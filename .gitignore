@@ -3,6 +3,7 @@
 
 xcuserdata/
 .build/
+.idea/
 
 ### OSX ###
 *.DS_Store
