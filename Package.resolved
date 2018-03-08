@@ -3,11 +3,11 @@
     "pins": [
       {
         "package": "Swifter",
-        "repositoryURL": "https://github.com/httpswift/swifter.git",
+        "repositoryURL": "https://github.com/cwillisf/swifter.git",
         "state": {
-          "branch": null,
-          "revision": "31ffd9b31f8eaf45d34d7b55a40bba08e3ce1b96",
-          "version": "1.3.3"
+          "branch": "stable",
+          "revision": "3c86f8e4031ae37f3decc7cac1931356e80d4759",
+          "version": null
         }
       }
     ]
