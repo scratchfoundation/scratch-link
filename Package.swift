@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "scratch-connect",
 	dependencies: [
-        .package(url: "https://github.com/cwillisf/swifter.git", .branch("stable"))
+        .package(url: "https://github.com/cwillisf/swifter.git", .branch("WebSocketSessionDelegate")),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.

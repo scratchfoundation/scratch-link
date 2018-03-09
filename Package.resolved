@@ -5,8 +5,8 @@
         "package": "Swifter",
         "repositoryURL": "https://github.com/cwillisf/swifter.git",
         "state": {
-          "branch": "stable",
-          "revision": "3c86f8e4031ae37f3decc7cac1931356e80d4759",
+          "branch": "WebSocketSessionDelegate",
+          "revision": "1d369abb750c2661181ac3eb008190dd0894269b",
           "version": null
         }
       }
