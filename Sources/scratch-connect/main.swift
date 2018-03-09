@@ -2,6 +2,12 @@ import CoreBluetooth
 import Foundation
 import Swifter
 
+let SDMPort: in_port_t = 20110
+
+enum SDMRoutes: String {
+    case BLE = "/scratch/ble"
+}
+
 enum SerializationError: Error {
     case Invalid(String)
     case Internal(String)
@@ -100,11 +106,11 @@ class ScratchConnect: WebSocketSessionDelegate {
         server = HttpServer()
         bt = ScratchBluetooth()
 
-        server["/scratch/ble"] = websocket(session(_:didReceiveText:), session(_:didReceiveBinary:))
+        server[SDMRoutes.BLE.rawValue] = websocket(session(_:didReceiveText:), session(_:didReceiveBinary:))
 
         print("Starting server...")
         do {
-            try server.start(20110)
+            try server.start(SDMPort)
             print("Server started")
         } catch let error {
             print("Failed to start server: \(error)")
