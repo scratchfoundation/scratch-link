@@ -17,7 +17,6 @@ enum BluetoothError: Error {
     case NotReady
 }
 
-@available(OSX 10.13, *)
 class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
     private let central: CBCentralManager
     private var sessions: [WebSocketSession]
@@ -70,11 +69,17 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
         return "scan started"
     }
 
+    // Work around bug(?) in 10.13 SDK
+    // see https://forums.developer.apple.com/thread/84375
+    func getUUID(forPeripheral peripheral: CBPeripheral) -> UUID {
+        return peripheral.value(forKey: "identifier") as! NSUUID as UUID
+    }
+
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
         do {
             let objectJSON: [String: Any] = [
                 "name": peripheral.name ?? "",
-                "UUID": peripheral.identifier.uuidString,
+                "UUID": getUUID(forPeripheral: peripheral).uuidString,
                 "RSSI": RSSI
             ]
             let responseJSON: [Any] = [
@@ -98,7 +103,6 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
     }
 }
 
-@available(OSX 10.13, *)
 class ScratchConnect: WebSocketSessionDelegate {
     let server: HttpServer
     let bt: ScratchBluetooth
@@ -188,14 +192,10 @@ class ScratchConnect: WebSocketSessionDelegate {
     }
 }
 
-if #available(OSX 10.13, *) {
-    let app = ScratchConnect()
+let app = ScratchConnect()
 
-    let runLoop = RunLoop.current
-    while runLoop.run(mode: .defaultRunLoopMode, before: .distantFuture) {
-        // use select() to accept socket connections from tray icon / admin panel / something?
-        print("Loop")
-    }
-} else {
-    // Fallback on earlier versions
+let runLoop = RunLoop.current
+while runLoop.run(mode: .defaultRunLoopMode, before: .distantFuture) {
+    // use select() to accept socket connections from tray icon / admin panel / something?
+    print("Loop")
 }
