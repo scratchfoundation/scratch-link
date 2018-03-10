@@ -78,10 +78,11 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
                 "RSSI": RSSI
             ]
             let responseJSON: [Any] = [
-                (callNumber += 1),
+                callNumber,
                 "didDiscoverPeripheral",
                 objectJSON
             ]
+            callNumber += 1
 
             let responseData = try JSONSerialization.data(withJSONObject: responseJSON)
             if let responseString = String(bytes: responseData, encoding: .utf8) {
