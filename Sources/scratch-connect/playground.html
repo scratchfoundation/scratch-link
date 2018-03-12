@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scratch PB Test Client Fun Stuff Yay</title>
+</head>
+<body>
+<div><label for="log">Log</label></div>
+<textarea id="log" title="log" readonly style="width: 40rem; height: 10rem;"></textarea>
+<div>
+    <input id="follow" type="checkbox" title="Follow" checked>
+    <label for="follow">Follow</label>
+</div>
+<div>
+    <button id="init">Connect to app</button>
+    <button id="go">Do a thing!</button>
+</div>
+</body>
+<script>
+    class ScratchBLE {
+        constructor () {
+            this._requestID = 0;
+            this._openRequests = {};
+
+            this._ws = new WebSocket('ws://localhost:20110/scratch/ble');
+            this._ws.onmessage = e => this._onSocketMessage(e);
+            this._ws.onopen = e => this._onSocketOpen(e);
+            this._ws.onclose = e => this._onSocketClose(e);
+            this._ws.onerror = e => this._onSocketError(e);
+
+            this._waitForBluetooth = new Promise(resolve => { this._onBluetoothReady = resolve; });
+        }
+
+        dispose () {
+            this._ws.close();
+            this._ws = null;
+        }
+
+        requestDevice (options) {
+            return this._waitForBluetooth.then(this._call('scan', options));
+        }
+
+        _onSocketOpen (e) {
+            addLine(`WS opened: ${stringify(e)}`);
+        }
+
+        _onSocketClose (e) {
+            addLine(`WS closed: ${stringify(e)}`);
+        }
+
+        _onSocketError (e) {
+            addLine(`WS error: ${stringify(e)}`);
+        }
+
+        _onSocketMessage (e) {
+            addLine(`Received message: ${e.data}`);
+            const json = JSON.parse(e.data);
+            const result = this._handleMessage(json);
+            if (result) {
+                this._ws.send(JSON.stringify(result));
+            }
+        }
+
+        _handleMessage (json) {
+            const callbackToken = json[0];
+            const action = json[1];
+            const args = json.splice(2);
+
+            switch (action) {
+                case '@': // action return
+                    this._openRequests[callbackToken].resolve.apply(null, args);
+                    delete this._openRequests[callbackToken];
+                    break;
+                case '!': // exception thrown
+                    this._openRequests[callbackToken].reject.apply(null, args);
+                    delete this._openRequests[callbackToken];
+                    break;
+                case 'adapterStateChanged':
+                    this._handleAdapterStateChanged.apply(this, args);
+                    break;
+                case 'deviceAdded':
+                    break;
+            }
+        }
+
+        _handleAdapterStateChanged (newState) {
+            addLine(`Adapter state changed to: ${newState}`);
+        }
+
+        _call (...args) {
+            const requestID = this._requestID++;
+            const promise = new Promise((resolve, reject) => {
+                this._openRequests[requestID] = {resolve, reject};
+            });
+            this._ws.send(JSON.stringify(
+                [requestID].concat(args)
+            ));
+            return promise;
+        }
+    }
+
+    self.Scratch = self.Scratch || {};
+
+    function init () {
+        addLine('Connecting...');
+        self.Scratch.BLE = new ScratchBLE();
+        addLine('Connected.');
+    }
+
+    function go() {
+        Scratch.BLE.requestDevice({
+            filters: [
+                {services: '4cdbbd87d6e646c29d0bdf87551e159a'}
+            ]
+        }).then(
+            x => {
+                addLine(`requestDevice resolved to: ${stringify(x)}`);
+            },
+            e => {
+                addLine(`requestDevice rejected with: ${stringify(e)}`);
+            }
+        );
+    }
+
+    function stringify(o) {
+        return JSON.stringify(o, Object.getOwnPropertyNames(o));
+    }
+
+    const follow = document.getElementById('follow');
+    const log = document.getElementById('log');
+
+    const goButton = document.getElementById('go');
+    goButton.onclick = () => {
+        try {
+            go();
+        } catch (e) {
+            addLine(`Go button caught exception: ${stringify(e)}`);
+        }
+    };
+
+    const initButton = document.getElementById('init');
+    initButton.onclick = () => {
+        try {
+            init();
+        } catch (e) {
+            addLine(`Init button caught exception: ${stringify(e)}`);
+        }
+    };
+
+    function addLine(text) {
+        log.innerHTML += `${text}\n`;
+        if (follow.checked) {
+            log.scrollTop = log.scrollHeight;
+        }
+    }
+
+</script>
+</html>

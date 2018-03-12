@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Swifter",
+        "repositoryURL": "https://github.com/cwillisf/swifter.git",
+        "state": {
+          "branch": "WebSocketSessionDelegate",
+          "revision": "1d369abb750c2661181ac3eb008190dd0894269b",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}
