@@ -42,7 +42,7 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
         inquiry.setSearchCriteria(BluetoothServiceClassMajor(kBluetoothServiceClassMajorAny),
                                    majorDeviceClass: BluetoothDeviceClassMajor(major),
                                    minorDeviceClass: BluetoothDeviceClassMinor(minor))
-        inquiry.inquiryLength = 30
+        inquiry.inquiryLength = 20
         inquiry.updateNewDeviceNames = true
         let inquiryStatus = inquiry.start()
         sendWSSResponse(inquiryStatus, returnCode: inquiryStatus)
