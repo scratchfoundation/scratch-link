@@ -61,7 +61,7 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
                     if (connectionResult != kIOReturnSuccess) {
                         sendWSSResponse("Connection process could not start or channel was not found",
                                         returnCode: connectionResult)
-                    }
+                    } // a success here may be a false positive, handle in callback
                     deviceNotAvailable = false
                     break
                 }
@@ -97,13 +97,33 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
         
         var data = message
         let mtu = connectedChannel?.getMTU()
-        if message.count <= Int(mtu!) {
+        let maxMessageSize = Int(mtu!)
+        if message.count <= maxMessageSize {
             let messageResult = connectedChannel?.writeAsync(&data, length: UInt16(message.count), refcon: &refcon)
             if (messageResult != kIOReturnSuccess) {
                 sendWSSResponse("Failed to buffer message", returnCode: messageResult)
-            } // a success here may be false positive, handle in callback
+            } else {
+                // this could be a false positive because writeAsync returns result of finding channel & buffering
+                sendWSSResponse(message.count, returnCode: messageResult)
+            }
         } else {
-            // split it up and send in chunks
+            // taken from https://stackoverflow.com/a/38156873
+            let chunks = stride(from: 0, to: data.count, by: maxMessageSize).map {
+                Array(data[$0..<min($0 + maxMessageSize, data.count)])
+            }
+            
+            var succeeded = 0
+            var bytesSent = 0
+            for chunk in chunks {
+                var mutableChunk = chunk
+                let intermediateResult = connectedChannel?.writeAsync(
+                    &mutableChunk, length: UInt16(chunk.count), refcon: &refcon)
+                succeeded += Int(intermediateResult!)
+                if intermediateResult == kIOReturnSuccess {
+                    bytesSent += chunk.count
+                }
+            }
+            sendWSSResponse(bytesSent, returnCode: IOReturn(succeeded))
         }
     }
     
@@ -132,7 +152,7 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
     }
     
     func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
-        print("inquiry complete: aborted = \(aborted)")
+        print("inquiry complete: aborted = \(aborted); error = \(error)")
     }
     
     /*
@@ -151,7 +171,7 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
         do {
             let response: [String: Any] = [
                 "jsonrpc": "2.0",
-                "method": "didDiscoverMessage",
+                "method": "didReceiveMessage",
                 "params": [
                     "uuid": device?.addressString,
                     "message": encodedMessage,
@@ -170,8 +190,10 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
     func rfcommChannelWriteComplete(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
                                     refcon: UnsafeMutableRawPointer!,
                                     status error: IOReturn) {
-        let numberOfBytesSent = 100
-        sendWSSResponse(numberOfBytesSent, returnCode: error) // include number of bytes sent to device
+        // It may not be possible to retrieve the number of bytes sent from this delegate method
+        // If we write to the channel synchronously, we can determine number of bytes sent correctly
+        let numberOfBytesSent = -1
+        sendWSSResponse(numberOfBytesSent, returnCode: error)
     }
     
     /*
