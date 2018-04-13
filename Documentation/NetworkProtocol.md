@@ -96,8 +96,8 @@ be passed from the SDM to the Scratch Extension many times for as long as the di
 ```
 
 Connection shall be initiated by the Scratch Extension by providing a specified peripheral identifier with which to
-connect. Attempting to connect to a peripheral which does not match the filtering information provided in a prior
-connection phase shall result in an error response.
+connect. Attempting to connect to a peripheral which does not match the filtering information provided in the discovery
+request shall result in an error response.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to connect to a peripheral.
 ```json
