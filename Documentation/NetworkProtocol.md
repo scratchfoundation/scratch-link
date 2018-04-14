@@ -77,7 +77,14 @@ the initial state.
 
 ### Discovery State
 
-The discovery state lasts until the Scratch Extension requests to connect to a peripheral or the discovery times out.
+The discovery state lasts until the Scratch Extension requests to connect to a peripheral or disconnects. The SDM shall
+manage the initiation and/or renewal of scan, enumeration, or other peripheral discovery requests with the host system
+on an ongoing basis until the end of the discovery phase.
+
+If an unreasonable amount of time passes without the Scratch Extension issuing a successful "connect" request or
+disconnecting from the socket, the SDM may end discovery and close the socket connection. This may help save battery
+power on mobile devices, for example.
+
 This state supports the "didDiscoverPeripheral" notification (sent from SDM to Scratch Extension) and the "connect"
 request (sent from Scratch Extension to SDM).
 
