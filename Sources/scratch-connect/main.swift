@@ -20,7 +20,6 @@ enum BluetoothError: Error {
 class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
     private let central: CBCentralManager
     private var sessions: [WebSocketSession]
-    private var callNumber: Int
 
     public var isReady: Bool {
         get {
@@ -29,7 +28,6 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
     }
 
     override init() {
-        callNumber = 0
         central = CBCentralManager()
         sessions = []
         super.init()
@@ -53,12 +51,12 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
         }
     }
 
-    func scan(forSession wss: WebSocketSession, withOptions options: Any?) throws -> Any? {
+    func scan(forSession wss: WebSocketSession, withOptions options: Any?) throws -> Codable? {
         if !isReady {
             throw BluetoothError.NotReady
         }
 
-        print("I should scan for: \(options)")
+        print("I should scan for: \(String(describing:options))")
 
         central.scanForPeripherals(withServices: nil)
 
@@ -66,7 +64,7 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
             sessions.append(wss)
         }
 
-        return "scan started"
+        return nil
     }
 
     // Work around bug(?) in 10.13 SDK
@@ -77,17 +75,16 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
         do {
-            let objectJSON: [String: Any] = [
+            let peripheralData: [String: Any] = [
                 "name": peripheral.name ?? "",
-                "UUID": getUUID(forPeripheral: peripheral).uuidString,
+                "peripheralId": getUUID(forPeripheral: peripheral).uuidString,
                 "RSSI": RSSI
             ]
-            let responseJSON: [Any] = [
-                callNumber,
-                "didDiscoverPeripheral",
-                objectJSON
+            let responseJSON: [String:Any?] = [
+                "jsonrpc": "2.0",
+                "method": "didDiscoverPeripheral",
+                "params": peripheralData
             ]
-            callNumber += 1
 
             let responseData = try JSONSerialization.data(withJSONObject: responseJSON)
             if let responseString = String(bytes: responseData, encoding: .utf8) {
@@ -103,6 +100,9 @@ class ScratchBluetooth: NSObject, CBCentralManagerDelegate {
     }
 }
 
+// Provide Scratch access to hardware devices using a JSON-RPC 2.0 API over WebSockets.
+// See NetworkProtocol.md for details.
+// TODO: implement remaining JSON-RPC 2.0 features: message batching, error responses
 class ScratchConnect: WebSocketSessionDelegate {
     let server: HttpServer
     let bt: ScratchBluetooth
@@ -150,43 +150,63 @@ class ScratchConnect: WebSocketSessionDelegate {
     }
 
     func session(_ wss: WebSocketSession, didReceiveJSON data: Data) throws -> Data? {
-        guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? [Any] else {
+        guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
             throw SerializationError.Invalid("top-level message structure")
         }
 
-        let callbackToken = json[0]
-        guard let action = json[1] as? String else {
-            throw SerializationError.Invalid("action identifier")
+        // property "jsonrpc" must be exactly "2.0"
+        if json["jsonrpc"] as? String != "2.0" {
+            throw SerializationError.Invalid("JSON-RPC version string")
         }
 
         // If we made it this far, make sure we hear about this socket going away
         wss.delegate = self
 
-        let reply = { () -> [Any] in
-            do {
-                if let result = try performAction(action, forSession: wss, withArgs: Array(json[2...])) {
-                    return [callbackToken, "@", result]
-                } else {
-                    return [callbackToken, "@"]
-                }
-            } catch {
-                // TODO: we shouldn't send back the whole error - we might leak sensitive info
-                return [callbackToken, "!", error]
-            }
-        }()
-        return try JSONSerialization.data(withJSONObject: reply)
+        if json.keys.contains("method") {
+            return try session(wss, didReceiveRequest: json)
+        } else if json.keys.contains("result") || json.keys.contains("error") {
+            return try session(wss, didReceiveResponse: json)
+        } else {
+            throw SerializationError.Invalid("message is neither request nor response")
+        }
+    }
+
+    func session(_ wss: WebSocketSession, didReceiveRequest json: [String: Any]) throws -> Data? {
+        guard let method = json["method"] as? String else {
+            throw SerializationError.Invalid("method value missing or not a string")
+        }
+
+        // optional: dictionary of parameters by name
+        // TODO: do we want to support passing parameters by position?
+        let params: [String:Any] = (json["params"] as? [String:Any]) ?? [String:Any]()
+
+        let result: Codable? = try call(method, forSession: wss, withParams: params)
+
+        var response: [String:Any?] = [
+            "jsonrpc": "2.0",
+            "result": result
+        ]
+        if let id = json["id"] {
+            response["id"] = id
+        }
+        return try JSONSerialization.data(withJSONObject: response)
+    }
+
+    func session(_ wss: WebSocketSession, didReceiveResponse json: [String: Any]) throws -> Data? {
+        // TODO
+        return nil
     }
 
     func sessionWillClose(_ session: WebSocketSession) {
         print("A session will close")
     }
 
-    func performAction(_ action: String, forSession wss: WebSocketSession, withArgs args: [Any]) throws -> Any? {
-        switch action {
+    func call(_ method: String, forSession wss: WebSocketSession, withParams params: [String:Any]) throws -> Codable? {
+        switch method {
         case "scan":
-            return try bt.scan(forSession: wss, withOptions: args[0])
+            return try bt.scan(forSession: wss, withOptions: params)
         default:
-            print("Unknown action: \(action)")
+            print("Unknown method: \(method)")
             return nil
         }
     }
