@@ -82,7 +82,7 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
 
     func call(_ method: String, withParams params: [String:Any]) throws -> Codable? {
         switch method {
-        case "scan":
+        case "discover":
             return try scan(withOptions: params)
         default:
             print("Unknown method: \(method)")
