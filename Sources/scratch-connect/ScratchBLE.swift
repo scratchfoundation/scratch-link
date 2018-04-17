@@ -1,9 +1,10 @@
 import CoreBluetooth
 import Foundation
+import Swifter
 
-class ScratchBLE: NSObject, CBCentralManagerDelegate {
-    private let central: CBCentralManager
-    private var sessions: [WebSocketSession]
+class ScratchConnectBLESession: NSObject, ScratchConnectSession, CBCentralManagerDelegate {
+    private let wss: WebSocketSession
+    private let central = CBCentralManager()
 
     enum BluetoothError: Error {
         case NotReady
@@ -15,9 +16,8 @@ class ScratchBLE: NSObject, CBCentralManagerDelegate {
         }
     }
 
-    override init() {
-        central = CBCentralManager()
-        sessions = []
+    required init(withSocket wss: WebSocketSession) {
+        self.wss = wss
         super.init()
         central.delegate = self
     }
@@ -39,7 +39,7 @@ class ScratchBLE: NSObject, CBCentralManagerDelegate {
         }
     }
 
-    func scan(forSession wss: WebSocketSession, withOptions options: Any?) throws -> Codable? {
+    func scan(withOptions options: Any?) throws -> Codable? {
         if !isReady {
             throw BluetoothError.NotReady
         }
@@ -47,10 +47,6 @@ class ScratchBLE: NSObject, CBCentralManagerDelegate {
         print("I should scan for: \(String(describing:options))")
 
         central.scanForPeripherals(withServices: nil)
-
-        if !sessions.contains(wss) {
-            sessions.append(wss)
-        }
 
         return nil
     }
@@ -76,14 +72,21 @@ class ScratchBLE: NSObject, CBCentralManagerDelegate {
 
             let responseData = try JSONSerialization.data(withJSONObject: responseJSON)
             if let responseString = String(bytes: responseData, encoding: .utf8) {
-                sessions.forEach {
-                    session in
-                    session.writeText(responseString)
-                    print("Reporting discovered device to a session")
-                }
+                wss.writeText(responseString)
+                print("Reporting discovered device to a session")
             }
         } catch {
             print("Error handling discovered peripheral: \(error)")
+        }
+    }
+
+    func call(_ method: String, withParams params: [String:Any]) throws -> Codable? {
+        switch method {
+        case "scan":
+            return try scan(withOptions: params)
+        default:
+            print("Unknown method: \(method)")
+            return nil
         }
     }
 }

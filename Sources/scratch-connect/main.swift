@@ -17,7 +17,7 @@ enum SerializationError: Error {
 // See NetworkProtocol.md for details.
 class ScratchConnect {
     let server: HttpServer
-    let sessionManagers: [SDMRoute:ScratchConnectSessionManagerBase]
+    var sessionManagers = [SDMRoute:ScratchConnectSessionManagerBase]()
 
     init() {
         server = HttpServer()
@@ -37,17 +37,17 @@ class ScratchConnect {
 }
 
 protocol ScratchConnectSession {
+    // Override this in your hardware-specific session
+    func call(_ method: String, withParams params: [String:Any]) throws -> Codable?
     init(withSocket wss: WebSocketSession)
 
+    // These are implemented for you in the extension
     func didReceiveRequest(_ json: [String: Any]) throws -> Data?
     func didReceiveResponse(_ json: [String: Any]) throws -> Data?
 }
 
-class ScratchConnectBLESession: ScratchConnectSession {
-    required init(withSocket wss: WebSocketSession) {
-    }
-
-    func session(_ wss: WebSocketSession, didReceiveRequest json: [String: Any]) throws -> Data? {
+extension ScratchConnectSession {
+    func didReceiveRequest(_ json: [String: Any]) throws -> Data? {
         guard let method = json["method"] as? String else {
             throw SerializationError.Invalid("method value missing or not a string")
         }
@@ -56,7 +56,7 @@ class ScratchConnectBLESession: ScratchConnectSession {
         // TODO: do we want to support passing parameters by position?
         let params: [String:Any] = (json["params"] as? [String:Any]) ?? [String:Any]()
 
-        let result: Codable? = try call(method, forSession: wss, withParams: params)
+        let result: Codable? = try call(method, withParams: params)
 
         var response: [String:Any?] = [
             "jsonrpc": "2.0",
@@ -68,23 +68,9 @@ class ScratchConnectBLESession: ScratchConnectSession {
         return try JSONSerialization.data(withJSONObject: response)
     }
 
-    func session(_ wss: WebSocketSession, didReceiveResponse json: [String: Any]) throws -> Data? {
+    func didReceiveResponse(_ json: [String: Any]) throws -> Data? {
         // TODO
         return nil
-    }
-
-    func sessionWillClose(_ session: WebSocketSession) {
-        print("A session will close")
-    }
-
-    func call(_ method: String, forSession wss: WebSocketSession, withParams params: [String:Any]) throws -> Codable? {
-        switch method {
-        case "scan":
-            return try ble.scan(forSession: wss, withOptions: params)
-        default:
-            print("Unknown method: \(method)")
-            return nil
-        }
     }
 }
 
