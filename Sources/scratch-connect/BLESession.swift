@@ -39,7 +39,7 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
         }
     }
 
-    func scan(withOptions options: Any?) throws -> Codable? {
+    func discover(withOptions options: Any?) throws -> Codable? {
         if !isReady {
             throw BluetoothError.NotReady
         }
@@ -83,7 +83,7 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
     func call(_ method: String, withParams params: [String:Any]) throws -> Codable? {
         switch method {
         case "discover":
-            return try scan(withOptions: params)
+            return try discover(withOptions: params)
         default:
             print("Unknown method: \(method)")
             return nil

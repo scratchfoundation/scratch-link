@@ -22,8 +22,9 @@ extension SessionManagerBase {
 
     func session(_ wss: WebSocketSession, didReceiveText text: String) {
         do {
+            // Try to encode the string as UTF8 bytes, since that's what the JSON decoder wants
             guard let data = text.data(using: .utf8) else {
-                throw SerializationError.Internal("text decoding")
+                throw SerializationError.Internal("text encoding")
             }
             if let result = try session(wss, didReceiveJSON: data) {
                 guard let jsonReply = String(bytes: result, encoding: .utf8) else {
