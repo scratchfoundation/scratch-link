@@ -1,7 +1,7 @@
 # Network Protocol
 
-This document describes the proposed communication protocol used by the Scratch extension framework (the client) to
-communicate with the device provider application (the server).
+This document describes the proposed communication protocol used by a Scratch Extension (or the extension framework) to
+communicate with the Scratch Device Manager (SDM).
 
 ## JSON-RPC 2.0
 
@@ -21,13 +21,29 @@ Extension and the SDM, the choice of path determines which Transport Protocol wi
 initiating a BLE connection, the extension connects to the SDM’s WebSocket server at path "/scratch/ble". For Bluetooth
 Classic (BT) connections, we propose using the following connection namespace: "/scratch/bt".
 
-### Discover
+### Stateful Connections
 
-Discovery for BT is fundamentally different than for BLE. Due to this difference we propose the following interface
-that handles both scanning for and reporting discovered devices. A discovery scan requires two arguments: a vendor
-identifier and a service identifier. Failure to provide both from the Scratch Extension shall result in the SDM
-refusing to perform a scan. This is to help ensure the privacy and safety of the user as further outlined in the
-"Implementation" section below.
+In contrast to previously proposed protocols, this proposal dedicates a particular connection to the discovery of and
+interaction with exactly one peripheral. If an Extension wishes to interact with more than one peripheral
+simultaneously then that Extension must open more than one connection to the SDM.
+
+To this end, a particular socket connection may transition through several distinct states, each of which is described
+below. Each state supports a particular set of requests and notifications, and sending a request or notification not
+supported by the current state shall result in an error response and otherwise be ignored. For example, attempting to
+send data to a peripheral using a "send" request while the connection is in the "discovery" state is a non-fatal error.
+
+### Initial State
+
+The connection begins in an initial, dormant state. The only message supported in this state is a discovery request,
+which will transition the connection into the discovery state. The SDM may terminate a connection which does not
+successfully enter the discovery state within a reasonable amount of time.
+
+A discovery request may include filtering information specific to the Transport Protocol associated with the connection.
+For example, a BLE discovery request might include the UUIDs of one or more required GATT services or characteristics.
+
+Note: discovery requests for wireless peripherals **must** include at least one non-trivial piece of filtering
+information. Failure to provide such from the Scratch Extension shall result in the SDM refusing to perform a scan.
+This is to help ensure the privacy and safety of the user.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
 ```json
@@ -35,14 +51,12 @@ JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
   "jsonrpc": "2.0",     // JSON-RPC version indicator
   "id": 1,              // Message sequence identifier
   "method": "discover", // Command identifier
-  "params": {
-    "vendor": 0x0397,   // Vendor identifier filter
-    "service": 0x0000   // Service identifier filter
-  }
+  "params": {...}       // Transport Protocol-specific filtering information
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful initiation of discovery.
+JSON-RPC **response** sent from SDM to Scratch Extension upon successful initiation of discovery. This confirms the
+transition into the discovery state.
 ```json
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -51,7 +65,8 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon successful initiat
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon failure to initiate discovery.
+JSON-RPC **response** sent from SDM to Scratch Extension upon failure to initiate discovery. The connection remains in
+the initial state.
 ```json
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -60,41 +75,51 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon failure to initiat
 }
 ```
 
+### Discovery State
+
+The discovery state lasts until the Scratch Extension requests to connect to a peripheral or disconnects. The SDM shall
+manage the initiation and/or renewal of scan, enumeration, or other peripheral discovery requests with the host system
+on an ongoing basis until the end of the discovery phase.
+
+If an unreasonable amount of time passes without the Scratch Extension issuing a successful "connect" request or
+disconnecting from the socket, the SDM may end discovery and close the socket connection. This may help save battery
+power on mobile devices, for example.
+
+This state supports the "didDiscoverPeripheral" notification (sent from SDM to Scratch Extension) and the "connect"
+request (sent from Scratch Extension to SDM).
+
 JSON-RPC **notification** sent from SDM to Scratch Extension upon discovery of peripherals. Note that this message may
-be passed from the SDM to the Scratch Extension many times for as long as the discovery process is initiated.
+be passed from the SDM to the Scratch Extension many times for as long as the discovery state is active.
 ```json
 {
   "jsonrpc": "2.0",                  // JSON-RPC version indicator
   "method": "didDiscoverPeripheral", // Command identifier
   "params": {
-    "uuid": 0x000,                   // Unique identifier for peripheral
+    "peripheralId": 0x0000,          // Unique identifier for peripheral
     "name": "EV3",                   // Name
     "rssi": -70                      // Signal strength indicator
   }
 }
 ```
 
-### Connect
-
-Similar to the BLE interface, connection shall be initiated by the Scratch Extension by providing a specified unique
-identifier (UUID) for the BT peripheral with which to connect. Confirmation and error handling is communicated using a
-"callback" pattern that is documented with more detail in the "Implementation" section below. Attempting to connect to
-a peripheral which does not match the vendor and service identifiers provided in a prior connection phase will result
-in an error response.
+Connection shall be initiated by the Scratch Extension by providing a specified peripheral identifier with which to
+connect. Attempting to connect to a peripheral which does not match the filtering information provided in the discovery
+request shall result in an error response.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to connect to a peripheral.
 ```json
 {
-  "jsonrpc": "2.0",    // JSON-RPC version indicator
-  "id": 3,             // Message sequence identifier
-  "method": "connect", // Command identifier
+  "jsonrpc": "2.0",        // JSON-RPC version indicator
+  "id": 3,                 // Message sequence identifier
+  "method": "connect",     // Command identifier
   "params": {
-    "uuid": 0x0000     // Unique identifier for peripheral
+    "peripheralId": 0x0000 // Unique identifier for peripheral
   }
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful connection.
+JSON-RPC **response** sent from SDM to Scratch Extension upon successful connection. This confirms the transition into
+the connected state.
 ```json
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -103,7 +128,8 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon successful connect
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon connection failure.
+JSON-RPC **response** sent from SDM to Scratch Extension upon connection failure. The discovery state shall remain
+active.
 ```json
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -112,49 +138,20 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon connection failure
 }
 ```
 
-### Disconnect
+### Connected State
 
-Disconnection is also handled similarly to the BLE interface, with a single "disconnect" event that may be dispatched
-by the Scratch Extension resulting in one of two "callback" responses. Attempting to "disconnect" from a peripheral
-which is not currently connected will result in an error response.
+The connected state indicates that the socket has become connected to a specific peripheral and further messages will
+be dedicated to that peripheral. In this state, the Scratch Extension may send the "send" request and the SDM may send
+the "didReceiveMessage" notification. To disconnect from the current peripheral or discover a new peripheral the
+Scratch Extension must disconnect this socket and connect to a new one.
 
-JSON-RPC **request** sent from Scratch Extension to SDM to disconnect from a peripheral.
-```json
-{
-  "jsonrpc": "2.0",       // JSON-RPC version indicator
-  "id": 4,                // Message sequence identifier
-  "method": "disconnect", // Command identifier
-  "params": {
-    "uuid": 0x0000        // Unique identifier for peripheral
-  }
-}
-```
+#### Sending a Message
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful disconnection.
-```json
-{
-  "jsonrpc": "2.0", // JSON-RPC version indicator
-  "id": 4,          // Message sequence identifier
-  "result": null    // Indicates success
-}
-```
-
-JSON-RPC **response** sent from SDM to Scratch Extension upon disconnection failure.
-```json
-{
-  "jsonrpc": "2.0", // JSON-RPC version indicator
-  "id": 4,          // Message sequence identifier
-  "error": {...}    // Error information
-}
-```
-
-### Sending a Message
-
-Sending serial messages over the Bluetooth Classic interface shall be initiated by the Scratch Extension. This command
-requires three arguments including the unique identifier (UUID) of the peripheral with which to communicate, the
-message body, and a supported encoding format. Attempting to "send" to a peripheral which is not currently connected
-will result in an error response. Attempting to "send" to a peripheral with an unsupported encoding or invalid message
-body will also result in an error response.
+Sending data to a connected peripheral shall be initiated by the Scratch Extension. This command requires two
+arguments: the message body and a supported encoding format. Attempting to "send" to a peripheral with an unsupported
+encoding or invalid message body will result in an error response. If the underlying peripheral connection has specific
+needs regarding packet size (MTU), keep-alive, etc., those concerns shall be managed by the SDM in order to simulate a
+persistent free-form serial data stream.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message to a specified peripheral.
 ```json
@@ -163,7 +160,6 @@ JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message
   "id": 5,                 // Message sequence identifier
   "method": "send",        // Command identifier
   "params": {
-    "uuid": 0x0000,        // Unique identifier for peripheral
     "message": "cGluZw==", // Message to be sent
     "encoding": "base64"   // Encoding of message to be sent
   }
@@ -190,9 +186,8 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon unsuccessful messa
 
 ### Receiving a Message
 
-Receiving serial messages over the Bluetooth Classic interface shall be initiated by the Scratch Device Manager. This
-command requires three arguments including the unique identifier (UUID) of the peripheral which has initiated the
-message, the message body, and the default encoding format (UTF-8). The Scratch Extension is not expected to return a
+Receiving data from a connected peripheral shall be initiated by the Scratch Device Manager. This message requires
+two arguments: the message body and the encoding format (`base64`). The Scratch Extension is not expected to return a
 "callback" response when receiving a message.
 
 JSON-RPC **notification** sent from SDM to Scratch Extension on receipt of a serial message.
@@ -201,7 +196,6 @@ JSON-RPC **notification** sent from SDM to Scratch Extension on receipt of a ser
   "jsonrpc": "2.0",              // JSON-RPC version indicator
   "method": "didReceiveMessage", // Command identifier
   "params": {
-    "uuid": 0x0000,              // Unique identifier for peripheral
     "message": "cG9uZw==",       // Message to be sent
     "encoding": "base64"         // Encoding of message to be sent
   }
