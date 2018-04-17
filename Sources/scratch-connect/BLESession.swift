@@ -2,7 +2,7 @@ import CoreBluetooth
 import Foundation
 import Swifter
 
-class ScratchConnectBLESession: NSObject, ScratchConnectSession, CBCentralManagerDelegate {
+class BLESession: NSObject, Session, CBCentralManagerDelegate {
     private let wss: WebSocketSession
     private let central = CBCentralManager()
 

@@ -17,12 +17,12 @@ enum SerializationError: Error {
 // See NetworkProtocol.md for details.
 class ScratchConnect {
     let server: HttpServer
-    var sessionManagers = [SDMRoute:ScratchConnectSessionManagerBase]()
+    var sessionManagers = [SDMRoute: SessionManagerBase]()
 
     init() {
         server = HttpServer()
 
-        sessionManagers[SDMRoute.BLE] = ScratchConnectSessionManager<ScratchConnectBLESession>()
+        sessionManagers[SDMRoute.BLE] = SessionManager<BLESession>()
 
         server[SDMRoute.BLE.rawValue] = sessionManagers[SDMRoute.BLE]!.makeSocketHandler()
 
@@ -36,7 +36,7 @@ class ScratchConnect {
     }
 }
 
-protocol ScratchConnectSession {
+protocol Session {
     // Override this in your hardware-specific session
     func call(_ method: String, withParams params: [String:Any]) throws -> Codable?
     init(withSocket wss: WebSocketSession)
@@ -46,7 +46,7 @@ protocol ScratchConnectSession {
     func didReceiveResponse(_ json: [String: Any]) throws -> Data?
 }
 
-extension ScratchConnectSession {
+extension Session {
     func didReceiveRequest(_ json: [String: Any]) throws -> Data? {
         guard let method = json["method"] as? String else {
             throw SerializationError.Invalid("method value missing or not a string")

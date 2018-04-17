@@ -1,13 +1,13 @@
 import Foundation
 import Swifter
 
-protocol ScratchConnectSessionManagerBase: WebSocketSessionDelegate {
+protocol SessionManagerBase: WebSocketSessionDelegate {
     // Hardware-specific, must be implemented in hardware-specific code
 
-    // Type-specific, implemented in ScratchConnectSessionManager<T>
-    func getSession(forSocket wss: WebSocketSession) -> ScratchConnectSession
+    // Type-specific, implemented in SessionManager<T>
+    func getSession(forSocket wss: WebSocketSession) -> Session
 
-    // Not type-specific implemented in ScratchConnectSessionManagerBase
+    // Not type-specific, implemented in SessionManagerBase
     func makeSocketHandler() -> ((HttpRequest) -> HttpResponse)
     func session(_ wss: WebSocketSession, didReceiveText text: String)
     func session(_ wss: WebSocketSession, didReceiveBinary data: [UInt8])
@@ -15,7 +15,7 @@ protocol ScratchConnectSessionManagerBase: WebSocketSessionDelegate {
 }
 
 // TODO: implement remaining JSON-RPC 2.0 features: message batching, error responses
-extension ScratchConnectSessionManagerBase {
+extension SessionManagerBase {
     func makeSocketHandler() -> ((HttpRequest) -> HttpResponse) {
         return websocket(session(_:didReceiveText:), session(_:didReceiveBinary:))
     }
@@ -70,10 +70,10 @@ extension ScratchConnectSessionManagerBase {
     }
 }
 
-class ScratchConnectSessionManager<SessionType: ScratchConnectSession>: ScratchConnectSessionManagerBase {
+class SessionManager<SessionType: Session>: SessionManagerBase {
     var sessions = [WebSocketSession:SessionType]()
 
-    func getSession(forSocket wss: WebSocketSession) -> ScratchConnectSession {
+    func getSession(forSocket wss: WebSocketSession) -> Session {
         if let session = sessions[wss] {
             return session
         }
