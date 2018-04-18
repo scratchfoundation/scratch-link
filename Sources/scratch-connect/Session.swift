@@ -3,38 +3,99 @@ import Swifter
 
 protocol Session {
     // Override this in your hardware-specific session
-    func call(_ method: String, withParams params: [String:Any]) throws -> Codable?
+    func call(_ method: String, withParams params: [String:Any],
+              completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws
     init(withSocket wss: WebSocketSession)
-
-    // These are implemented for you in the extension
-    func didReceiveRequest(_ json: [String: Any]) throws -> Data?
-    func didReceiveResponse(_ json: [String: Any]) throws -> Data?
 }
 
 extension Session {
-    func didReceiveRequest(_ json: [String: Any]) throws -> Data? {
+    func didReceiveData(_ data: Data, completion: @escaping (_ jsonResponseData: Data?) -> Void) {
+
+        var responseId: Any?
+
+        func makeResponse(_ result: Codable?, _ error: JSONRPCError?) -> [String: Any] {
+            var response: [String: Any] = [
+                "jsonrpc": "2.0"
+            ]
+            response["id"] = responseId
+            if let error = error {
+                response["error"] = error
+            } else {
+                // If there's no error then we must include this as a success flag, even if the value is nil/null
+                response["result"] = result
+            }
+
+            return response
+        }
+
+        func sendResponse(_ result: Codable?, _ error: JSONRPCError?) {
+            do {
+                print("1")
+                let response = makeResponse(result, error)
+                print("2: \(String(describing: response))")
+                let jsonData = try JSONSerialization.data(withJSONObject: response)
+                print("3")
+                completion(jsonData)
+                print("4")
+            } catch let firstError {
+                do {
+                    print("uh oh")
+                    let errorResponse = makeResponse(nil, JSONRPCError(
+                            code: 2, message: "Could not encode response", data: String(describing: firstError)))
+                    let jsonData = try JSONSerialization.data(withJSONObject: errorResponse)
+                    completion(jsonData)
+                } catch let secondError {
+                    print("Failure to report failure to encode!")
+                    print("Initial error: \(String(describing: firstError))")
+                    print("Secondary error: \(String(describing: secondError))")
+                }
+            }
+        }
+
+        do {
+            guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+                throw JSONRPCError.ParseError(data: "unrecognized message structure")
+            }
+
+            // do this as early as possible so that error responses can include it. If it's not present, nil is fine.
+            responseId = json["id"]
+
+            // property "jsonrpc" must be exactly "2.0"
+            if json["jsonrpc"] as? String != "2.0" {
+                throw JSONRPCError.InvalidRequest(data: "unrecognized JSON-RPC version string")
+            }
+
+            if json.keys.contains("method") {
+                try didReceiveRequest(json, completion: sendResponse)
+            } else if json.keys.contains("result") || json.keys.contains("error") {
+                try didReceiveResponse(json)
+            } else {
+                throw JSONRPCError.InvalidRequest(data: "message is neither request nor response")
+            }
+        } catch let error where error is JSONRPCError {
+            sendResponse(nil, error as? JSONRPCError)
+        } catch {
+            sendResponse(nil, JSONRPCError(
+                    code: 1, message: "Unhandled error encountered during call", data: String(describing: error)))
+        }
+    }
+
+    func didReceiveRequest(_ json: [String: Any],
+                           completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
+
         guard let method = json["method"] as? String else {
-            throw SerializationError.Invalid("method value missing or not a string")
+            throw JSONRPCError.InvalidRequest(data: "method value missing or not a string")
         }
 
         // optional: dictionary of parameters by name
-        // TODO: do we want to support passing parameters by position?
-        let params: [String:Any] = (json["params"] as? [String:Any]) ?? [String:Any]()
+        let params: [String: Any] = (json["params"] as? [String: Any]) ?? [String: Any]()
 
-        let result: Codable? = try call(method, withParams: params)
-
-        var response: [String:Any?] = [
-            "jsonrpc": "2.0",
-            "result": result
-        ]
-        if let id = json["id"] {
-            response["id"] = id
-        }
-        return try JSONSerialization.data(withJSONObject: response)
+        // On success, this will call makeResponse with a result
+        try call(method, withParams: params, completion: completion)
     }
 
-    func didReceiveResponse(_ json: [String: Any]) throws -> Data? {
-        // TODO
-        return nil
+    func didReceiveResponse(_ json: [String: Any]) throws {
+        // TODO: parse response to get its ID, connect it to a pending Request stored in this Session, call callback
+        // We currently don't plan to send any non-Notification Requests to the client so we don't need this yet
     }
 }

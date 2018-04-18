@@ -39,7 +39,7 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
         }
     }
 
-    func discover(withOptions options: Any?) throws -> Codable? {
+    func discover(withOptions options: Any?) throws {
         if !isReady {
             throw BluetoothError.NotReady
         }
@@ -47,8 +47,6 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
         print("I should scan for: \(String(describing:options))")
 
         central.scanForPeripherals(withServices: nil)
-
-        return nil
     }
 
     // Work around bug(?) in 10.13 SDK
@@ -80,13 +78,14 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
         }
     }
 
-    func call(_ method: String, withParams params: [String:Any]) throws -> Codable? {
+    func call(_ method: String, withParams params: [String:Any],
+              completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
         switch method {
         case "discover":
-            return try discover(withOptions: params)
+            try discover(withOptions: params)
+            completion(nil, nil)
         default:
-            print("Unknown method: \(method)")
-            return nil
+            throw JSONRPCError.MethodNotFound(data: method)
         }
     }
 }

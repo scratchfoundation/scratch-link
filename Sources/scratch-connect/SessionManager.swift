@@ -6,12 +6,6 @@ protocol SessionManagerBase: WebSocketSessionDelegate {
 
     // Type-specific, implemented in SessionManager<T>
     func getSession(forSocket wss: WebSocketSession) -> Session
-
-    // Not type-specific, implemented in SessionManagerBase
-    func makeSocketHandler() -> ((HttpRequest) -> HttpResponse)
-    func session(_ wss: WebSocketSession, didReceiveText text: String)
-    func session(_ wss: WebSocketSession, didReceiveBinary data: [UInt8])
-    func session(_ wss: WebSocketSession, didReceiveJSON data: Data) throws -> Data?
 }
 
 // TODO: implement remaining JSON-RPC 2.0 features: message batching, error responses
@@ -20,17 +14,34 @@ extension SessionManagerBase {
         return websocket(session(_:didReceiveText:), session(_:didReceiveBinary:))
     }
 
+    static func makeJSONData(fromObject object: [String: Any]) -> Data? {
+        do {
+            return try JSONSerialization.data(withJSONObject: object)
+        } catch {
+            print("Error attempting to serialize JSON from object: \(String(describing: object))")
+            return nil
+        }
+    }
+
     func session(_ wss: WebSocketSession, didReceiveText text: String) {
         do {
             // Try to encode the string as UTF8 bytes, since that's what the JSON decoder wants
             guard let data = text.data(using: .utf8) else {
                 throw SerializationError.Internal("text encoding")
             }
-            if let result = try session(wss, didReceiveJSON: data) {
-                guard let jsonReply = String(bytes: result, encoding: .utf8) else {
-                    throw SerializationError.Internal("reply encoding")
+            session(wss, didReceiveData: data) { response in // (response: [String: Any]?) -> Void in
+                if let response = response {
+                    do {
+                        let jsonData = try JSONSerialization.data(withJSONObject: response)
+                        if let jsonReply = String(bytes: jsonData, encoding: .utf8) {
+                            wss.writeText(jsonReply)
+                        } else {
+                            print("Could not decode response JSON data to text: \(String(describing: response))")
+                        }
+                    } catch {
+                        print("Error attempting to serialize response to JSON data: \(String(describing: response))")
+                    }
                 }
-                wss.writeText(jsonReply)
             }
         } catch {
             print("Error handling text message: \(error)")
@@ -38,36 +49,18 @@ extension SessionManagerBase {
     }
 
     func session(_ wss: WebSocketSession, didReceiveBinary data: [UInt8]) {
-        do {
-            if let result = try session(wss, didReceiveJSON: Data(data)) {
-                let jsonReply = [UInt8](result)
+        session(wss, didReceiveData: Data(data)) { response in
+            if let response = response {
+                let jsonReply = [UInt8](response)
                 wss.writeBinary(jsonReply)
             }
-        } catch let error {
-            print("Error handling binary message: \(error)")
         }
     }
 
-    func session(_ wss: WebSocketSession, didReceiveJSON data: Data) throws -> Data? {
-        guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-            throw SerializationError.Invalid("top-level message structure")
-        }
-
-        // property "jsonrpc" must be exactly "2.0"
-        if json["jsonrpc"] as? String != "2.0" {
-            throw SerializationError.Invalid("JSON-RPC version string")
-        }
-
-        // If we made it this far, make sure we hear about this socket going away
+    func session(_ wss: WebSocketSession, didReceiveData data: Data,
+                 completion: @escaping (_ jsonResponseData: Data?) -> Void) {
         let session = getSession(forSocket: wss)
-
-        if json.keys.contains("method") {
-            return try session.didReceiveRequest(json)
-        } else if json.keys.contains("result") || json.keys.contains("error") {
-            return try session.didReceiveResponse(json)
-        } else {
-            throw SerializationError.Invalid("message is neither request nor response")
-        }
+        session.didReceiveData(data, completion: completion)
     }
 }
 
