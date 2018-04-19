@@ -3,7 +3,7 @@ import Foundation
 import Swifter
 
 class BLESession: NSObject, Session, CBCentralManagerDelegate {
-    private let wss: WebSocketSession
+    private(set) var wss: WebSocketSession
     private let central = CBCentralManager()
 
     enum BluetoothError: Error {
@@ -56,29 +56,16 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
-        do {
-            let peripheralData: [String: Any] = [
-                "name": peripheral.name ?? "",
-                "peripheralId": getUUID(forPeripheral: peripheral).uuidString,
-                "RSSI": RSSI
-            ]
-            let responseJSON: [String:Any?] = [
-                "jsonrpc": "2.0",
-                "method": "didDiscoverPeripheral",
-                "params": peripheralData
-            ]
+        let peripheralData: [String: Any] = [
+            "name": peripheral.name ?? "",
+            "peripheralId": getUUID(forPeripheral: peripheral).uuidString,
+            "RSSI": RSSI
+        ]
 
-            let responseData = try JSONSerialization.data(withJSONObject: responseJSON)
-            if let responseString = String(bytes: responseData, encoding: .utf8) {
-                wss.writeText(responseString)
-                print("Reporting discovered device to a session")
-            }
-        } catch {
-            print("Error handling discovered peripheral: \(error)")
-        }
+        sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
 
-    func call(_ method: String, withParams params: [String:Any],
+    func didReceiveCall(_ method: String, withParams params: [String:Any],
               completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
         switch method {
         case "discover":
