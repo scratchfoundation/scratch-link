@@ -55,7 +55,14 @@ extension Session {
             ]
             response["id"] = responseId
             if let error = error {
-                response["error"] = error
+                var jsonError: [String: Any] = [
+                    "code": error.code,
+                    "message": error.message
+                ]
+                if let data = error.data {
+                    jsonError["data"] = data
+                }
+                response["error"] = jsonError
             } else {
                 // If there's no error then we must include this as a success flag, even if the value is null
                 response["result"] = result ?? NSNull()
