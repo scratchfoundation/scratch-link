@@ -36,7 +36,7 @@
         }
 
         requestDevice (options) {
-            return this._waitForBluetooth.then(this._call('scan', options));
+            return this._waitForBluetooth.then(this._call('discover', options));
         }
 
         _onSocketOpen (e) {
