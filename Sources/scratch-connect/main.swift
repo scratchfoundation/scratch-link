@@ -5,7 +5,7 @@ let SDMPort: in_port_t = 20110
 
 enum SDMRoute: String {
     case BLE = "/scratch/ble"
-    case BT = "/scratch/bt" // should this be BT, RFCOMM, ...?
+    case BT = "/scratch/bt"
 }
 
 enum SerializationError: Error {
