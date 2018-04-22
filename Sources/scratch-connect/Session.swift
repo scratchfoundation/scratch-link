@@ -1,8 +1,12 @@
 import Foundation
 import Swifter
 
-protocol Session {
-    var wss: WebSocketSession { get }
+class Session {
+    private let wss: WebSocketSession
+
+    required init(withSocket wss: WebSocketSession) {
+        self.wss = wss
+    }
 
     // Override this to handle received RPC requests & notifications.
     // Call the completion handler when done with a request:
@@ -10,12 +14,10 @@ protocol Session {
     // - pass an instance of `JSONRPCError` for `error` on failure
     // You may also throw a `JSONRPCError` (or any other `Error`) iff it is encountered synchronously.
     func didReceiveCall(_ method: String, withParams params: [String:Any],
-                        completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws
+                        completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
+        preconditionFailure("Must override didReceiveCall")
+    }
 
-    init(withSocket wss: WebSocketSession)
-}
-
-extension Session {
     // Pass nil for the completion handler to send a Notification
     // Note that the closure is automatically @escaping by virtue of being part of an aggregate (Optional)
     func sendRemoteRequest(_ method: String, withParams params: [String:Any]? = nil,
