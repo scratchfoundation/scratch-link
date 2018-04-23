@@ -68,15 +68,15 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
     }
 
     override func didReceiveCall(_ method: String, withParams params: [String:Any],
-              completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
+                                 completion: @escaping JSONRPCCompletionHandler) throws {
         switch method {
         case "discover":
             try discover(withOptions: params)
             completion(nil, nil)
         case "pingMe":
             completion("willPing", nil)
-            sendRemoteRequest("ping") { (result: Codable?, error: JSONRPCError?) in
-                print("Got result from ping:", result as Any)
+            sendRemoteRequest("ping") { (result: Any?, error: JSONRPCError?) in
+                print("Got result from ping:", String(describing: result))
             }
         default:
             throw JSONRPCError.MethodNotFound(data: method)

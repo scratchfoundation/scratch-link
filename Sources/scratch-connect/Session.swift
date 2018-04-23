@@ -2,10 +2,17 @@ import Foundation
 import Swifter
 
 class Session {
+    typealias RequestID = Int
+    typealias JSONRPCCompletionHandler = (_ result: Any?, _ error: JSONRPCError?) -> Void
+
     private let wss: WebSocketSession
+    private var nextId: RequestID
+    private var completionHandlers: [RequestID:JSONRPCCompletionHandler]
 
     required init(withSocket wss: WebSocketSession) {
         self.wss = wss
+        self.nextId = 0
+        self.completionHandlers = [RequestID:JSONRPCCompletionHandler]()
     }
 
     // Override this to handle received RPC requests & notifications.
@@ -14,24 +21,27 @@ class Session {
     // - pass an instance of `JSONRPCError` for `error` on failure
     // You may also throw a `JSONRPCError` (or any other `Error`) iff it is encountered synchronously.
     func didReceiveCall(_ method: String, withParams params: [String:Any],
-                        completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
+                        completion: @escaping JSONRPCCompletionHandler) throws {
         preconditionFailure("Must override didReceiveCall")
     }
 
     // Pass nil for the completion handler to send a Notification
     // Note that the closure is automatically @escaping by virtue of being part of an aggregate (Optional)
     func sendRemoteRequest(_ method: String, withParams params: [String:Any]? = nil,
-                           completion: ((_ result: Codable?, _ error: JSONRPCError?) -> Void)? = nil) {
-        let request: [String: Any?] = [
+                           completion: JSONRPCCompletionHandler? = nil) {
+        var request: [String: Any?] = [
             "jsonrpc": "2.0",
-            "method": method,
-            "params": params
+            "method": method
         ]
 
+        if params != nil {
+            request["params"] = params
+        }
+
         if completion != nil {
-            // TODO: add ID, record as a pending request, etc.
-            // see also didReceiveResponse
-            print("Only Notifications supported for now!")
+            let requestId = getNextId()
+            request["id"] = requestId
+            completionHandlers[requestId] = completion
         }
 
         do {
@@ -51,7 +61,7 @@ class Session {
 
         var responseId: Any = NSNull() // initialize with null until we try to read the real ID
 
-        func makeResponse(_ result: Codable?, _ error: JSONRPCError?) -> [String: Any] {
+        func makeResponse(_ result: Any?, _ error: JSONRPCError?) -> [String: Any] {
             var response: [String: Any] = [
                 "jsonrpc": "2.0"
             ]
@@ -73,7 +83,7 @@ class Session {
             return response
         }
 
-        func sendResponse(_ result: Codable?, _ error: JSONRPCError?) {
+        func sendResponse(_ result: Any?, _ error: JSONRPCError?) {
             do {
                 let response = makeResponse(result, error)
                 let jsonData = try JSONSerialization.data(withJSONObject: response)
@@ -120,9 +130,7 @@ class Session {
         }
     }
 
-    func didReceiveRequest(_ json: [String: Any],
-                           completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
-
+    func didReceiveRequest(_ json: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         guard let method = json["method"] as? String else {
             throw JSONRPCError.InvalidRequest(data: "method value missing or not a string")
         }
@@ -135,7 +143,27 @@ class Session {
     }
 
     func didReceiveResponse(_ json: [String: Any]) throws {
-        // TODO: parse response to get its ID, connect it to a pending Request stored in this Session, call callback
-        // We currently don't plan to send any non-Notification Requests to the client so we don't need this yet
+        guard let id = json["id"] as? RequestID else {
+            throw JSONRPCError.InvalidRequest(data: "response ID value missing or wrong type")
+        }
+
+        guard let completionHandler = completionHandlers[id] else {
+            throw JSONRPCError.InvalidRequest(data: "response ID does not correspond to any open request")
+        }
+
+        if let errorJSON = json["error"] as? [String:Any] {
+            let error = JSONRPCError(fromJSON: errorJSON)
+            completionHandler(nil, error)
+        } else {
+            let rawResult = json["result"]
+            let result = (rawResult is NSNull ? nil : rawResult)
+            completionHandler(result, nil)
+        }
+    }
+
+    private func getNextId() -> RequestID {
+        let result = self.nextId;
+        self.nextId += 1;
+        return result;
     }
 }

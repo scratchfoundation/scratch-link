@@ -102,22 +102,19 @@
             if (error != null) {
                 response.error = error;
             } else {
-                response.result = result;
+                response.result = result || null;
             }
             this._sendMessage(response);
         }
 
         _handleResponse (json) {
             const {result, error, id} = json;
-            if (id) {
-                const openRequest = this._openRequests[id];
-                console.log(`Open request for id ${id} is ${openRequest}`);
-                delete this._openRequests[id];
-                if (error) {
-                    openRequest.reject(error);
-                } else {
-                    openRequest.resolve(result);
-                }
+            const openRequest = this._openRequests[id];
+            delete this._openRequests[id];
+            if (error) {
+                openRequest.reject(error);
+            } else {
+                openRequest.resolve(result);
             }
         }
 
@@ -172,7 +169,9 @@
         }
 
         _sendMessage (message) {
-            this._ws.send(JSON.stringify(message));
+            const messageText = JSON.stringify(message);
+            addLine(`Sending message: ${messageText}`);
+            this._ws.send(messageText);
         }
     }
 
@@ -185,18 +184,13 @@
             return this.sendRemoteRequest('discover', options);
         }
 
-        _handleAdapterStateChanged (newState) {
-            addLine(`Adapter state changed to: ${newState}`);
-        }
-
         didReceiveCall (method, params) {
             switch (method) {
-                case 'adapterStateChanged':
-                    this._handleAdapterStateChanged.call(this, params);
-                    break;
                 case 'didDiscoverPeripheral':
                     addLine(`Peripheral discovered: ${stringify(params)}`);
                     break;
+                case 'ping':
+                    return 42;
             }
         }
     }
@@ -236,7 +230,7 @@
     }
 
     function stringify(o) {
-        return JSON.stringify(o, Object.getOwnPropertyNames(o));
+        return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
     }
 
     const follow = document.getElementById('follow');
@@ -265,7 +259,7 @@
         try {
             requestPing();
         } catch (e) {
-            addLine(`Go button caught exception: ${stringify(e)}`)
+            addLine(`Ping button caught exception: ${stringify(e)}`);
         }
     };
 
