@@ -5,33 +5,50 @@ import Swifter
 class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
     private var inquiry: IOBluetoothDeviceInquiry
     private var connectedChannel: IOBluetoothRFCOMMChannel?
-    private var sequenceId = 0
     private let rfcommQueue = DispatchQueue(label: "ScratchConnect.BTSession.rfcommQueue")
-    internal var wss: WebSocketSession
+    private var state: SessionState = .Initial
+    
+    enum SessionState {
+        case Initial
+        case Discovery
+        case Connected
+    }
     
     required init(withSocket wss: WebSocketSession) {
-        self.wss = wss
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
+        super.init(withSocket: wss)
         inquiry.delegate = self
     }
     
-    func didReceiveCall(_ method: String, withParams params: [String:Any],
-                        completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
-        switch method {
-        case "discover":
+    override func didReceiveCall(_ method: String, withParams params: [String:Any],
+                                 completion: @escaping JSONRPCCompletionHandler) throws {
+        switch state {
+        case .Initial:
+            if method != "discover" {
+                completion(nil, JSONRPCError.MethodNotFound(data: "Cannot call \(method) in initial state"))
+                return;
+            }
             if let major = params["majorDeviceClass"] as? UInt, let minor = params["minorDeviceClass"] as? UInt {
+                state = .Discovery
                 discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, completion: completion)
             } else {
                 completion(nil, JSONRPCError.InvalidParams(data: "majorDeviceClass and minorDeviceClass required"))
             }
-        case "connect":
+        case .Discovery:
+            if method != "connect" {
+                completion(nil, JSONRPCError.MethodNotFound(data: "Cannot call \(method) in discovery state"))
+                return
+            }
             if let peripheralId = params["peripheralId"] as? String {
                 connect(toDevice: peripheralId, completion: completion)
             } else {
                 completion(nil, JSONRPCError.InvalidParams(data: "peripheralId required"))
             }
-        case "send":
-            if connectedChannel == nil || connectedChannel?.isOpen() == false {
+        case .Connected:
+            if method != "send" {
+                completion(nil, JSONRPCError.MethodNotFound(data: "Cannot call \(method) in connected state"))
+            }
+            if state != .Connected || connectedChannel == nil || connectedChannel?.isOpen() == false {
                 completion(nil, JSONRPCError.InvalidRequest(data: "No peripheral connected"))
             } else if let message = params["message"] as? String, let encoding = params["encoding"] as? String {
                 var decodedMessage: [UInt8]
@@ -51,13 +68,11 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                     completion(nil, JSONRPCError.InvalidParams(data: "Unsupported encoding"))
                 }
             }
-        default:
-            completion(nil, JSONRPCError.MethodNotFound())
         }
     }
     
     func discover(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt,
-                  completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
+                  completion: @escaping JSONRPCCompletionHandler) {
         // see https://www.bluetooth.com/specifications/assigned-numbers/baseband for available device classes
         // LEGO EV3 is major class toy (8), minor class robot (1)
         inquiry.setSearchCriteria(BluetoothServiceClassMajor(kBluetoothServiceClassMajorAny),
@@ -73,7 +88,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     }
     
     func connect(toDevice deviceId: String,
-                 completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
+                 completion: @escaping JSONRPCCompletionHandler) {
         inquiry.stop()
         let availableDevices = inquiry.foundDevices() as? [IOBluetoothDevice]
         if let device = availableDevices?.first(where: {$0.addressString == deviceId}) {
@@ -84,6 +99,9 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 if (connectionResult != kIOReturnSuccess) {
                     completion(nil, JSONRPCError.InternalError(data:
                         "Connection process could not start or channel was not found"))
+                } else {
+                    self.state = .Connected
+                    completion(nil, nil)
                 }
             }
         } else {
@@ -92,7 +110,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     }
     
     func disconnect(fromDevice deviceId: String,
-                    completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
+                    completion: @escaping JSONRPCCompletionHandler) {
         let bluetoothDevice = connectedChannel?.getDevice()
         if (bluetoothDevice?.addressString == deviceId) {
             let disconnectionResult = connectedChannel?.close()
@@ -108,7 +126,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     }
     
     func sendMessage(_ message: [UInt8],
-                     completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
+                     completion: @escaping JSONRPCCompletionHandler) {
         var data = message
         let mtu = connectedChannel?.getMTU()
         let maxMessageSize = Int(mtu!)
@@ -155,6 +173,12 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             "rssi": device.rawRSSI()
         ]
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
+    }
+    
+    func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
+        if !aborted {
+            sender.start()
+        }
     }
     
     /*
