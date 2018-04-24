@@ -23,8 +23,10 @@ class ScratchConnect {
         server = HttpServer()
 
         sessionManagers[SDMRoute.BLE] = SessionManager<BLESession>()
+        sessionManagers[SDMRoute.BT] = SessionManager<BTSession>()
 
         server[SDMRoute.BLE.rawValue] = sessionManagers[SDMRoute.BLE]!.makeSocketHandler()
+        server[SDMRoute.BT.rawValue] = sessionManagers[SDMRoute.BT]!.makeSocketHandler()
 
         print("Starting server...")
         do {

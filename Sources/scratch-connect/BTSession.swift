@@ -8,35 +8,62 @@
 
 import Foundation
 import IOBluetooth
+import Swifter
 
-class SessionStub: NSObject {
-    private let id: Int
-    init(id: Int) {
-        self.id = id
-        super.init()
-    }
-    func writeText(_ text: String) {
-        print("Session \(id) received \(text)")
-    }
-}
-
-class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
+class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
     private var inquiry: IOBluetoothDeviceInquiry
     private var connectedChannel: IOBluetoothRFCOMMChannel?
     private var sequenceId = 0
     private var refcon = 0
-    private var wss: SessionStub
+    internal var wss: WebSocketSession
     
-    init(forSession session: SessionStub) {
-        wss = session
+    required init(withSocket wss: WebSocketSession) {
+        self.wss = wss
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
-        super.init()
-        
-        // Cannot access self before call to super.init; register self as delegate to capture inquiry status
         inquiry.delegate = self
     }
     
-    func scan(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt) {
+    func didReceiveCall(_ method: String, withParams params: [String:Any],
+                        completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
+        switch method {
+        case "discover":
+            if let major = params["majorDeviceClass"] as? UInt, let minor = params["minorDeviceClass"] as? UInt {
+                discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, completion: completion)
+            } else {
+                completion(nil, JSONRPCError.InvalidParams(data: "majorDeviceClass and minorDeviceClass required"))
+            }
+        case "connect":
+            if let peripheralId = params["peripheralId"] as? String {
+                connect(toDevice: peripheralId, completion: completion)
+            } else {
+                completion(nil, JSONRPCError.InvalidParams(data: "peripheralId required"))
+            }
+        case "send":
+            if connectedChannel == nil || connectedChannel?.isOpen() == false {
+                completion(nil, JSONRPCError.InvalidRequest(data: "No peripheral connected"))
+            } else if let message = params["message"] as? String, let encoding = params["encoding"] as? String {
+                var decodedMessage: [UInt8]
+                if encoding == "base64" {
+                    decodedMessage = base64Decode(message)
+                    if decodedMessage.count > 0 {
+                        sendMessage(decodedMessage, completion: completion)
+                    } else {
+                        completion(nil, JSONRPCError.InvalidParams(data: "Invalid base64 string"))
+                    }
+                } else if encoding == "utf8" {
+                    // TODO: decode utf8
+                    completion(nil, JSONRPCError.InvalidParams(data: "Invalid base64 string"))
+                } else {
+                    completion(nil, JSONRPCError.InvalidParams(data: "Unsupported encoding"))
+                }
+            }
+        default:
+            completion(nil, JSONRPCError.MethodNotFound())
+        }
+    }
+    
+    func discover(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt,
+                  completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
         // see https://www.bluetooth.com/specifications/assigned-numbers/baseband for available device classes
         // LEGO EV3 is major class toy (8), minor class robot (1)
         inquiry.setSearchCriteria(BluetoothServiceClassMajor(kBluetoothServiceClassMajorAny),
@@ -45,66 +72,56 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
         inquiry.inquiryLength = 20
         inquiry.updateNewDeviceNames = true
         let inquiryStatus = inquiry.start()
-        sendWSSResponse(inquiryStatus, returnCode: inquiryStatus)
+        let error = inquiryStatus != kIOReturnSuccess ?
+            JSONRPCError.InternalError(data: "Device inquiry failed to start") : nil
+        
+        completion(nil, error)
     }
     
-    func connect(toDevice deviceId: String) {
+    func connect(toDevice deviceId: String,
+                 completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
         inquiry.stop()
-        let availableDevices = inquiry.foundDevices()
-        var deviceNotAvailable = true
-        for device in availableDevices! {
-            if let bluetoothDevice = device as? IOBluetoothDevice {
-                if (bluetoothDevice.addressString == deviceId) {
-                    // consider connecting synchronously for a more accurate success result
-                    let connectionResult =
-                        bluetoothDevice.openRFCOMMChannelAsync(&connectedChannel, withChannelID: 1, delegate: self)
-                    if (connectionResult != kIOReturnSuccess) {
-                        sendWSSResponse("Connection process could not start or channel was not found",
-                                        returnCode: connectionResult)
-                    } // a success here may be a false positive, handle in callback
-                    deviceNotAvailable = false
-                    break
-                }
-            } else {
-                print("Non-IOBluetoothDevice returned by IOBluetoothDeviceInquiry")
+        let availableDevices = inquiry.foundDevices() as? [IOBluetoothDevice]
+        if let device = availableDevices?.first(where: {$0.addressString == deviceId}) {
+            let connectionResult = device.openRFCOMMChannelAsync(&connectedChannel, withChannelID: 1, delegate: self)
+            if (connectionResult != kIOReturnSuccess) {
+                completion(nil, JSONRPCError.InternalError(data:
+                    "Connection process could not start or channel was not found"))
             }
-        }
-        if deviceNotAvailable {
-            // we cannot connect if we do not know about the device
-            sendWSSResponse("Device \(deviceId) not found", returnCode: IOReturn(1))
+        } else {
+            completion(nil, JSONRPCError.InvalidRequest(data: "Device \(deviceId) not available for connection"))
         }
     }
     
-    func disconnect(fromDevice deviceId: String) {
+    func disconnect(fromDevice deviceId: String,
+                    completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
         let bluetoothDevice = connectedChannel?.getDevice()
         if (bluetoothDevice?.addressString == deviceId) {
             let disconnectionResult = connectedChannel?.close()
             // release the connected channel and reset reference counter so we can reuse it
             connectedChannel = nil
             refcon = 0
-            sendWSSResponse(nil, returnCode: disconnectionResult)
+            let error = disconnectionResult != kIOReturnSuccess ?
+                JSONRPCError.InternalError(data: "Device failed to disconnect") : nil
+            completion(nil, error)
         } else {
-            sendWSSResponse("Cannot disconnect from device that is already not connected", returnCode: IOReturn(1))
+            completion(nil, JSONRPCError.InvalidRequest(data:
+                "Cannot disconnect from device that is already not connected"))
         }
     }
     
-    func sendMessage(toDevice deviceId: String, message: [UInt8]) {
-        let bluetoothDevice = connectedChannel?.getDevice()
-        if connectedChannel?.isOpen() == false || bluetoothDevice?.addressString != deviceId {
-            sendWSSResponse("Device \(deviceId) is not connected", returnCode: IOReturn(1))
-            return
-        }
-        
+    func sendMessage(_ message: [UInt8],
+                     completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) {
         var data = message
         let mtu = connectedChannel?.getMTU()
         let maxMessageSize = Int(mtu!)
         if message.count <= maxMessageSize {
             let messageResult = connectedChannel?.writeAsync(&data, length: UInt16(message.count), refcon: &refcon)
-            if (messageResult != kIOReturnSuccess) {
-                sendWSSResponse("Failed to buffer message", returnCode: messageResult)
+            if messageResult != kIOReturnSuccess {
+                completion(nil, JSONRPCError.InternalError(data: "Failed to buffer message"))
             } else {
                 // this could be a false positive because writeAsync returns result of finding channel & buffering
-                sendWSSResponse(message.count, returnCode: messageResult)
+                completion(message.count, nil)
             }
         } else {
             // taken from https://stackoverflow.com/a/38156873
@@ -123,7 +140,7 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
                     bytesSent += chunk.count
                 }
             }
-            sendWSSResponse(bytesSent, returnCode: IOReturn(succeeded))
+            completion(bytesSent, nil)
         }
     }
     
@@ -132,27 +149,12 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
      */
     
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!) {
-        do {
-            let response: [String: Any] = [
-                "jsonrpc": "2.0",
-                "method": "didDiscoverPeripheral",
-                "params": [
-                    "uuid": device.addressString,
-                    "name": device.name,
-                    "rssi": device.rawRSSI()
-                ]
-            ]
-            let responseData = try JSONSerialization.data(withJSONObject: response)
-            if let responseString = String(bytes: responseData, encoding: .utf8) {
-                wss.writeText(responseString)
-            }
-        } catch {
-            print("Error handling discovered device: \(error)")
-        }
-    }
-    
-    func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
-        print("inquiry complete: aborted = \(aborted); error = \(error)")
+        let peripheralData: [String: Any] = [
+            "peripheralId": device.addressString,
+            "name": device.name,
+            "rssi": device.rawRSSI()
+        ]
+        sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
     
     /*
@@ -160,75 +162,29 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
      */
     
     func rfcommChannelOpenComplete(_ rfcommChannel: IOBluetoothRFCOMMChannel!, status error: IOReturn) {
-        sendWSSResponse(error, returnCode: error)
+        // TODO
     }
     
     func rfcommChannelData(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
                            data dataPointer: UnsafeMutableRawPointer!,
                            length dataLength: Int) {
-        let device = rfcommChannel.getDevice()
         let encodedMessage = base64Encode(dataPointer, length: dataLength)
-        do {
-            let response: [String: Any] = [
-                "jsonrpc": "2.0",
-                "method": "didReceiveMessage",
-                "params": [
-                    "uuid": device?.addressString,
-                    "message": encodedMessage,
-                    "encoding": "base64"
-                ]
-            ]
-            let responseData = try JSONSerialization.data(withJSONObject: response)
-            if let responseString = String(bytes: responseData, encoding: .utf8) {
-                wss.writeText(responseString)
-            }
-        } catch {
-            print("Error receiving message: \(error)")
-        }
+        let responseData: [String: Any] = [
+            "message": encodedMessage,
+            "encoding": "base64"
+        ]
+        sendRemoteRequest("didReceiveMessage", withParams: responseData)
     }
     
     func rfcommChannelWriteComplete(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
                                     refcon: UnsafeMutableRawPointer!,
                                     status error: IOReturn) {
-        // It may not be possible to retrieve the number of bytes sent from this delegate method
-        // If we write to the channel synchronously, we can determine number of bytes sent correctly
-        let numberOfBytesSent = -1
-        sendWSSResponse(numberOfBytesSent, returnCode: error)
+        // TODO
     }
     
     /*
      * Helper methods
      */
-    
-    func sendWSSResponse(_ message: Any?, returnCode: IOReturn?) {
-        do {
-            if (returnCode == kIOReturnSuccess) {
-                let response: [String: Any] = [
-                    "jsonrpc": "2.0",
-                    "id": sequenceId,
-                    "result": message
-                ]
-                let responseData = try JSONSerialization.data(withJSONObject: response)
-                if let responseString = String(bytes: responseData, encoding: .utf8) {
-                    wss.writeText(responseString)
-                }
-                sequenceId += 1
-            } else {
-                let response: [String: Any] = [
-                    "jsonrpc": "2.0",
-                    "id": sequenceId,
-                    "error": message
-                ]
-                let responseData = try JSONSerialization.data(withJSONObject: response)
-                if let responseString = String(bytes: responseData, encoding: .utf8) {
-                    wss.writeText(responseString)
-                }
-                sequenceId += 1
-            }
-        } catch {
-            print("Error sending WSS response: \(error)")
-        }
-    }
     
     func base64Encode(_ buffer: UnsafeMutableRawPointer, length: Int) -> String {
         var array: [UInt8] = Array(repeating: 0, count: length)
@@ -237,5 +193,12 @@ class ScratchBT: NSObject, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceIn
         }
         let data = Data(array)
         return data.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
+    }
+    
+    func base64Decode(_ base64String: String) -> [UInt8] {
+        if let data = Data(base64Encoded: base64String) {
+            return [UInt8](data)
+        }
+        return []
     }
 }
