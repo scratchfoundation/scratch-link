@@ -1,11 +1,3 @@
-//
-//  bt.swift
-//  SDM
-//
-//  Created by LabVIEW on 4/6/18.
-//  Copyright © 2018 NI. All rights reserved.
-//
-
 import Foundation
 import IOBluetooth
 import Swifter
@@ -14,7 +6,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     private var inquiry: IOBluetoothDeviceInquiry
     private var connectedChannel: IOBluetoothRFCOMMChannel?
     private var sequenceId = 0
-    private var refcon = 0
+    private let rfcommQueue = DispatchQueue(label: "ScratchConnect.BTSession.rfcommQueue")
     internal var wss: WebSocketSession
     
     required init(withSocket wss: WebSocketSession) {
@@ -51,8 +43,10 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                         completion(nil, JSONRPCError.InvalidParams(data: "Invalid base64 string"))
                     }
                 } else if encoding == "utf8" {
-                    // TODO: decode utf8
-                    completion(nil, JSONRPCError.InvalidParams(data: "Invalid base64 string"))
+                    // DANGER ZONE: any real message that we might want to send to EV3 cannot be reliably transferred
+                    // as utf-8. Bluetooth probably shouldn't support utf8 encoding of 'send' messages.
+                    decodedMessage = utf8Decode(message)
+                    sendMessage(decodedMessage, completion: completion)
                 } else {
                     completion(nil, JSONRPCError.InvalidParams(data: "Unsupported encoding"))
                 }
@@ -83,10 +77,14 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         inquiry.stop()
         let availableDevices = inquiry.foundDevices() as? [IOBluetoothDevice]
         if let device = availableDevices?.first(where: {$0.addressString == deviceId}) {
-            let connectionResult = device.openRFCOMMChannelAsync(&connectedChannel, withChannelID: 1, delegate: self)
-            if (connectionResult != kIOReturnSuccess) {
-                completion(nil, JSONRPCError.InternalError(data:
-                    "Connection process could not start or channel was not found"))
+            rfcommQueue.async {
+                let connectionResult = device.openRFCOMMChannelSync(&self.connectedChannel,
+                     withChannelID: 1,
+                     delegate: self)
+                if (connectionResult != kIOReturnSuccess) {
+                    completion(nil, JSONRPCError.InternalError(data:
+                        "Connection process could not start or channel was not found"))
+                }
             }
         } else {
             completion(nil, JSONRPCError.InvalidRequest(data: "Device \(deviceId) not available for connection"))
@@ -100,7 +98,6 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             let disconnectionResult = connectedChannel?.close()
             // release the connected channel and reset reference counter so we can reuse it
             connectedChannel = nil
-            refcon = 0
             let error = disconnectionResult != kIOReturnSuccess ?
                 JSONRPCError.InternalError(data: "Device failed to disconnect") : nil
             completion(nil, error)
@@ -116,12 +113,13 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         let mtu = connectedChannel?.getMTU()
         let maxMessageSize = Int(mtu!)
         if message.count <= maxMessageSize {
-            let messageResult = connectedChannel?.writeAsync(&data, length: UInt16(message.count), refcon: &refcon)
-            if messageResult != kIOReturnSuccess {
-                completion(nil, JSONRPCError.InternalError(data: "Failed to buffer message"))
-            } else {
-                // this could be a false positive because writeAsync returns result of finding channel & buffering
-                completion(message.count, nil)
+            rfcommQueue.async {
+                let messageResult = self.connectedChannel?.writeSync(&data, length: UInt16(message.count))
+                if messageResult != kIOReturnSuccess {
+                    completion(nil, JSONRPCError.InternalError(data: "Failed to send message"))
+                } else {
+                    completion(message.count, nil)
+                }
             }
         } else {
             // taken from https://stackoverflow.com/a/38156873
@@ -129,18 +127,20 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 Array(data[$0..<min($0 + maxMessageSize, data.count)])
             }
             
-            var succeeded = 0
-            var bytesSent = 0
-            for chunk in chunks {
-                var mutableChunk = chunk
-                let intermediateResult = connectedChannel?.writeAsync(
-                    &mutableChunk, length: UInt16(chunk.count), refcon: &refcon)
-                succeeded += Int(intermediateResult!)
-                if intermediateResult == kIOReturnSuccess {
-                    bytesSent += chunk.count
+            rfcommQueue.async {
+                var succeeded = 0
+                var bytesSent = 0
+                for chunk in chunks {
+                    var mutableChunk = chunk
+                    let intermediateResult = self.connectedChannel?.writeSync(
+                        &mutableChunk, length: UInt16(chunk.count))
+                    succeeded += Int(intermediateResult!)
+                    if intermediateResult == kIOReturnSuccess {
+                        bytesSent += chunk.count
+                    }
                 }
+                completion(bytesSent, succeeded == 0 ? nil : JSONRPCError.InternalError(data: "Failed to send message"))
             }
-            completion(bytesSent, nil)
         }
     }
     
@@ -161,10 +161,6 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
      * IOBluetoothRFCOMMChannelDelegate implementation
      */
     
-    func rfcommChannelOpenComplete(_ rfcommChannel: IOBluetoothRFCOMMChannel!, status error: IOReturn) {
-        // TODO
-    }
-    
     func rfcommChannelData(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
                            data dataPointer: UnsafeMutableRawPointer!,
                            length dataLength: Int) {
@@ -174,12 +170,6 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             "encoding": "base64"
         ]
         sendRemoteRequest("didReceiveMessage", withParams: responseData)
-    }
-    
-    func rfcommChannelWriteComplete(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
-                                    refcon: UnsafeMutableRawPointer!,
-                                    status error: IOReturn) {
-        // TODO
     }
     
     /*
@@ -200,5 +190,9 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             return [UInt8](data)
         }
         return []
+    }
+    
+    func utf8Decode(_ utf8String: String) -> [UInt8] {
+        return [UInt8](utf8String.utf8)
     }
 }
