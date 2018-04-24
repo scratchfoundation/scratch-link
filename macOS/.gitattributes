@@ -1,0 +1,2 @@
+# This .gitignore file has special eol behavior
+.gitignore -text
