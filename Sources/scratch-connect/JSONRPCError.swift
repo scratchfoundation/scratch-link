@@ -1,11 +1,30 @@
 import Foundation
 
-struct JSONRPCError: Codable, Error {
+struct JSONRPCError: Error {
     typealias ErrorData = String // TODO: support richer error data
 
     let code: Int
     let message: String
     let data: ErrorData?
+
+    init(code: Int, message: String, data: ErrorData? = nil) {
+        self.code = code
+        self.message = message
+        self.data = data
+    }
+
+    init(fromJSON json: [String:Any]) {
+        if let code = json["code"] as? Int, let message = json["message"] as? String {
+            self.code = code
+            self.message = message
+            self.data = json["data"] as? ErrorData
+        } else {
+            // Consider it a parse error
+            code = -32700
+            message = "Parse Error"
+            data = "Could not parse error JSON"
+        }
+    }
 
     static func ParseError(data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: -32700, message: "Parse Error", data: data)

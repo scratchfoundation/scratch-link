@@ -2,9 +2,9 @@ import CoreBluetooth
 import Foundation
 import Swifter
 
-class BLESession: NSObject, Session, CBCentralManagerDelegate {
-    private(set) var wss: WebSocketSession
-    private let central = CBCentralManager()
+class BLESession: Session, SwiftCBCentralManagerDelegate {
+    private let central: CBCentralManager
+    private let delegateHelper: CBCentralManagerDelegateHelper
 
     enum BluetoothError: Error {
         case NotReady
@@ -17,9 +17,11 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
     }
 
     required init(withSocket wss: WebSocketSession) {
-        self.wss = wss
-        super.init()
-        central.delegate = self
+        self.central = CBCentralManager()
+        self.delegateHelper = CBCentralManagerDelegateHelper()
+        super.init(withSocket: wss)
+        self.delegateHelper.delegate = self
+        self.central.delegate = self.delegateHelper
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
@@ -65,12 +67,17 @@ class BLESession: NSObject, Session, CBCentralManagerDelegate {
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
 
-    func didReceiveCall(_ method: String, withParams params: [String:Any],
-              completion: @escaping (_ result: Codable?, _ error: JSONRPCError?) -> Void) throws {
+    override func didReceiveCall(_ method: String, withParams params: [String:Any],
+                                 completion: @escaping JSONRPCCompletionHandler) throws {
         switch method {
         case "discover":
             try discover(withOptions: params)
             completion(nil, nil)
+        case "pingMe":
+            completion("willPing", nil)
+            sendRemoteRequest("ping") { (result: Any?, error: JSONRPCError?) in
+                print("Got result from ping:", String(describing: result))
+            }
         default:
             throw JSONRPCError.MethodNotFound(data: method)
         }
