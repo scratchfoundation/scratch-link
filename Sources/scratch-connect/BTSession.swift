@@ -48,7 +48,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             if method != "send" {
                 completion(nil, JSONRPCError.MethodNotFound(data: "Cannot call \(method) in connected state"))
             }
-            if state != .Connected || connectedChannel == nil || connectedChannel?.isOpen() == false {
+            if connectedChannel == nil || connectedChannel?.isOpen() == false {
                 completion(nil, JSONRPCError.InvalidRequest(data: "No peripheral connected"))
             } else if let message = params["message"] as? String, let encoding = params["encoding"] as? String {
                 var decodedMessage: [UInt8]
@@ -114,7 +114,6 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         let bluetoothDevice = connectedChannel?.getDevice()
         if (bluetoothDevice?.addressString == deviceId) {
             let disconnectionResult = connectedChannel?.close()
-            // release the connected channel and reset reference counter so we can reuse it
             connectedChannel = nil
             let error = disconnectionResult != kIOReturnSuccess ?
                 JSONRPCError.InternalError(data: "Device failed to disconnect") : nil
