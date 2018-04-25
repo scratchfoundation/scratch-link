@@ -51,19 +51,13 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             if connectedChannel == nil || connectedChannel?.isOpen() == false {
                 completion(nil, JSONRPCError.InvalidRequest(data: "No peripheral connected"))
             } else if let message = params["message"] as? String, let encoding = params["encoding"] as? String {
-                var decodedMessage: [UInt8]
                 if encoding == "base64" {
-                    decodedMessage = base64Decode(message)
+                    let decodedMessage = base64Decode(message)
                     if decodedMessage.count > 0 {
                         sendMessage(decodedMessage, completion: completion)
                     } else {
                         completion(nil, JSONRPCError.InvalidParams(data: "Invalid base64 string"))
                     }
-                } else if encoding == "utf8" {
-                    // DANGER ZONE: any real message that we might want to send to EV3 cannot be reliably transferred
-                    // as utf-8. Bluetooth probably shouldn't support utf8 encoding of 'send' messages.
-                    decodedMessage = utf8Decode(message)
-                    sendMessage(decodedMessage, completion: completion)
                 } else {
                     completion(nil, JSONRPCError.InvalidParams(data: "Unsupported encoding"))
                 }
@@ -126,12 +120,16 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     
     func sendMessage(_ message: [UInt8],
                      completion: @escaping JSONRPCCompletionHandler) {
+        guard let connectedChannel = connectedChannel else {
+            completion(nil, JSONRPCError.InternalError(data: "No peripheral connected"))
+            return
+        }
         var data = message
-        let mtu = connectedChannel?.getMTU()
-        let maxMessageSize = Int(mtu!)
+        let mtu = connectedChannel.getMTU()
+        let maxMessageSize = Int(mtu)
         if message.count <= maxMessageSize {
             rfcommQueue.async {
-                let messageResult = self.connectedChannel?.writeSync(&data, length: UInt16(message.count))
+                let messageResult = connectedChannel.writeSync(&data, length: UInt16(message.count))
                 if messageResult != kIOReturnSuccess {
                     completion(nil, JSONRPCError.InternalError(data: "Failed to send message"))
                 } else {
@@ -149,9 +147,8 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 var bytesSent = 0
                 for chunk in chunks {
                     var mutableChunk = chunk
-                    let intermediateResult = self.connectedChannel?.writeSync(
-                        &mutableChunk, length: UInt16(chunk.count))
-                    succeeded += Int(intermediateResult!)
+                    let intermediateResult = connectedChannel.writeSync(&mutableChunk, length: UInt16(chunk.count))
+                    succeeded += Int(intermediateResult)
                     if intermediateResult == kIOReturnSuccess {
                         bytesSent += chunk.count
                     }
@@ -213,9 +210,5 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             return [UInt8](data)
         }
         return []
-    }
-    
-    func utf8Decode(_ utf8String: String) -> [UInt8] {
-        return [UInt8](utf8String.utf8)
     }
 }
