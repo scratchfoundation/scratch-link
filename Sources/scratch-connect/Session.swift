@@ -15,6 +15,16 @@ class Session {
         self.completionHandlers = [RequestID:JSONRPCCompletionHandler]()
     }
 
+    // Override this to clean up session-specific resources, if any.
+    func sessionWillClose() {
+        if completionHandlers.count > 0 {
+            print("Warning: session closing with \(completionHandlers.count) pending requests")
+            for (_, completionHandler) in completionHandlers {
+                completionHandler(nil, JSONRPCError.InternalError(data: "Session closed"))
+            }
+        }
+    }
+
     // Override this to handle received RPC requests & notifications.
     // Call the completion handler when done with a request:
     // - pass your call's "return value" (or nil) as `result` on success

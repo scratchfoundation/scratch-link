@@ -64,6 +64,9 @@ class SessionManager<SessionType: Session>: SessionManagerBase {
     }
 
     func sessionWillClose(_ wss: WebSocketSession) {
+        if let session = sessions[wss] {
+            session.sessionWillClose()
+        }
         wss.delegate = nil
         sessions.removeValue(forKey: wss)
     }
