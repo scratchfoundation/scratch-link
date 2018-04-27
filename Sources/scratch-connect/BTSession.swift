@@ -65,6 +65,13 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         }
     }
     
+    override func sessionWillClose() {
+        super.sessionWillClose()
+        inquiry.stop()
+        connectedChannel?.close()
+        connectedChannel = nil
+    }
+    
     func discover(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt,
                   completion: @escaping JSONRPCCompletionHandler) {
         // see https://www.bluetooth.com/specifications/assigned-numbers/baseband for available device classes
@@ -76,7 +83,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         inquiry.updateNewDeviceNames = true
         let inquiryStatus = inquiry.start()
         let error = inquiryStatus != kIOReturnSuccess ?
-            JSONRPCError.InternalError(data: "Device inquiry failed to start") : nil
+            JSONRPCError.ServerError(code: -32400, data: "Device inquiry failed to start") : nil
         
         completion(nil, error)
     }
@@ -91,7 +98,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                      withChannelID: 1,
                      delegate: self)
                 if (connectionResult != kIOReturnSuccess) {
-                    completion(nil, JSONRPCError.InternalError(data:
+                    completion(nil, JSONRPCError.ServerError(code: -32300, data:
                         "Connection process could not start or channel was not found"))
                 } else {
                     self.state = .Connected
@@ -103,25 +110,10 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         }
     }
     
-    func disconnect(fromDevice deviceId: String,
-                    completion: @escaping JSONRPCCompletionHandler) {
-        let bluetoothDevice = connectedChannel?.getDevice()
-        if (bluetoothDevice?.addressString == deviceId) {
-            let disconnectionResult = connectedChannel?.close()
-            connectedChannel = nil
-            let error = disconnectionResult != kIOReturnSuccess ?
-                JSONRPCError.InternalError(data: "Device failed to disconnect") : nil
-            completion(nil, error)
-        } else {
-            completion(nil, JSONRPCError.InvalidRequest(data:
-                "Cannot disconnect from device that is already not connected"))
-        }
-    }
-    
     func sendMessage(_ message: [UInt8],
                      completion: @escaping JSONRPCCompletionHandler) {
         guard let connectedChannel = connectedChannel else {
-            completion(nil, JSONRPCError.InternalError(data: "No peripheral connected"))
+            completion(nil, JSONRPCError.ServerError(code: -32500, data: "No peripheral connected"))
             return
         }
         var data = message
@@ -131,7 +123,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             rfcommQueue.async {
                 let messageResult = connectedChannel.writeSync(&data, length: UInt16(message.count))
                 if messageResult != kIOReturnSuccess {
-                    completion(nil, JSONRPCError.InternalError(data: "Failed to send message"))
+                    completion(nil, JSONRPCError.ServerError(code: -32300, data: "Failed to send message"))
                 } else {
                     completion(message.count, nil)
                 }
@@ -153,7 +145,8 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                         bytesSent += chunk.count
                     }
                 }
-                completion(bytesSent, succeeded == 0 ? nil : JSONRPCError.InternalError(data: "Failed to send message"))
+                completion(bytesSent, succeeded == 0 ? nil : JSONRPCError.ServerError(code: -32300,
+                      data: "Failed to send message"))
             }
         }
     }
