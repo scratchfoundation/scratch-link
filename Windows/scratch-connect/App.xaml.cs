@@ -31,7 +31,8 @@ namespace scratch_connect
             };
 
             _server = new HttpListener();
-            _server.Prefixes.Add($"http://+:{SDMPort}/");
+            // "http://+:{SDMPort}" would be better but requires elevated privileges
+            _server.Prefixes.Add($"http://127.0.0.1:{SDMPort}/");
             _server.Start();
 
             AcceptNextClient();
