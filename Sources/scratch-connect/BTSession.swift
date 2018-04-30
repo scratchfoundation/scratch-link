@@ -107,6 +107,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             }
         } else {
             completion(nil, JSONRPCError.InvalidRequest(data: "Device \(deviceId) not available for connection"))
+            inquiry.start()
         }
     }
     
@@ -165,9 +166,22 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     }
     
     func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
+        print("Inquiry finished")
         if !aborted {
             sender.start()
         }
+    }
+    
+    func deviceInquiryStarted(_ sender: IOBluetoothDeviceInquiry!) {
+        print("Inquiry started")
+    }
+    
+    func deviceInquiryUpdatingDeviceNamesStarted(_ sender: IOBluetoothDeviceInquiry!, devicesRemaining: UInt32) {
+        print("name updates remaining: \(devicesRemaining)")
+    }
+    
+    func deviceInquiryDeviceNameUpdated(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!, devicesRemaining: UInt32) {
+        print("name updated: \(device.name)")
     }
     
     /*
