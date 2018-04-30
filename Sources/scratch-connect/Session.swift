@@ -16,9 +16,9 @@ class Session {
     }
 
     // Override this to clean up session-specific resources, if any.
-    func sessionWillClose() {
+    func sessionWasClosed() {
         if completionHandlers.count > 0 {
-            print("Warning: session closing with \(completionHandlers.count) pending requests")
+            print("Warning: session was closed with \(completionHandlers.count) pending requests")
             for (_, completionHandler) in completionHandlers {
                 completionHandler(nil, JSONRPCError.InternalError(data: "Session closed"))
             }
@@ -157,7 +157,7 @@ class Session {
             throw JSONRPCError.InvalidRequest(data: "response ID value missing or wrong type")
         }
 
-        guard let completionHandler = completionHandlers[id] else {
+        guard let completionHandler = completionHandlers.removeValue(forKey: id) else {
             throw JSONRPCError.InvalidRequest(data: "response ID does not correspond to any open request")
         }
 
