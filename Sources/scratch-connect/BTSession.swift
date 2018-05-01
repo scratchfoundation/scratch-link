@@ -68,8 +68,8 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     override func sessionWasClosed() {
         super.sessionWasClosed()
         inquiry.stop()
-        connectedChannel?.close()
         connectedChannel?.setDelegate(nil)
+        connectedChannel?.close()
         connectedChannel = nil
     }
     
