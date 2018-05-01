@@ -18,6 +18,7 @@
 <div>
     <button id="initBT">Connect to app (BT)</button>
     <button id="goBT">Do a (BT) thing!</button>
+    <button id="closeBT">Goodbye</button>
 </div>
 <div>
     <input id="peripheralId" value="00-16-53-3d-05-04" type="text" placeholder="Peripheral id">
@@ -389,6 +390,11 @@
         } catch (e) {
             addLine(`Send button caught exception: ${stringify(e)}`);
         }
+    }
+
+    const closeButton = document.getElementById('closeBT');
+    closeButton.onclick = () => {
+        self.Scratch.BT.dispose();
     }
 
     function addLine(text) {
