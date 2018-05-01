@@ -83,7 +83,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         inquiry.updateNewDeviceNames = true
         let inquiryStatus = inquiry.start()
         let error = inquiryStatus != kIOReturnSuccess ?
-            JSONRPCError.ServerError(code: -32400, data: "Device inquiry failed to start") : nil
+            JSONRPCError.ServerError(code: -32500, data: "Device inquiry failed to start") : nil
         
         completion(nil, error)
     }
@@ -98,7 +98,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                      withChannelID: 1,
                      delegate: self)
                 if (connectionResult != kIOReturnSuccess) {
-                    completion(nil, JSONRPCError.ServerError(code: -32300, data:
+                    completion(nil, JSONRPCError.ServerError(code: -32500, data:
                         "Connection process could not start or channel was not found"))
                 } else {
                     self.state = .Connected
@@ -124,7 +124,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             rfcommQueue.async {
                 let messageResult = connectedChannel.writeSync(&data, length: UInt16(message.count))
                 if messageResult != kIOReturnSuccess {
-                    completion(nil, JSONRPCError.ServerError(code: -32300, data: "Failed to send message"))
+                    completion(nil, JSONRPCError.ServerError(code: -32500, data: "Failed to send message"))
                 } else {
                     completion(message.count, nil)
                 }
@@ -146,7 +146,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                         bytesSent += chunk.count
                     }
                 }
-                completion(bytesSent, succeeded == 0 ? nil : JSONRPCError.ServerError(code: -32300,
+                completion(bytesSent, succeeded == 0 ? nil : JSONRPCError.ServerError(code: -32500,
                       data: "Failed to send message"))
             }
         }
