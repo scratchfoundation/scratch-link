@@ -69,6 +69,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         super.sessionWasClosed()
         inquiry.stop()
         connectedChannel?.close()
+        connectedChannel?.setDelegate(nil)
         connectedChannel = nil
     }
     
