@@ -15,6 +15,19 @@
     <button id="go">Do a thing!</button>
     <button id="ping">Request ping</button>
 </div>
+<div>
+    <button id="initBT">Connect to app (BT)</button>
+    <button id="goBT">Do a (BT) thing!</button>
+    <button id="closeBT">Goodbye</button>
+</div>
+<div>
+    <input id="peripheralId" value="00-16-53-3d-05-04" type="text" placeholder="Peripheral id">
+    <button id="connect">Make friends!</button>
+</div>
+<div>
+    <input id="messageBody" value="DwAAAIAAAJQBgQKC6AOC6AM=" type="text" placeholder="data">
+    <button id="send">Converse!</button>
+</div>
 </body>
 <script>
     class JSONRPC {
@@ -195,6 +208,37 @@
         }
     }
 
+    class ScratchBT extends JSONRPCWebSocket {
+        constructor () {
+            super(new WebSocket('ws://localhost:20110/scratch/bt'));
+        }
+
+        requestDevice (options) {
+            return this.sendRemoteRequest('discover', options);
+        }
+
+        connectDevice (options) {
+            return this.sendRemoteRequest('connect', options);
+        }
+
+        sendMessage (options) {
+            return this.sendRemoteRequest('send', options);
+        }
+
+        didReceiveCall (method, params) {
+            switch (method) {
+                case 'didDiscoverPeripheral':
+                    addLine(`Peripheral discovered: ${stringify(params)}`);
+                    break;
+                case 'didReceiveMessage':
+                    addLine(`Message received from peripheral: ${stringify(params)}`);
+                    break;
+                default:
+                    return 'nah';
+            }
+        }
+    }
+
     self.Scratch = self.Scratch || {};
 
     function init () {
@@ -203,11 +247,31 @@
         addLine('Connected.');
     }
 
+    function initBT () {
+        addLine('Connecting...');
+        self.Scratch.BT = new ScratchBT();
+        addLine('Connected.');
+    }
+
     function go() {
         Scratch.BLE.requestDevice({
             filters: [
                 {services: '4cdbbd87d6e646c29d0bdf87551e159a'}
             ]
+        }).then(
+            x => {
+                addLine(`requestDevice resolved to: ${stringify(x)}`);
+            },
+            e => {
+                addLine(`requestDevice rejected with: ${stringify(e)}`);
+            }
+        );
+    }
+
+    function goBT () {
+        Scratch.BT.requestDevice({
+            majorDeviceClass: 8,
+            minorDeviceClass: 1
         }).then(
             x => {
                 addLine(`requestDevice resolved to: ${stringify(x)}`);
@@ -229,6 +293,33 @@
         );
     }
 
+    function connect (peripheralId) {
+        Scratch.BT.connectDevice({
+            peripheralId: peripheralId
+        }).then(
+            x => {
+                addLine(`connectDevice resolved to: ${stringify(x)}`);
+            },
+            e => {
+                addLine(`connectDevice rejected with: ${stringify(e)}`);
+            }
+        );
+    }
+
+    function sendMessage (message) {
+        Scratch.BT.sendMessage({
+            message: message,
+            encoding: 'base64'
+        }).then(
+            x => {
+                addLine(`sendMessage resolved to: ${stringify(x)}`);
+            },
+            e => {
+                addLine(`sendMessage rejected with: ${stringify(e)}`);
+            }
+        );
+    }
+
     function stringify(o) {
         return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
     }
@@ -245,12 +336,30 @@
         }
     };
 
+    const goBTButton = document.getElementById('goBT');
+    goBTButton.onclick = () => {
+        try {
+            goBT();
+        } catch (e) {
+            addLine(`Go BT button caught exception: ${stringify(e)}`);
+        }
+    };
+
     const initButton = document.getElementById('init');
     initButton.onclick = () => {
         try {
             init();
         } catch (e) {
             addLine(`Init button caught exception: ${stringify(e)}`);
+        }
+    };
+
+    const initBTButton = document.getElementById('initBT');
+    initBTButton.onclick = () => {
+        try {
+            initBT();
+        } catch (e) {
+            addLine(`Init BT button caught exception: ${stringify(e)}`);
         }
     };
 
@@ -262,6 +371,31 @@
             addLine(`Ping button caught exception: ${stringify(e)}`);
         }
     };
+
+    const connectButton = document.getElementById('connect');
+    connectButton.onclick = () => {
+        try {
+            const peripheralId = document.getElementById('peripheralId');
+            connect(peripheralId.value);
+        } catch (e) {
+            addLine(`Connect button caught exception: ${stringify(e)}`);
+        }
+    };
+
+    const sendButton = document.getElementById('send');
+    sendButton.onclick = () => {
+        try {
+            const data = document.getElementById('messageBody');
+            sendMessage(data.value);
+        } catch (e) {
+            addLine(`Send button caught exception: ${stringify(e)}`);
+        }
+    }
+
+    const closeButton = document.getElementById('closeBT');
+    closeButton.onclick = () => {
+        self.Scratch.BT.dispose();
+    }
 
     function addLine(text) {
         log.innerHTML += `${text}\n`;
