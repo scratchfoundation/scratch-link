@@ -27,7 +27,8 @@ namespace scratch_connect
         {
             _sessionManagers = new Dictionary<string, SessionManager>
             {
-                [SDMPath.BLE] = new SessionManager(webSocket => new BLESession(webSocket))
+                [SDMPath.BLE] = new SessionManager(webSocket => new BLESession(webSocket)),
+                [SDMPath.BT] = new SessionManager(webSocket => new BTSession(webSocket))
             };
 
             _server = new HttpListener();
