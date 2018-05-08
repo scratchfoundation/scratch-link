@@ -164,7 +164,7 @@ namespace scratch_connect
                 var response = new JObject(
                     new JProperty("jsonrpc", "2.0"),
                     new JProperty("id", responseId),
-                    error == null ? new JProperty("result", result) : new JProperty("error", error)
+                    error == null ? new JProperty("result", result) : new JProperty("error", JObject.FromObject(error))
                 );
 
                 var responseText = JsonConvert.SerializeObject(response);
