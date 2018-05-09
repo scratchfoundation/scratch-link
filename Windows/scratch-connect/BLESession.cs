@@ -132,7 +132,7 @@ namespace scratch_connect
             {
                 new JProperty("name", new JValue(args.Advertisement.LocalName ?? "")),
                 new JProperty("rssi", new JValue(args.RawSignalStrengthInDBm)),
-                new JProperty("uuid", new JValue(args.BluetoothAddress))
+                new JProperty("peripheralId", new JValue(args.BluetoothAddress))
             };
 
             SendRemoteRequest("didDiscoverPeripheral", peripheralData);
