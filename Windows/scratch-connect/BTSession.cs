@@ -13,8 +13,18 @@ namespace scratch_connect
     internal class BTSession : Session
     {
         // Things we can look for are listed here:
-        // https://docs.microsoft.com/en-us/windows/uwp/devices-sensors/device-information-properties
+        // <a href="https://docs.microsoft.com/en-us/windows/uwp/devices-sensors/device-information-properties" />
+
+        /// <summary>
+        /// Signal strength property
+        /// </summary>
         private const string SignalStrengthPropertyName = "System.Devices.Aep.SignalStrength";
+
+        /// <summary>
+        /// Indicates that the device returned is actually available and not discovered from a cache
+        /// </summary>
+        private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
+
         private DeviceWatcher _watcher;
         private readonly List<DeviceInformation> _devices;
 
@@ -29,42 +39,48 @@ namespace scratch_connect
             switch (method)
             {
                 case "discover":
-                    try
-                    {
-                        if (!parameters.TryGetValue("majorDeviceClass", out var majorDeviceClassToken) || 
-                            !parameters.TryGetValue("minorDeviceClass", out var minorDeviceClassToken))
-                        {
-                            throw new ArgumentException();
-                        }
-                        var major = majorDeviceClassToken.ToObject<int>();
-                        var minor = minorDeviceClassToken.ToObject<int>();
-                        var deviceClass =
-                            BluetoothClassOfDevice.FromParts((BluetoothMajorClass) major, (BluetoothMinorClass) minor,
-                                BluetoothServiceCapabilities.None);
-                        var selector = BluetoothDevice.GetDeviceSelectorFromClassOfDevice(deviceClass);
-
-                        _watcher = DeviceInformation.CreateWatcher(selector,
-                            new List<String> { SignalStrengthPropertyName });
-                        _watcher.Added += PeripheralDiscovered;
-                        _watcher.Removed += PeripheralLost;
-                        _watcher.Updated += PeripheralUpdated;
-                        _watcher.EnumerationCompleted += EnumerationCompleted;
-                        _watcher.Stopped += EnumerationStopped;
-                        _watcher.Start();
-
-                        await completion(null, null);
-                    }
-                    catch (ArgumentException)
-                    {
-                        await completion(null,
-                            JsonRpcException.InvalidParams("majorDeviceClass and minorDeviceClass required"));
-                    }
+                    Discover(parameters);
+                    await completion(null, null);
                     break;
                 case "connect":
-                    _watcher.Stop();
+                    if (_watcher.Status == DeviceWatcherStatus.Started)
+                    {
+                        _watcher.Stop();
+                    }
                     break;
                 default:
                     throw JsonRpcException.MethodNotFound(method);
+            }
+        }
+
+        private void Discover(JObject parameters)
+        {
+            var major = parameters["majorDeviceClass"]?.ToObject<int>();
+            var minor = parameters["minorDeviceClass"]?.ToObject<int>();
+            if (major == null || minor == null)
+            {
+                throw JsonRpcException.InvalidParams("majorDeviceClass and minorDeviceClass required");
+            }
+
+            var deviceClass =
+                BluetoothClassOfDevice.FromParts((BluetoothMajorClass)major, (BluetoothMinorClass)minor,
+                    BluetoothServiceCapabilities.None);
+            var selector = BluetoothDevice.GetDeviceSelectorFromClassOfDevice(deviceClass);
+
+            try
+            {
+                _watcher = DeviceInformation.CreateWatcher(selector,
+                    new List<String> {SignalStrengthPropertyName, IsPresentPropertyName});
+                _watcher.Added += PeripheralDiscovered;
+                _watcher.Removed += PeripheralLost;
+                _watcher.Updated += PeripheralUpdated;
+                _watcher.EnumerationCompleted += EnumerationCompleted;
+                _watcher.Stopped += EnumerationStopped;
+                _watcher.Start();
+            }
+            catch (ArgumentException)
+            {
+                throw JsonRpcException.ApplicationError("Failed to create device watcher");
             }
         }
 
@@ -72,12 +88,20 @@ namespace scratch_connect
 
         async void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
+            if ((bool)deviceInformation.Properties[IsPresentPropertyName] == false)
+            {
+                return;
+            }
+
             _devices.Add(deviceInformation);
 
-            dynamic peripheralInfo = new JObject();
-            peripheralInfo.peripheralId = deviceInformation.Id.Split('-')[1];
-            peripheralInfo.name = deviceInformation.Name;
-            peripheralInfo.rssi = deviceInformation.Properties[SignalStrengthPropertyName];
+            var peripheralInfo = new JObject
+            {
+                new JProperty("peripheralId", new JValue(deviceInformation.Id.Split('-')[1])),
+                new JProperty("name", new JValue(deviceInformation.Name)),
+                new JProperty("rssi", new JValue(deviceInformation.Properties[SignalStrengthPropertyName]))
+            };
+
             SendRemoteRequest("didDiscoverPeripheral", peripheralInfo);
         }
 
