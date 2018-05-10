@@ -1,7 +1,8 @@
 # Network Protocol
 
 This document describes the proposed communication protocol used by a Scratch Extension (or the extension framework) to
-communicate with the Scratch Device Manager (SDM).
+communicate with the Scratch Device Manager (SDM). The SDM supports multiple types of peripheral; this document
+describes the portions of the protocol which are common across peripheral types.
 
 ## JSON-RPC 2.0
 
@@ -30,7 +31,7 @@ simultaneously then that Extension must open more than one connection to the SDM
 To this end, a particular socket connection may transition through several distinct states, each of which is described
 below. Each state supports a particular set of requests and notifications, and sending a request or notification not
 supported by the current state shall result in an error response and otherwise be ignored. For example, attempting to
-send data to a peripheral using a "send" request while the connection is in the "discovery" state is a non-fatal error.
+read or write data from or to a peripheral while the connection is in the "discovery" state is an error.
 
 ### Initial State
 
@@ -141,19 +142,45 @@ active.
 ### Connected State
 
 The connected state indicates that the socket has become connected to a specific peripheral and further messages will
-be dedicated to that peripheral. In this state, the Scratch Extension may send the "send" request and the SDM may send
-the "didReceiveMessage" notification. To disconnect from the current peripheral or discover a new peripheral the
-Scratch Extension must disconnect this socket and connect to a new one.
+be dedicated to that peripheral. To disconnect from the current peripheral or discover a new peripheral the Scratch
+Extension must disconnect this socket and connect to a new one.
 
-#### Sending a Message
+The details of peripheral communication depend on the type of peripheral and are documented separately. This section
+describes a few conventions which should be used in peripheral communication protocols when reasonable.
 
-Sending data to a connected peripheral shall be initiated by the Scratch Extension. This command requires two
-arguments: the message body and a supported encoding format. Attempting to "send" to a peripheral with an unsupported
-encoding or invalid message body will result in an error response. If the underlying peripheral connection has specific
-needs regarding packet size (MTU), keep-alive, etc., those concerns shall be managed by the SDM in order to simulate a
-persistent free-form serial data stream.
+#### Message encoding
 
-JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message to a specified peripheral.
+Web Sockets support both "text" and "binary" frames; either is acceptable for sending a JSON-RPC message between the
+SDM and the Scratch Extension. It is acceptable to send one message as a text frame and the next as a binary frame.
+A request and its response should match: for example, if a request is sent in a text frame the corresponding response
+should be sent in a text frame.
+
+When a JSON-RPC message is sent in a text frame, the JSON object shall occupy the whole message. The Web Socket
+specification covers how text frames are encoded went sent over a Web Socket and how text frames are decoded when
+received over a web socket; no additional text encoding is necessary or allowed.
+
+When a JSON-RPC message is sent in a binary frame, the text shall be encoded to bytes using UTF-8 encoding. The
+resulting buffer of UTF-8 bytes shall occupy the whole message.
+
+Peripheral protocols should use only printable ASCII characters in method, parameter, and property names. Ideally, all
+method, parameter, and property names should be legal identifiers in JavaScript, C#, and Swift.
+
+#### Data Buffers
+
+Using JSON-RPC implies that all message payloads must be text, but communication with peripherals may require sending
+or receiving binary data. Binary data must therefore be encoded into a JSON-friendly string. In general, a message
+which contains a buffer of data should take the following format:
+```json
+{
+  "message": "cGluZw==", // Message content
+  "encoding": "base64"   // Encoding used by the "message" property
+}
+```
+
+JSON data in the above format should be interpreted as if it were a buffer of bytes: the "message" should be decoded
+to bytes using the encoding method specified by the "encoding" property.
+
+For example, a peripheral interface may implement a "send" **request** like this:
 ```json
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -166,38 +193,4 @@ JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful message send.
-```json
-{
-  "jsonrpc": "2.0", // JSON-RPC version indicator
-  "id": 5,          // Message sequence identifier
-  "result": 4       // Number of bytes sent to peripheral
-}
-```
-
-JSON-RPC **response** sent from SDM to Scratch Extension upon unsuccessful message send.
-```json
-{
-  "jsonrpc": "2.0", // JSON-RPC version indicator
-  "id": 5,          // Message sequence identifier
-  "error": {...}    // Error information
-}
-```
-
-### Receiving a Message
-
-Receiving data from a connected peripheral shall be initiated by the Scratch Device Manager. This message requires
-two arguments: the message body and the encoding format (`base64`). The Scratch Extension is not expected to return a
-"callback" response when receiving a message.
-
-JSON-RPC **notification** sent from SDM to Scratch Extension on receipt of a serial message.
-```json
-{
-  "jsonrpc": "2.0",              // JSON-RPC version indicator
-  "method": "didReceiveMessage", // Command identifier
-  "params": {
-    "message": "cG9uZw==",       // Message to be sent
-    "encoding": "base64"         // Encoding of message to be sent
-  }
-}
-```
+If the "encoding" property is omitted, the "message" is assumed to be a Unicode string.
