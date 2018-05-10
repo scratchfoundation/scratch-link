@@ -69,8 +69,11 @@ namespace scratch_connect
 
             try
             {
-                _watcher = DeviceInformation.CreateWatcher(selector,
-                    new List<String> {SignalStrengthPropertyName, IsPresentPropertyName});
+                _watcher = DeviceInformation.CreateWatcher(selector, new List<String>
+                {
+                    SignalStrengthPropertyName,
+                    IsPresentPropertyName
+                });
                 _watcher.Added += PeripheralDiscovered;
                 _watcher.Removed += PeripheralLost;
                 _watcher.Updated += PeripheralUpdated;
@@ -88,10 +91,12 @@ namespace scratch_connect
 
         async void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
-            if ((bool)deviceInformation.Properties[IsPresentPropertyName] == false)
+            if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
+                || (bool)isPresent == false)
             {
                 return;
             }
+            deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
 
             _devices.Add(deviceInformation);
 
@@ -99,7 +104,7 @@ namespace scratch_connect
             {
                 new JProperty("peripheralId", new JValue(deviceInformation.Id.Split('-')[1])),
                 new JProperty("name", new JValue(deviceInformation.Name)),
-                new JProperty("rssi", new JValue(deviceInformation.Properties[SignalStrengthPropertyName]))
+                new JProperty("rssi", rssi)
             };
 
             SendRemoteRequest("didDiscoverPeripheral", peripheralInfo);
