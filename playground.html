@@ -18,6 +18,7 @@
 <div>
     <button id="initBT">Connect to app (BT)</button>
     <button id="goBT">Do a (BT) thing!</button>
+    <button id="beep">Yell!</button>
     <button id="closeBT">Goodbye</button>
 </div>
 <div>
@@ -25,7 +26,7 @@
     <button id="connect">Make friends!</button>
 </div>
 <div>
-    <input id="messageBody" value="DwAAAIAAAJQBgQKC6AOC6AM=" type="text" placeholder="data">
+    <input id="messageBody" value="DQAAAAAEAJkdAAAAAgFg" type="text" placeholder="data">
     <button id="send">Converse!</button>
 </div>
 </body>
@@ -385,6 +386,15 @@
             addLine(`Connect button caught exception: ${stringify(e)}`);
         }
     };
+
+    const beepButton = document.getElementById('beep');
+    beepButton.onclick = () => {
+        try {
+            sendMessage("DwAAAIAAAJQBgQKC6AOC6AM=");
+        } catch (e) {
+            addLine(`Send button caught exception: ${stringify(e)}`);
+        }
+    }
 
     const sendButton = document.getElementById('send');
     sendButton.onclick = () => {
