@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
+using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 using Newtonsoft.Json.Linq;
 
@@ -32,14 +33,22 @@ namespace scratch_connect
         private IEnumerable<BLEScanFilter> _filters;
 
         /// <summary>
+        /// Set of peripherals which have been reported to the client during the most recent discovery.
+        /// These peripherals are eligible for connection.
+        /// </summary>
+        private readonly HashSet<ulong> _reportedPeripherals;
+
+        /// <summary>
         /// In addition to the services mentioned in _filters, the client will have access to these if present.
         /// </summary>
         private ICollection<Guid> _optionalServices;
 
+        private BluetoothLEDevice _peripheral;
         private BluetoothLEAdvertisementWatcher _watcher;
 
         internal BLESession(WebSocket webSocket) : base(webSocket)
         {
+            _reportedPeripherals = new HashSet<ulong>();
         }
 
         protected override async Task DidReceiveCall(string method, JObject parameters,
@@ -49,6 +58,10 @@ namespace scratch_connect
             {
                 case "discover":
                     Discover(parameters);
+                    await completion(null, null);
+                    break;
+                case "connect":
+                    Connect(parameters);
                     await completion(null, null);
                     break;
                 case "pingMe":
@@ -66,6 +79,11 @@ namespace scratch_connect
 
         private void Discover(JObject parameters)
         {
+            if (_peripheral != null)
+            {
+                throw JsonRpcException.InvalidRequest("cannot discover when connected");
+            }
+
             var jsonFilters = parameters["filters"]?.ToObject<JArray>();
             if (jsonFilters == null || jsonFilters.Count < 1)
             {
@@ -100,6 +118,7 @@ namespace scratch_connect
                     OutOfRangeTimeout = TimeSpan.FromMilliseconds(OutOfRangeTimeout)
                 }
             };
+            _reportedPeripherals.Clear();
             _filters = newFilters;
             _optionalServices = newOptionalServices;
             _watcher.Received += OnAdvertisementReceived;
@@ -135,7 +154,25 @@ namespace scratch_connect
                 new JProperty("peripheralId", new JValue(args.BluetoothAddress))
             };
 
+            _reportedPeripherals.Add(args.BluetoothAddress);
             SendRemoteRequest("didDiscoverPeripheral", peripheralData);
+        }
+
+        private async void Connect(JObject parameters)
+        {
+            if (_peripheral != null)
+            {
+                throw JsonRpcException.InvalidRequest("already connected to peripheral");
+            }
+
+            var peripheralId = parameters["peripheralId"].ToObject<ulong>();
+            if (!_reportedPeripherals.Contains(peripheralId))
+            {
+                // the client may only connect to devices that were returned by the current discovery request
+                throw JsonRpcException.InvalidParams($"invalid peripheral ID: {peripheralId}");
+            }
+
+            _peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
         }
     }
 
