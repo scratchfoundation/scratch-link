@@ -256,8 +256,12 @@
     function go() {
         Scratch.BLE.requestDevice({
             filters: [
-                {services: '4cdbbd87d6e646c29d0bdf87551e159a'}
-            ]
+                { services: ['4cdbbd87-d6e6-46c2-9d0b-df87551e159a'] },
+                { services: ['continuous_glucose_monitoring', 'mesh_proxy'] },
+                { name: 'wholeName' },
+                { namePrefix: 'prefixOfName' }
+            ],
+            optionalServices: ['battery_service']
         }).then(
             x => {
                 addLine(`requestDevice resolved to: ${stringify(x)}`);
