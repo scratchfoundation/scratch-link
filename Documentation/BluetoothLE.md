@@ -35,7 +35,7 @@ services in this list, or the "Connected State" section for more information abo
 "services" filter property, the "optionalServices" parameter, and the services available to the Scratch Extension.
 
 Example JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery:
-```json
+```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
   "id": 1,              // Message sequence identifier
@@ -91,7 +91,7 @@ allowed. A service is allowed if and only if:
 - it was named in the "optionalServices" array of the "discover" request.
 
 Consider this request:
-```json
+```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
   "id": 1,              // Message sequence identifier

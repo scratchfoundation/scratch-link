@@ -47,7 +47,7 @@ information. Failure to provide such from the Scratch Extension shall result in 
 This is to help ensure the privacy and safety of the user.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
-```json
+```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
   "id": 1,              // Message sequence identifier
@@ -58,7 +58,7 @@ JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon successful initiation of discovery. This confirms the
 transition into the discovery state.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 1,          // Message sequence identifier
@@ -68,7 +68,7 @@ transition into the discovery state.
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon failure to initiate discovery. The connection remains in
 the initial state.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 1,          // Message sequence identifier
@@ -91,7 +91,7 @@ request (sent from Scratch Extension to SDM).
 
 JSON-RPC **notification** sent from SDM to Scratch Extension upon discovery of peripherals. Note that this message may
 be passed from the SDM to the Scratch Extension many times for as long as the discovery state is active.
-```json
+```json5
 {
   "jsonrpc": "2.0",                  // JSON-RPC version indicator
   "method": "didDiscoverPeripheral", // Command identifier
@@ -108,7 +108,7 @@ connect. Attempting to connect to a peripheral which does not match the filterin
 request shall result in an error response.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to connect to a peripheral.
-```json
+```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
   "id": 3,                 // Message sequence identifier
@@ -121,7 +121,7 @@ JSON-RPC **request** sent from Scratch Extension to SDM to connect to a peripher
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon successful connection. This confirms the transition into
 the connected state.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 3,          // Message sequence identifier
@@ -131,7 +131,7 @@ the connected state.
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon connection failure. The discovery state shall remain
 active.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 3,          // Message sequence identifier
@@ -170,7 +170,7 @@ method, parameter, and property names should be legal identifiers in JavaScript,
 Using JSON-RPC implies that all message payloads must be text, but communication with peripherals may require sending
 or receiving binary data. Binary data must therefore be encoded into a JSON-friendly string. In general, a message
 which contains a buffer of data should take the following format:
-```json
+```json5
 {
   "message": "cGluZw==", // Message content
   "encoding": "base64"   // Encoding used by the "message" property
@@ -181,7 +181,7 @@ JSON data in the above format should be interpreted as if it were a buffer of by
 to bytes using the encoding method specified by the "encoding" property.
 
 For example, a peripheral interface may implement a "send" **request** like this:
-```json
+```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
   "id": 5,                 // Message sequence identifier

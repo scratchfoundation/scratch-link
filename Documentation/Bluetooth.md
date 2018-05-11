@@ -15,7 +15,7 @@ For Bluetooth (BT) connections, an extension connects to the SDM’s WebSocket s
 TODO: describe Bluetooth discovery / filtering parameters.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
-```json
+```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
   "id": 1,              // Message sequence identifier
@@ -26,7 +26,7 @@ JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon successful initiation of discovery. This confirms the
 transition into the discovery state.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 1,          // Message sequence identifier
@@ -36,7 +36,7 @@ transition into the discovery state.
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon failure to initiate discovery. The connection remains in
 the initial state.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 1,          // Message sequence identifier
@@ -55,7 +55,7 @@ needs regarding packet size (MTU), keep-alive, etc., those concerns shall be man
 persistent free-form serial data stream.
 
 JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message to a specified peripheral.
-```json
+```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
   "id": 5,                 // Message sequence identifier
@@ -68,7 +68,7 @@ JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message
 ```
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon successful message send.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 5,          // Message sequence identifier
@@ -77,7 +77,7 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon successful message
 ```
 
 JSON-RPC **response** sent from SDM to Scratch Extension upon unsuccessful message send.
-```json
+```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
   "id": 5,          // Message sequence identifier
@@ -92,7 +92,7 @@ two arguments: the message body and the encoding format (`base64`). The Scratch 
 "callback" response when receiving a message.
 
 JSON-RPC **notification** sent from SDM to Scratch Extension on receipt of a serial message.
-```json
+```json5
 {
   "jsonrpc": "2.0",              // JSON-RPC version indicator
   "method": "didReceiveMessage", // Command identifier
