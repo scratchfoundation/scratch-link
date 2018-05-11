@@ -55,15 +55,14 @@ namespace scratch_connect
 
         private void Discover(JObject parameters)
         {
-            var major = parameters["majorDeviceClass"]?.ToObject<int>();
-            var minor = parameters["minorDeviceClass"]?.ToObject<int>();
+            var major = parameters["majorDeviceClass"]?.ToObject<BluetoothMajorClass>();
+            var minor = parameters["minorDeviceClass"]?.ToObject<BluetoothMinorClass>();
             if (major == null || minor == null)
             {
                 throw JsonRpcException.InvalidParams("majorDeviceClass and minorDeviceClass required");
             }
 
-            var deviceClass =
-                BluetoothClassOfDevice.FromParts((BluetoothMajorClass)major, (BluetoothMinorClass)minor,
+            var deviceClass = BluetoothClassOfDevice.FromParts(major.Value, minor.Value,
                     BluetoothServiceCapabilities.None);
             var selector = BluetoothDevice.GetDeviceSelectorFromClassOfDevice(deviceClass);
 
