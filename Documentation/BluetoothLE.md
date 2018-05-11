@@ -83,6 +83,15 @@ the Web Bluetooth specification, which in practice is just shorthand for calling
 
 ### Connected State
 
+Connecting to a BLE peripheral with a "connect" request is the SDM equivalent of the [Web Bluetooth
+`device.gatt.connect()`](https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect) call.
+After successfully connecting to a peripheral the Scratch Extension may access any **allowed** GATT service which the
+peripheral provides by reading and writing characteristics of those services, etc.
+
+The SDM shall block access to certain GATT UUIDs (services, characteristics, etc.) as demanded by the [GATT Blocklist](
+https://webbluetoothcg.github.io/web-bluetooth/#the-gatt-blocklist). Such UUIDs are allowed in discovery filters but
+not allowed for actual communication.
+
 #### Allowed Services
 
 The SDM shall reject any attempt by the Scratch Extension to access a GATT service unless the service is specifically
