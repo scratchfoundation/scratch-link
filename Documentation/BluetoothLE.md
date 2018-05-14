@@ -1,4 +1,4 @@
-# Bluetooth Device Protocol
+# Bluetooth LE Device Protocol
 
 This document describes the proposed communication protocol used by a Scratch Extension (or the extension framework) to
 communicate with a Bluetooth Low Energy (BLE) peripheral's GATT interface using the Scratch Device Manager (SDM). This
@@ -42,8 +42,8 @@ Example JSON-RPC **request** sent from Scratch Extension to SDM to initiate disc
   "method": "discover", // Command identifier
   "params": {
     "filters": [
-      { "name": "My Peripheral" },              // Accept device named exactly "My Peripheral"
-      { "services": [ 0x1815, "current_time" ]} // Accept device with both "Automation IO" and "Current Time" services
+      { "name": "My Peripheral" },              // Accept peripheral named exactly "My Peripheral"
+      { "services": [ 0x1815, "current_time" ]} // Accept peripheral with both "Automation IO" and "Current Time" services
     ],
     "optionalServices": [
       "00001826-0000-1000-8000-00805f9b34fb"  // Allow the "Fitness Machine" service if present
@@ -106,8 +106,8 @@ Consider this request:
   "method": "discover", // Command identifier
   "params": {
     "filters": [
-      { "name": "My Peripheral" },              // Accept device named exactly "My Peripheral"
-      { "services": [ 0x1815, "current_time" ]} // Accept device with both "Automation IO" and "Current Time" services
+      { "name": "My Peripheral" },              // Accept peripheral named exactly "My Peripheral"
+      { "services": [ 0x1815, "current_time" ]} // Accept peripheral with both "Automation IO" and "Current Time" services
     ],
     "optionalServices": [
       "00001826-0000-1000-8000-00805f9b34fb"  // Allow the "Fitness Machine" service if present
@@ -117,8 +117,8 @@ Consider this request:
 ```
 
 Suppose the SDM finds a peripheral with the name "My Peripheral" and reports that to the client in a
-"didDiscoverPeripheral" notification, then the Scratch Extension chooses to connect to the "My Peripheral" device. The
-Scratch Extension will be allowed to contact the following services:
+"didDiscoverPeripheral" notification, then the Scratch Extension chooses to connect to the "My Peripheral" peripheral.
+The Scratch Extension will be allowed to contact the following services:
 - Service 0x1805, the "Current Time" service, with UUID 00001805-0000-1000-8000-00805f9b34fb
 - Service 0x1815, the "Automation IO" service, with UUID 00001815-0000-1000-8000-00805f9b34fb
 - Service 0x1826, the "Fitness Machine" service, with UUID 00001826-0000-1000-8000-00805f9b34fb
