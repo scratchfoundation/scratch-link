@@ -41,10 +41,11 @@ namespace scratch_connect
         /// <summary>
         /// In addition to the services mentioned in _filters, the client will have access to these if present.
         /// </summary>
-        private ICollection<Guid> _optionalServices;
+        private HashSet<Guid> _optionalServices;
 
         private BluetoothLEDevice _peripheral;
         private BluetoothLEAdvertisementWatcher _watcher;
+        private HashSet<Guid> _allowedServices;
 
         internal BLESession(WebSocket webSocket) : base(webSocket)
         {
@@ -96,7 +97,7 @@ namespace scratch_connect
                 throw JsonRpcException.InvalidParams("discovery request includes empty filter");
             }
 
-            ICollection<Guid> newOptionalServices = null;
+            HashSet<Guid> newOptionalServices = null;
             if (parameters.TryGetValue("optionalServices", out var optionalServicesToken))
             {
                 var optionalServicesArray = (JArray) optionalServicesToken;
@@ -173,19 +174,40 @@ namespace scratch_connect
             }
 
             _peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
+
+            // collect optional services plus all services from all filters
+            // Note: this modifies _optionalServices for convenience since we know it'll go away soon.
+            _allowedServices = _filters
+                .Where(filter => filter.RequiredServices?.Count > 0)
+                .Aggregate(_optionalServices, (result, filter) =>
+            {
+                result.UnionWith(filter.RequiredServices);
+                return result;
+            });
+
+            // remove everything that's completely excluded by the block-list
+            // we will filter specifically for reads and writes later
+            _allowedServices.RemoveWhere(uuid =>
+                GattHelpers.GetBlockListStatus(uuid) == GattHelpers.BlockListStatus.Exclude);
+
+            // clean up resources used by discovery
+            _watcher.Stop();
+            _watcher = null;
+            _reportedPeripherals.Clear();
+            _optionalServices = null;
         }
     }
 
     internal class BLEScanFilter
     {
-        private readonly string _name;
-        private readonly string _namePrefix;
-        private readonly HashSet<Guid> _requiredServices;
+        public string Name { get; }
+        public string NamePrefix { get; }
+        public HashSet<Guid> RequiredServices { get; }
 
         public bool IsEmpty =>
-            string.IsNullOrWhiteSpace(_name) &&
-            string.IsNullOrWhiteSpace(_namePrefix) &&
-            (_requiredServices == null || _requiredServices.Count < 1);
+            string.IsNullOrWhiteSpace(Name) &&
+            string.IsNullOrWhiteSpace(NamePrefix) &&
+            (RequiredServices == null || RequiredServices.Count < 1);
 
         // See https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing
         internal BLEScanFilter(JToken filter)
@@ -196,19 +218,19 @@ namespace scratch_connect
 
             if (filterObject.TryGetValue("name", out token))
             {
-                _name = token.ToString();
+                Name = token.ToString();
             }
 
             if (filterObject.TryGetValue("namePrefix", out token))
             {
-                _namePrefix = token.ToString();
+                NamePrefix = token.ToString();
             }
 
             if (filterObject.TryGetValue("services", out token))
             {
                 var serviceArray = (JArray) token;
-                _requiredServices = new HashSet<Guid>(serviceArray.Select(GattHelpers.GetServiceUuid));
-                if (_requiredServices.Count < 1)
+                RequiredServices = new HashSet<Guid>(serviceArray.Select(GattHelpers.GetServiceUuid));
+                if (RequiredServices.Count < 1)
                 {
                     throw JsonRpcException.InvalidParams($"filter contains empty or invalid services list: {filter}");
                 }
@@ -228,17 +250,17 @@ namespace scratch_connect
         // See https://webbluetoothcg.github.io/web-bluetooth/#matches-a-filter
         public bool Matches(BluetoothLEAdvertisement advertisement)
         {
-            if (!string.IsNullOrWhiteSpace(_name) && (advertisement.LocalName != _name))
+            if (!string.IsNullOrWhiteSpace(Name) && (advertisement.LocalName != Name))
             {
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(_namePrefix) && (!advertisement.LocalName.StartsWith(_namePrefix)))
+            if (!string.IsNullOrWhiteSpace(NamePrefix) && (!advertisement.LocalName.StartsWith(NamePrefix)))
             {
                 return false;
             }
 
-            return _requiredServices.All(service => advertisement.ServiceUuids.Contains(service));
+            return RequiredServices.All(service => advertisement.ServiceUuids.Contains(service));
         }
     }
 }
