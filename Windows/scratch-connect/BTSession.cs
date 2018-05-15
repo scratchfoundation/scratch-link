@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Enumeration;
+using Windows.Networking.Sockets;
 
 namespace scratch_connect
 {
@@ -47,6 +48,7 @@ namespace scratch_connect
                     {
                         _watcher.Stop();
                     }
+                    Connect(parameters);
                     break;
                 default:
                     throw JsonRpcException.MethodNotFound(method);
@@ -86,6 +88,24 @@ namespace scratch_connect
             }
         }
 
+        private async void Connect(JObject parameters)
+        {
+            var id = parameters["peripheralId"]?.ToObject<string>();
+            var bluetoothDevice = await BluetoothDevice.FromIdAsync(id);
+            var services = await bluetoothDevice.GetRfcommServicesAsync();
+            if (services.Services.Count > 0)
+            {
+                var socket = new StreamSocket();
+                await socket.ConnectAsync(services.Services[0].ConnectionHostName,
+                    services.Services[0].ConnectionServiceName);
+            }
+            else
+            {
+                throw JsonRpcException.ApplicationError("Cannot read services from peripheral");
+            }
+            
+        }
+
         #region DeviceWatcher Events
 
         async void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
@@ -101,7 +121,7 @@ namespace scratch_connect
 
             var peripheralInfo = new JObject
             {
-                new JProperty("peripheralId", new JValue(deviceInformation.Id.Split('-')[1])),
+                new JProperty("peripheralId", new JValue(deviceInformation.Id)),
                 new JProperty("name", new JValue(deviceInformation.Name)),
                 new JProperty("rssi", rssi)
             };
