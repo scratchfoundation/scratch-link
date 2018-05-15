@@ -10,6 +10,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\playground.html = ..\playground.html
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{3721552C-638C-48CC-A154-F995CEA87505}"
+	ProjectSection(SolutionItems) = preProject
+		..\Documentation\Bluetooth.md = ..\Documentation\Bluetooth.md
+		..\Documentation\BluetoothLE.md = ..\Documentation\BluetoothLE.md
+		..\Documentation\NetworkProtocol.md = ..\Documentation\NetworkProtocol.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +30,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3721552C-638C-48CC-A154-F995CEA87505} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8DE7771A-9DD3-44DD-AA08-46514DA0F673}

@@ -1,0 +1,341 @@
+# Bluetooth LE Device Protocol
+
+This document describes the proposed communication protocol used by a Scratch Extension (or the extension framework) to
+communicate with a Bluetooth Low Energy (BLE) peripheral's GATT interface using the Scratch Device Manager (SDM). This
+document builds on the "Network Protocol" document describing the portions of the protocol common to all peripheral
+types.
+
+## Proposed Interface (Scratch Extension to Scratch Device Manager)
+
+In general, BLE support in the SDM is patterned after BLE support in Web bluetooth. The Web Bluetooth specification
+can be found here: https://webbluetoothcg.github.io/web-bluetooth/
+
+### Initiating Communication with SDM
+
+For BLE connections, an extension connects to the SDM’s WebSocket server at the path "/scratch/ble".
+
+### Initial State
+
+The Scratch Extension may initiate discovery by sending a "discover" request. The parameters of the "discover" request
+shall include an array-valued "filters" property and may also contain an array-valued "optionalServices" property.
+
+The "filters" array shall contain at least one item, and each item must represent a non-trivial filter. A peripheral
+is accepted by a filter if the peripheral matches **every** condition in the filter; a peripheral matches a "discover"
+request if the peripheral matches **any** filter in the "filters" array.
+
+A filter object shall contain one or more of the following properties:
+- "name": to pass this condition, the peripheral's advertised name must match this string exactly.
+- "namePrefix": to pass this condition, the peripheral's advertised name must begin with this string.
+- "services": to pass this condition, every service named in this array-valued property must be advertised by the
+  peripheral. See the "Service Names" section below for more information on specifying services in this list.
+
+The "optionalServices" array, if present, shall contain service names which the Scratch Extension would like to access
+even if they are not used for filtering. See the "Service Names" section below for more information on specifying
+services in this list, or the "Connected State" section for more information about the relationship between the
+"services" filter property, the "optionalServices" parameter, and the services available to the Scratch Extension.
+
+Example JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery:
+```json5
+{
+  "jsonrpc": "2.0",     // JSON-RPC version indicator
+  "id": 1,              // Message sequence identifier
+  "method": "discover", // Command identifier
+  "params": {
+    "filters": [
+      { "name": "My Peripheral" },              // Accept peripheral named exactly "My Peripheral"
+      { "services": [ 0x1815, "current_time" ]} // Accept peripheral with both "Automation IO" and "Current Time" services
+    ],
+    "optionalServices": [
+      "00001826-0000-1000-8000-00805f9b34fb"  // Allow the "Fitness Machine" service if present
+    ]
+  }
+}
+```
+
+#### Comparison to Web Bluetooth
+
+Discovery of a BLE peripheral mimics the
+[Web Bluetooth specification](https://webbluetoothcg.github.io/web-bluetooth/#device-discovery) with a few exceptions:
+- The "acceptAllDevices" property is not allowed.
+- The "filters" list must contain at least one filter.
+- Each filter in the "filters" list must be non-trivial. For example, a filter which contains only an empty
+  "namePrefix" is not allowed.
+- The "manufacturerData" and "serviceData" filter properties are not supported.
+
+#### Service Names
+
+The "services" array and, if present, the "optionalServices" array shall contain what the Web Bluetooth specification
+calls "names" for GATT services. A GATT service name is one of the following:
+- A full GATT service UUID in string format, such as "0000180f-0000-1000-8000-00805f9b34fb"
+  - Hexadecimal characters shall be lower-case
+- A "short ID" in integer format, such as 0x180f
+- A name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services) without the
+  "org.bluetooth.service." prefix, such as "battery_service"
+
+Each of the examples above specifies the same service.
+
+The SDM shall resolve each name to a full UUID using the [getService](
+https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothuuid-getservice) algorithm as described by the Web
+Bluetooth specification, which in practice is just shorthand for calling the [resolveUuidName](
+https://webbluetoothcg.github.io/web-bluetooth/#resolveuuidname) algorithm and passing the [Service Assigned Numbers
+table](https://www.bluetooth.com/specifications/gatt/services) and "org.bluetooth.service" for the prefix.
+
+### Connected State
+
+Connecting to a BLE peripheral with a "connect" request is the SDM equivalent of the [Web Bluetooth
+`device.gatt.connect()`](https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect) call.
+After successfully connecting to a peripheral the Scratch Extension may access any **allowed** GATT service which the
+peripheral provides by reading and writing characteristics of those services, etc.
+
+The SDM shall block access to certain GATT UUIDs (services, characteristics, etc.) as demanded by the [GATT Blocklist](
+https://webbluetoothcg.github.io/web-bluetooth/#the-gatt-blocklist). Such UUIDs are allowed in discovery filters but
+not allowed for actual communication.
+
+#### Allowed Services
+
+The SDM shall reject any attempt by the Scratch Extension to access a GATT service unless the service is specifically
+allowed. A service is allowed if and only if:
+- it was named in the "services" array of **any** filter in the "discover" request, **or**
+- it was named in the "optionalServices" array of the "discover" request.
+
+Consider this request:
+```json5
+{
+  "jsonrpc": "2.0",     // JSON-RPC version indicator
+  "id": 1,              // Message sequence identifier
+  "method": "discover", // Command identifier
+  "params": {
+    "filters": [
+      { "name": "My Peripheral" },              // Accept peripheral named exactly "My Peripheral"
+      { "services": [ 0x1815, "current_time" ]} // Accept peripheral with both "Automation IO" and "Current Time" services
+    ],
+    "optionalServices": [
+      "00001826-0000-1000-8000-00805f9b34fb"  // Allow the "Fitness Machine" service if present
+    ]
+  }
+}
+```
+
+Suppose the SDM finds a peripheral with the name "My Peripheral" and reports that to the client in a
+"didDiscoverPeripheral" notification, then the Scratch Extension chooses to connect to the "My Peripheral" peripheral.
+The Scratch Extension will be allowed to contact the following services:
+- Service 0x1805, the "Current Time" service, with UUID 00001805-0000-1000-8000-00805f9b34fb
+- Service 0x1815, the "Automation IO" service, with UUID 00001815-0000-1000-8000-00805f9b34fb
+- Service 0x1826, the "Fitness Machine" service, with UUID 00001826-0000-1000-8000-00805f9b34fb
+
+Note that the peripheral may or may not implement each of these services: in fact, since the peripheral satisfied the
+discovery filter based on its name it might not implement any of these services.
+
+#### Enumerating Services
+
+The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to the SDM:
+```json5
+{
+  "jsonrpc": "2.0",        // JSON-RPC version indicator
+  "id": 3,                 // Message sequence identifier
+  "method": "getServices", // Command identifier
+  "params": {}             // No parameters
+}
+```
+
+On success, the SDM's **response** shall contain an array of service UUIDs as its result:
+```json5
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": [
+    "0000180f-0000-1000-8000-00805f9b34fb"
+  ]
+}
+```
+
+The Scratch Extension is not required to enumerate a peripheral's services; the SDM shall not change the list of
+allowed services based on whether or not the Scratch Extension has requested enumeration. 
+
+#### Enumerating Service Characteristics
+
+The Scratch Extension may query the list of characteristics available on an allowed service by sending a
+"getCharacteristics" **request** to the SDM:
+```json5
+{
+  "jsonrpc": "2.0",                // JSON-RPC version indicator
+  "id": 4,                         // Message sequence identifier
+  "method": "getCharacteristics",  // Command identifier
+  "params": {
+    "serviceId": "battery_service" // GATT service to query
+  }
+}
+```
+
+The "serviceId" property may be any valid GATT service name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
+
+On success, the SDM's **response** shall contain an array of characteristic UUIDs as its result:
+```json5
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": [
+    "00002a19-0000-1000-8000-00805f9b34fb"
+  ]
+}
+```
+
+The Scratch Extension is not required to enumerate a service's characteristics; the SDM shall not change the list of
+allowed characteristics based on whether or not the Scratch Extension has requested enumeration. 
+
+#### Writing to a Characteristic
+
+The Scratch Extension may write data to a characteristics available on an allowed service by sending a "write"
+**request** to the SDM:
+```json5
+{
+  "jsonrpc": "2.0",                            // JSON-RPC version indicator
+  "id": 5,                                     // Message sequence identifier
+  "method": "write",                           // Command identifier
+  "params": {
+    "serviceId": "battery_service",            // Optional: GATT service to write
+    "characteristicId": "battery_level_state", // GATT characteristic to write
+    "message": "cGluZw==",                     // Content to be written
+    "encoding": "base64"                       // Optional: Encoding used by the "message" property
+  }
+}
+```
+
+The "serviceId" property may be any valid GATT service name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
+
+The "serviceId" property may be omitted; in this case the peripheral's primary service will be assumed. The primary
+service shall be determined the same way as in [the Web Bluetooth `getPrimaryService(service)` call](
+https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
+
+The "characteristicId" property may be any valid GATT characteristic name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Characteristic Assigned Numbers table](
+  https://www.bluetooth.com/specifications/gatt/characteristic).
+
+The "encoding" property may be omitted; in this case the "message" is assumed to be a Unicode string. The SDM shall
+encode the string using UTF-8 and write the resulting bytes to the characteristic.
+
+On success, the SDM's **response** shall contain the number of bytes written, which may differ from the number of
+characters in the string value of the initiating request's "message" property:
+```json5
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "result": 4
+}
+```
+
+#### Reading from a Characteristic
+
+The Scratch Extension may read data from a characteristics available on an allowed service by sending a "read"
+**request** to the SDM:
+```json5
+{
+  "jsonrpc": "2.0",                            // JSON-RPC version indicator
+  "id": 6,                                     // Message sequence identifier
+  "method": "read",                            // Command identifier
+  "params": {
+    "serviceId": "battery_service",            // Optional: GATT service to read
+    "characteristicId": "battery_level_state", // GATT characteristic to read
+    "encoding": "base64",                      // Optional: Encoding requested to be used in the response
+    "startNotifications": true                 // Optional: Whether or not to register for value change notifications
+  }
+}
+```
+
+The "serviceId" property may be any valid GATT service name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
+
+The "serviceId" property may be omitted; in this case the peripheral's primary service will be assumed. The primary
+service shall be determined the same way as in [the Web Bluetooth `getPrimaryService(service)` call](
+https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
+
+The "characteristicId" property may be any valid GATT characteristic name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
+
+If the "encoding" property is present then the SDM should use the indicated encoding for the response, but the SDM is
+not required to do so. If the "encoding" property is absent in the **request** the SDM may choose an encoding for the
+response.
+
+On success, the SDM's **response** shall contain the data read from the characteristic:
+```json5
+{
+  "jsonrpc": "2.0",        // JSON-RPC version indicator
+  "id": 6,                 // Message sequence identifier
+  "result": {
+    "message": "cG9uZw==", // The data read from the characteristic
+    "encoding": "base64"   // Optional: Encoding used by the "message" property
+  }
+}
+```
+
+If the "encoding" property is absent in the **response**, the Scratch Extension should assume that the "message"
+property contains a Unicode string.
+
+If the "startNotifications" property is both present and true in the **request**, then the SDM shall continuously
+notify the Scratch Extension of changes in the characteristic's value. This shall continue until the Scratch Extension
+makes a "stopNotifications" request.
+
+#### Value change notification
+
+The SDM notifies the Scratch Extension of value changes with **notification** messages in this form:
+```json5
+{
+  "jsonrpc": "2.0",                    // JSON-RPC version indicator
+  "method": "characteristicDidChange", // Command identifier
+  "params": {
+    "serviceId": "0000180f-0000-1000-8000-00805f9b34fb" // UUID of the service which hosts the changed characteristic
+    "characteristicId": "00002a19-0000-1000-8000-00805f9b34fb", // UUID of the characteristic whose value changed
+    "message": "cG9uZw==",             // The data read from the characteristic
+    "encoding": "base64"               // Optional: Encoding used by the "message" property
+  }
+}
+```
+
+If the "encoding" property is absent the Scratch Extension should assume that the "message" property contains a
+Unicode string.
+
+The SDM shall only send such a notification when the value of a characteristic changes, and only for characteristics
+which have been read by a "read" request with the "startNotifications" flag set. Such notifications shall continue
+until the Scratch Extension makes a "stopNotifications" request.
+
+#### Stop Notifications
+
+The Scratch Extension may end value change notifications by sending a "stopNotifications" **request** to the SDM:
+```json5
+{
+  "jsonrpc": "2.0",                           // JSON-RPC version indicator
+  "id": 7,                                    // Message sequence identifier
+  "method": "stopNotifications",              // Command identifier
+  "params": {
+    "serviceId": "battery_service",           // Optional: GATT service for which to stop notifications
+    "characteristicId": "battery_level_state" // GATT characteristic for which to stop notifications
+  }
+}
+```
+
+The "serviceId" property may be any valid GATT service name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
+
+The "serviceId" property may be omitted; in this case the peripheral's primary service will be assumed. The primary
+service shall be determined the same way as in [the Web Bluetooth `getPrimaryService(service)` call](
+https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
+
+The "characteristicId" property may be any valid GATT characteristic name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Characteristic Assigned Numbers table](
+  https://www.bluetooth.com/specifications/gatt/characteristic).
