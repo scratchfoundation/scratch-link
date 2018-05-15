@@ -65,6 +65,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BLESession.cs" />
+    <Compile Include="EncodingHelpers.cs" />
     <Compile Include="GattHelpers.cs" />
     <Compile Include="BTSession.cs" />
     <Compile Include="JSONRPCException.cs" />

@@ -80,6 +80,9 @@ namespace scratch_connect
             return new Guid(alias, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb);
         }
 
+        /// <summary>
+        /// Possible values for an item on the GATT block list.
+        /// </summary>
         [Flags]
         public enum BlockListStatus
         {
