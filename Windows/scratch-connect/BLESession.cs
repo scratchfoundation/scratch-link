@@ -48,7 +48,7 @@ namespace scratch_connect
         /// </summary>
         private HashSet<Guid> _optionalServices;
 
-        private BluetoothLEDevice _peripheral;
+        private IReadOnlyList<GattDeviceService> _services;
         private BluetoothLEAdvertisementWatcher _watcher;
         private HashSet<Guid> _allowedServices;
 
@@ -87,7 +87,7 @@ namespace scratch_connect
                     await completion(await Read(parameters), null);
                     break;
                 case "stopNotifications":
-                    StopNotifications(parameters);
+                    await StopNotifications(parameters);
                     await completion(null, null);
                     break;
                 case "pingMe":
@@ -114,7 +114,7 @@ namespace scratch_connect
         /// </param>
         private void Discover(JObject parameters)
         {
-            if (_peripheral != null)
+            if (_services != null)
             {
                 throw JsonRpcException.InvalidRequest("cannot discover when connected");
             }
@@ -207,7 +207,7 @@ namespace scratch_connect
         /// </param>
         private async void Connect(JObject parameters)
         {
-            if (_peripheral != null)
+            if (_services != null)
             {
                 throw JsonRpcException.InvalidRequest("already connected to peripheral");
             }
@@ -219,13 +219,21 @@ namespace scratch_connect
                 throw JsonRpcException.InvalidParams($"invalid peripheral ID: {peripheralId}");
             }
 
-            _peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
+            var peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
+            var servicesResult = await peripheral.GetGattServicesAsync(BluetoothCacheMode.Uncached);
+            if (servicesResult.Status != GattCommunicationStatus.Success)
+            {
+                throw JsonRpcException.ApplicationError($"failed to enumerate GATT services: {servicesResult.Status}");
+            }
+
+            _services = servicesResult.Services;
 
             // collect optional services plus all services from all filters
             // Note: this modifies _optionalServices for convenience since we know it'll go away soon.
+            _allowedServices = _optionalServices ?? new HashSet<Guid>();
             _allowedServices = _filters
                 .Where(filter => filter.RequiredServices?.Count > 0)
-                .Aggregate(_optionalServices, (result, filter) =>
+                .Aggregate(_allowedServices, (result, filter) =>
                 {
                     result.UnionWith(filter.RequiredServices);
                     return result;
@@ -248,7 +256,7 @@ namespace scratch_connect
         private async Task<JToken> Write(JObject parameters)
         {
             var buffer = EncodingHelpers.DecodeBuffer(parameters);
-            var endpoint = GetEndpoint("write request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
+            var endpoint = await GetEndpoint("write request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
 
             var result = await endpoint.WriteValueAsync(buffer.AsBuffer());
 
@@ -275,7 +283,7 @@ namespace scratch_connect
         /// </returns>
         private async Task<JToken> Read(JObject parameters)
         {
-            var endpoint = GetEndpoint("read request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
+            var endpoint = await GetEndpoint("read request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
             var encoding = parameters.TryGetValue("encoding", out var encodingToken)
                 ? encodingToken?.ToObject<string>() // possibly null and that's OK
                 : "base64";
@@ -303,9 +311,9 @@ namespace scratch_connect
         /// Handle the client's request to stop receiving notifications for changes in a characteristic's value.
         /// </summary>
         /// <param name="parameters">The IDs of the service and characteristic</param>
-        private void StopNotifications(JObject parameters)
+        private async Task StopNotifications(JObject parameters)
         {
-            var endpoint = GetEndpoint("stopNotifications request", parameters, GattHelpers.BlockListStatus.ExcludeReads);
+            var endpoint = await GetEndpoint("stopNotifications request", parameters, GattHelpers.BlockListStatus.ExcludeReads);
             endpoint.ValueChanged -= OnValueChanged;
         }
 
@@ -342,12 +350,23 @@ namespace scratch_connect
         /// The specified GATT service characteristic, if it can be resolved and all checks pass.
         /// Otherwise, a JSON-RPC exception is thrown indicating what went wrong.
         /// </returns>
-        private GattCharacteristic GetEndpoint(string errorContext, JObject endpointInfo,
+        private async Task<GattCharacteristic> GetEndpoint(string errorContext, JObject endpointInfo,
             GattHelpers.BlockListStatus checkFlag)
         {
-            var serviceId = endpointInfo.TryGetValue("serviceId", out var serviceToken)
-                ? GattHelpers.GetServiceUuid(serviceToken)
-                : _peripheral.GattServices.FirstOrDefault()?.Uuid;
+            GattDeviceService service;
+            Guid? serviceId;
+
+            if (endpointInfo.TryGetValue("serviceId", out var serviceToken))
+            {
+                serviceId = GattHelpers.GetServiceUuid(serviceToken);
+                service = _services.FirstOrDefault(s => s.Uuid == serviceId);
+            }
+            else
+            {
+                service = _services.FirstOrDefault(); // could in theory be null
+                serviceId = service?.Uuid;
+            }
+
             if (!serviceId.HasValue)
             {
                 throw JsonRpcException.InvalidParams($"Could not determine service UUID for {errorContext}");
@@ -364,15 +383,31 @@ namespace scratch_connect
                 throw JsonRpcException.InvalidParams($"service is block-listed with {blockStatus}: {serviceId}");
             }
 
-            var service = _peripheral.GetGattService(serviceId.Value);
             if (service == null)
             {
                 throw JsonRpcException.InvalidParams($"could not find service {serviceId}");
             }
 
-            var characteristicId = endpointInfo.TryGetValue("characteristicId", out var characteristicToken)
-                ? GattHelpers.GetCharacteristicUuid(characteristicToken)
-                : service.GetAllCharacteristics().FirstOrDefault()?.Uuid;
+            GattCharacteristic characteristic;
+            Guid? characteristicId;
+            if (endpointInfo.TryGetValue("characteristicId", out var characteristicToken))
+            {
+                characteristic = null; // we will attempt to collect this below
+                characteristicId = GattHelpers.GetCharacteristicUuid(characteristicToken);
+            }
+            else
+            {
+                var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
+                if (characteristicsResult.Status != GattCommunicationStatus.Success)
+                {
+                    throw JsonRpcException.ApplicationError(
+                        $"failed to collect characteristics from service: {characteristicsResult.Status}");
+                }
+
+                characteristic = characteristicsResult.Characteristics.FirstOrDefault(); // could in theory be null
+                characteristicId = characteristic?.Uuid;
+            }
+
             if (!characteristicId.HasValue)
             {
                 throw JsonRpcException.InvalidParams($"Could not determine characteristic UUID for {errorContext}");
@@ -385,7 +420,26 @@ namespace scratch_connect
                     $"characteristic is block-listed with {blockStatus}: {characteristicId}");
             }
 
-            return service.GetCharacteristics(characteristicId.Value)?.FirstOrDefault();
+            // collect the characteristic if we didn't do so above
+            if (characteristic == null)
+            {
+                var characteristicsResult = await service.GetCharacteristicsForUuidAsync(characteristicId.Value, BluetoothCacheMode.Uncached);
+                if (characteristicsResult.Status != GattCommunicationStatus.Success)
+                {
+                    throw JsonRpcException.ApplicationError(
+                        $"failed to collect characteristics from service: {characteristicsResult.Status}");
+                }
+
+                if (characteristicsResult.Characteristics.Count < 1)
+                {
+                    throw JsonRpcException.InvalidParams($"could not find characteristic {characteristicId} on service {serviceId}");
+                }
+
+                // TODO: why is this a list?
+                characteristic = characteristicsResult.Characteristics[0];
+            }
+
+            return characteristic;
         }
     }
 
