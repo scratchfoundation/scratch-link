@@ -31,8 +31,14 @@ namespace scratch_connect
         /// </summary>
         private const string BluetoothAddressPropertyName = "System.Devices.Aep.DeviceAddress";
 
+        /// <summary>
+        /// PIN code expected to pair with EV3
+        /// </summary>
+        private const string EV3PairingCode = "1234";
+
         private DeviceWatcher _watcher;
         private readonly List<DeviceInformation> _devices;
+        private StreamSocket _connectedSocket;
 
         internal BTSession(WebSocket webSocket) : base(webSocket)
         {
@@ -100,19 +106,43 @@ namespace scratch_connect
             var id = parameters["peripheralId"]?.ToObject<string>();
             var address = Convert.ToUInt64(id, 16);
             var bluetoothDevice = await BluetoothDevice.FromBluetoothAddressAsync(address);
+            if (!bluetoothDevice.DeviceInformation.Pairing.IsPaired)
+            {
+                await Pair(bluetoothDevice);
+            }
             var services = await bluetoothDevice.GetRfcommServicesAsync(BluetoothCacheMode.Uncached);
             if (services.Services.Count > 0)
             {
-                var socket = new StreamSocket();
-                await socket.ConnectAsync(services.Services[0].ConnectionHostName,
+                _connectedSocket = new StreamSocket();
+                await _connectedSocket.ConnectAsync(services.Services[0].ConnectionHostName,
                     services.Services[0].ConnectionServiceName);
             }
             else
             {
                 throw JsonRpcException.ApplicationError("Cannot read services from peripheral");
             }
-            
         }
+
+        private async Task Pair(BluetoothDevice bluetoothDevice)
+        {
+            bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
+            var pairingResult =
+                await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(DevicePairingKinds.ProvidePin);
+            if (!(pairingResult.Status == DevicePairingResultStatus.Paired ||
+                pairingResult.Status == DevicePairingResultStatus.AlreadyPaired))
+            {
+                throw JsonRpcException.ApplicationError("Could not automatically pair with peripheral");
+            }
+        }
+
+        #region Custom Pairing Events
+
+        private void CustomOnPairingRequested(DeviceInformationCustomPairing sender, DevicePairingRequestedEventArgs args)
+        {
+            args.Accept(EV3PairingCode);
+        }
+
+        #endregion
 
         #region DeviceWatcher Events
 
