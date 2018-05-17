@@ -26,6 +26,11 @@ namespace scratch_connect
         /// </summary>
         private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
 
+        /// <summary>
+        /// Bluetooth MAC address
+        /// </summary>
+        private const string BluetoothAddressPropertyName = "System.Devices.Aep.DeviceAddress";
+
         private DeviceWatcher _watcher;
         private readonly List<DeviceInformation> _devices;
 
@@ -49,6 +54,7 @@ namespace scratch_connect
                         _watcher.Stop();
                     }
                     Connect(parameters);
+                    await completion(null, null);
                     break;
                 default:
                     throw JsonRpcException.MethodNotFound(method);
@@ -73,7 +79,8 @@ namespace scratch_connect
                 _watcher = DeviceInformation.CreateWatcher(selector, new List<String>
                 {
                     SignalStrengthPropertyName,
-                    IsPresentPropertyName
+                    IsPresentPropertyName,
+                    BluetoothAddressPropertyName
                 });
                 _watcher.Added += PeripheralDiscovered;
                 _watcher.Removed += PeripheralLost;
@@ -91,8 +98,9 @@ namespace scratch_connect
         private async void Connect(JObject parameters)
         {
             var id = parameters["peripheralId"]?.ToObject<string>();
-            var bluetoothDevice = await BluetoothDevice.FromIdAsync(id);
-            var services = await bluetoothDevice.GetRfcommServicesAsync();
+            var address = Convert.ToUInt64(id, 16);
+            var bluetoothDevice = await BluetoothDevice.FromBluetoothAddressAsync(address);
+            var services = await bluetoothDevice.GetRfcommServicesAsync(BluetoothCacheMode.Uncached);
             if (services.Services.Count > 0)
             {
                 var socket = new StreamSocket();
@@ -115,13 +123,15 @@ namespace scratch_connect
             {
                 return;
             }
+            deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
+            var peripheralId = ((string) address)?.Replace(":", "");
 
             _devices.Add(deviceInformation);
 
             var peripheralInfo = new JObject
             {
-                new JProperty("peripheralId", new JValue(deviceInformation.Id)),
+                new JProperty("peripheralId", peripheralId),
                 new JProperty("name", new JValue(deviceInformation.Name)),
                 new JProperty("rssi", rssi)
             };
@@ -161,6 +171,11 @@ namespace scratch_connect
             {
                 Debug.Print("Enumeration stopped.");
             }
+            _watcher.Added -= PeripheralDiscovered;
+            _watcher.Removed -= PeripheralLost;
+            _watcher.Updated -= PeripheralUpdated;
+            _watcher.EnumerationCompleted -= EnumerationCompleted;
+            _watcher.Stopped -= EnumerationStopped;
         }
 
         #endregion
