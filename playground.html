@@ -4,409 +4,464 @@
     <title>Scratch PB Test Client Fun Stuff Yay</title>
 </head>
 <body>
-<div><label for="log">Log</label></div>
-<textarea id="log" title="log" readonly style="width: 40rem; height: 10rem;"></textarea>
-<div>
-    <input id="follow" type="checkbox" title="Follow" checked>
-    <label for="follow">Follow</label>
-</div>
-<div>
-    <button id="init">Connect to app</button>
-    <button id="go">Do a thing!</button>
-    <button id="ping">Request ping</button>
-</div>
-<div>
-    <button id="initBT">Connect to app (BT)</button>
-    <button id="goBT">Do a (BT) thing!</button>
-    <button id="closeBT">Goodbye</button>
-</div>
-<div>
-    <input id="peripheralId" value="00-16-53-3d-05-04" type="text" placeholder="Peripheral id">
-    <button id="connect">Make friends!</button>
-</div>
-<div>
-    <input id="messageBody" value="DwAAAIAAAJQBgQKC6AOC6AM=" type="text" placeholder="data">
-    <button id="send">Converse!</button>
-</div>
-</body>
-<script>
-    class JSONRPC {
-        constructor() {
-            this._requestID = 0;
-            this._openRequests = {};
-        }
-
-        /**
-         * Make an RPC Request and retrieve the result.
-         * @param {string} method - the remote method to call
-         * @param {object} params - the parameters to pass to the remote method
-         * @returns {Promise} - a promise for the result of the call
-         */
-        sendRemoteRequest (method, params) {
-            const requestID = this._requestID++;
-
-            const promise = new Promise((resolve, reject) => {
-                this._openRequests[requestID] = {resolve, reject};
-            });
-
-            this._sendRequest(method, params, requestID);
-
-            return promise;
-        }
-
-        /**
-         * Make an RPC Notification with no expectation of a result or callback.
-         * @param {string} method - the remote method to call
-         * @param {object} params - the parameters to pass to the remote method
-         */
-        sendRemoteNotification (method, params) {
-            this._sendRequest(method, params);
-        }
-
-        /**
-         * Handle an RPC request from remote.
-         * @param {string} method - the method requested by the remote caller
-         * @param {object} params - the parameters sent with the remote caller's request
-         * @returns a result or Promise for result, if appropriate.
-         */
-        didReceiveCall (method, params) {
-            throw new Error("Must override didReceiveCall");
-        }
-
-        /**
-         * Send a JSON-style message object over the transport.
-         * @param {object} jsonMessageObject - the message to send
-         * @private
-         */
-        _sendMessage (jsonMessageObject) {
-            throw new Error("Must override _sendMessage");
-        }
-
-        _sendRequest (method, params, id) {
-            const request = {
-                jsonrpc: "2.0",
-                method,
-                params
-            };
-
-            if (id != null) {
-                request.id = id;
+    <div><label for="log">Log</label></div>
+    <textarea id="log" title="log" readonly style="width: 40rem; height: 10rem;"></textarea>
+    <div>
+        <input id="follow" type="checkbox" title="Follow" checked>
+        <label for="follow">Follow</label>
+    </div>
+    <fieldset>
+        <legend>BLE / micro:bit</legend>
+        <div>
+            <button id="initBLE">Connect to app</button>
+            <button id="pingBLE">Request ping</button>
+            <button id="discoverBLE">Find a micro:bit</button>
+            <button id="connectBLE">Connect to discovered micro:bit</button>
+            <button id="readBLE">Read and monitor data</button>
+            <button id="writeBLE">Change the LEDs</button>
+        </div>
+    </fieldset>
+    <fieldset>
+        <legend>BT / EV3</legend>
+        <div>
+            <button id="initBT">Connect to app (BT)</button>
+            <button id="goBT">Do a (BT) thing!</button>
+            <button id="closeBT">Goodbye</button>
+        </div>
+        <div>
+            <input id="peripheralId" value="00-16-53-3d-05-04" type="text" placeholder="Peripheral id">
+            <button id="connect">Make friends!</button>
+        </div>
+        <div>
+            <input id="messageBody" value="DwAAAIAAAJQBgQKC6AOC6AM=" type="text" placeholder="data">
+            <button id="send">Converse!</button>
+        </div>
+    </fieldset>
+    <script>
+        class JSONRPC {
+            constructor() {
+                this._requestID = 0;
+                this._openRequests = {};
             }
 
-            this._sendMessage(request);
-        }
+            /**
+             * Make an RPC Request and retrieve the result.
+             * @param {string} method - the remote method to call
+             * @param {object} params - the parameters to pass to the remote method
+             * @returns {Promise} - a promise for the result of the call
+             */
+            sendRemoteRequest(method, params) {
+                const requestID = this._requestID++;
 
-        _handleMessage (json) {
-            if (json.jsonrpc !== '2.0') {
-                throw new Error(`Bad or missing JSON-RPC version in message: ${stringify(json)}`);
+                const promise = new Promise((resolve, reject) => {
+                    this._openRequests[requestID] = { resolve, reject };
+                });
+
+                this._sendRequest(method, params, requestID);
+
+                return promise;
             }
-            if (json.hasOwnProperty('method')) {
-                this._handleRequest(json);
-            } else {
-                this._handleResponse(json);
+
+            /**
+             * Make an RPC Notification with no expectation of a result or callback.
+             * @param {string} method - the remote method to call
+             * @param {object} params - the parameters to pass to the remote method
+             */
+            sendRemoteNotification(method, params) {
+                this._sendRequest(method, params);
+            }
+
+            /**
+             * Handle an RPC request from remote.
+             * @param {string} method - the method requested by the remote caller
+             * @param {object} params - the parameters sent with the remote caller's request
+             * @returns a result or Promise for result, if appropriate.
+             */
+            didReceiveCall(method, params) {
+                throw new Error("Must override didReceiveCall");
+            }
+
+            /**
+             * Send a JSON-style message object over the transport.
+             * @param {object} jsonMessageObject - the message to send
+             * @private
+             */
+            _sendMessage(jsonMessageObject) {
+                throw new Error("Must override _sendMessage");
+            }
+
+            _sendRequest(method, params, id) {
+                const request = {
+                    jsonrpc: "2.0",
+                    method,
+                    params
+                };
+
+                if (id != null) {
+                    request.id = id;
+                }
+
+                this._sendMessage(request);
+            }
+
+            _handleMessage(json) {
+                if (json.jsonrpc !== '2.0') {
+                    throw new Error(`Bad or missing JSON-RPC version in message: ${stringify(json)}`);
+                }
+                if (json.hasOwnProperty('method')) {
+                    this._handleRequest(json);
+                } else {
+                    this._handleResponse(json);
+                }
+            }
+
+            _sendResponse(id, result, error) {
+                const response = {
+                    jsonrpc: '2.0',
+                    id
+                };
+                if (error != null) {
+                    response.error = error;
+                } else {
+                    response.result = result || null;
+                }
+                this._sendMessage(response);
+            }
+
+            _handleResponse(json) {
+                const { result, error, id } = json;
+                const openRequest = this._openRequests[id];
+                delete this._openRequests[id];
+                if (error) {
+                    openRequest.reject(error);
+                } else {
+                    openRequest.resolve(result);
+                }
+            }
+
+            _handleRequest(json) {
+                const { method, params, id } = json;
+                const rawResult = this.didReceiveCall(method, params);
+                if (id != null) {
+                    Promise.resolve(rawResult).then(
+                        result => {
+                            this._sendResponse(id, result);
+                        },
+                        error => {
+                            this._sendResponse(id, null, error);
+                        }
+                    );
+                }
             }
         }
 
-        _sendResponse (id, result, error) {
-            const response = {
-                jsonrpc: '2.0',
-                id
-            };
-            if (error != null) {
-                response.error = error;
-            } else {
-                response.result = result || null;
+        class JSONRPCWebSocket extends JSONRPC {
+            constructor(webSocket) {
+                super();
+
+                this._ws = webSocket;
+                this._ws.onmessage = e => this._onSocketMessage(e);
+                this._ws.onopen = e => this._onSocketOpen(e);
+                this._ws.onclose = e => this._onSocketClose(e);
+                this._ws.onerror = e => this._onSocketError(e);
             }
-            this._sendMessage(response);
-        }
 
-        _handleResponse (json) {
-            const {result, error, id} = json;
-            const openRequest = this._openRequests[id];
-            delete this._openRequests[id];
-            if (error) {
-                openRequest.reject(error);
-            } else {
-                openRequest.resolve(result);
+            dispose() {
+                this._ws.close();
+                this._ws = null;
+            }
+
+            _onSocketOpen(e) {
+                addLine(`WS opened: ${stringify(e)}`);
+            }
+
+            _onSocketClose(e) {
+                addLine(`WS closed: ${stringify(e)}`);
+            }
+
+            _onSocketError(e) {
+                addLine(`WS error: ${stringify(e)}`);
+            }
+
+            _onSocketMessage(e) {
+                addLine(`Received message: ${e.data}`);
+                const json = JSON.parse(e.data);
+                this._handleMessage(json);
+            }
+
+            _sendMessage(message) {
+                const messageText = JSON.stringify(message);
+                addLine(`Sending message: ${messageText}`);
+                this._ws.send(messageText);
             }
         }
 
-        _handleRequest (json) {
-            const {method, params, id} = json;
-            const rawResult = this.didReceiveCall(method, params);
-            if (id != null) {
-                Promise.resolve(rawResult).then(
-                    result => {
-                        this._sendResponse(id, result);
-                    },
-                    error => {
-                        this._sendResponse(id, null, error);
-                    }
-                );
+        class ScratchBLE extends JSONRPCWebSocket {
+            constructor() {
+                super(new WebSocket('ws://localhost:20110/scratch/ble'));
+
+                this.discoveredPeripheralId = null;
             }
-        }
-    }
 
-    class JSONRPCWebSocket extends JSONRPC {
-        constructor (webSocket) {
-            super();
+            requestDevice(options) {
+                return this.sendRemoteRequest('discover', options);
+            }
 
-            this._ws = webSocket;
-            this._ws.onmessage = e => this._onSocketMessage(e);
-            this._ws.onopen = e => this._onSocketOpen(e);
-            this._ws.onclose = e => this._onSocketClose(e);
-            this._ws.onerror = e => this._onSocketError(e);
-        }
-
-        dispose () {
-            this._ws.close();
-            this._ws = null;
-        }
-
-        _onSocketOpen (e) {
-            addLine(`WS opened: ${stringify(e)}`);
-        }
-
-        _onSocketClose (e) {
-            addLine(`WS closed: ${stringify(e)}`);
-        }
-
-        _onSocketError (e) {
-            addLine(`WS error: ${stringify(e)}`);
-        }
-
-        _onSocketMessage (e) {
-            addLine(`Received message: ${e.data}`);
-            const json = JSON.parse(e.data);
-            this._handleMessage(json);
-        }
-
-        _sendMessage (message) {
-            const messageText = JSON.stringify(message);
-            addLine(`Sending message: ${messageText}`);
-            this._ws.send(messageText);
-        }
-    }
-
-    class ScratchBLE extends JSONRPCWebSocket {
-        constructor () {
-            super(new WebSocket('ws://localhost:20110/scratch/ble'));
-        }
-
-        requestDevice (options) {
-            return this.sendRemoteRequest('discover', options);
-        }
-
-        didReceiveCall (method, params) {
-            switch (method) {
+            didReceiveCall(method, params) {
+                switch (method) {
                 case 'didDiscoverPeripheral':
                     addLine(`Peripheral discovered: ${stringify(params)}`);
+                    this.discoveredPeripheralId = params['peripheralId'];
                     break;
                 case 'ping':
                     return 42;
+                }
+            }
+
+            read(serviceId, characteristicId, optStartNotifications = false) {
+                const params = {
+                    serviceId,
+                    characteristicId
+                };
+                if (optStartNotifications) {
+                    params.startNotifications = true;
+                }
+                return this.sendRemoteRequest('read', params);
+            }
+
+            write(serviceId, characteristicId, message, encoding = null) {
+                const params = { serviceId, characteristicId, message };
+                if (encoding) {
+                    params.encoding = encoding;
+                }
+                return this.sendRemoteRequest('write', params);
             }
         }
-    }
 
-    class ScratchBT extends JSONRPCWebSocket {
-        constructor () {
-            super(new WebSocket('ws://localhost:20110/scratch/bt'));
-        }
+        class ScratchBT extends JSONRPCWebSocket {
+            constructor() {
+                super(new WebSocket('ws://localhost:20110/scratch/bt'));
+            }
 
-        requestDevice (options) {
-            return this.sendRemoteRequest('discover', options);
-        }
+            requestDevice(options) {
+                return this.sendRemoteRequest('discover', options);
+            }
 
-        connectDevice (options) {
-            return this.sendRemoteRequest('connect', options);
-        }
+            connectDevice(options) {
+                return this.sendRemoteRequest('connect', options);
+            }
 
-        sendMessage (options) {
-            return this.sendRemoteRequest('send', options);
-        }
+            sendMessage(options) {
+                return this.sendRemoteRequest('send', options);
+            }
 
-        didReceiveCall (method, params) {
-            switch (method) {
-                case 'didDiscoverPeripheral':
-                    addLine(`Peripheral discovered: ${stringify(params)}`);
-                    break;
-                case 'didReceiveMessage':
-                    addLine(`Message received from peripheral: ${stringify(params)}`);
-                    break;
-                default:
-                    return 'nah';
+            didReceiveCall(method, params) {
+                switch (method) {
+                    case 'didDiscoverPeripheral':
+                        addLine(`Peripheral discovered: ${stringify(params)}`);
+                        break;
+                    case 'didReceiveMessage':
+                        addLine(`Message received from peripheral: ${stringify(params)}`);
+                        break;
+                    default:
+                        return 'nah';
+                }
             }
         }
-    }
 
-    self.Scratch = self.Scratch || {};
+        self.Scratch = self.Scratch || {};
 
-    function init () {
-        addLine('Connecting...');
-        self.Scratch.BLE = new ScratchBLE();
-        addLine('Connected.');
-    }
-
-    function initBT () {
-        addLine('Connecting...');
-        self.Scratch.BT = new ScratchBT();
-        addLine('Connected.');
-    }
-
-    function go() {
-        Scratch.BLE.requestDevice({
-            filters: [
-                { services: ['4cdbbd87-d6e6-46c2-9d0b-df87551e159a'] },
-                { services: ['continuous_glucose_monitoring', 'mesh_proxy'] },
-                { name: 'wholeName' },
-                { namePrefix: 'prefixOfName' }
-            ],
-            optionalServices: ['battery_service']
-        }).then(
-            x => {
-                addLine(`requestDevice resolved to: ${stringify(x)}`);
-            },
-            e => {
-                addLine(`requestDevice rejected with: ${stringify(e)}`);
+        function attachFunctionToButton(buttonId, func) {
+            const button = document.getElementById(buttonId);
+            button.onclick = () => {
+                try {
+                    func();
+                } catch (e) {
+                    addLine(`Button ${buttonId} caught exception: ${stringify(e)})`);
+                }
             }
-        );
-    }
+        }
 
-    function goBT () {
-        Scratch.BT.requestDevice({
-            majorDeviceClass: 8,
-            minorDeviceClass: 1
-        }).then(
-            x => {
-                addLine(`requestDevice resolved to: ${stringify(x)}`);
-            },
-            e => {
-                addLine(`requestDevice rejected with: ${stringify(e)}`);
+        function initBLE() {
+            addLine('Connecting...');
+            self.Scratch.BLE = new ScratchBLE();
+            addLine('Connected.');
+        }
+
+        function pingBLE() {
+            Scratch.BLE.sendRemoteRequest('pingMe').then(
+                x => {
+                    addLine(`Ping request resolved with: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`Ping request rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function discoverBLE() {
+            Scratch.BLE.requestDevice({
+                filters: [
+                    { services: [0xf005] } // micro:bit
+                ]
+            }).then(
+                x => {
+                    addLine(`requestDevice resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`requestDevice rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function connectBLE() {
+            // this should really be implicit in `requestDevice` but splitting it out helps with debugging
+            Scratch.BLE.sendRemoteRequest(
+                'connect',
+                { peripheralId: Scratch.BLE.discoveredPeripheralId }
+            ).then(
+                x => {
+                    addLine(`connect resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`connect rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function readBLE() {
+            Scratch.BLE.read(0xf005, '5261da01-fa7e-42ab-850b-7c80220097cc', true).then(
+                x => {
+                    addLine(`read resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`read rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function writeBLE() {
+            Scratch.BLE.write(0xf005, '5261da03-fa7e-42ab-850b-7c80220097cc', 'LINK').then(
+                x => {
+                    addLine(`write resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`write rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        attachFunctionToButton('initBLE', initBLE);
+        attachFunctionToButton('pingBLE', pingBLE);
+        attachFunctionToButton('discoverBLE', discoverBLE);
+        attachFunctionToButton('connectBLE', connectBLE);
+        attachFunctionToButton('readBLE', readBLE);
+        attachFunctionToButton('writeBLE', writeBLE);
+
+
+        function initBT() {
+            addLine('Connecting...');
+            self.Scratch.BT = new ScratchBT();
+            addLine('Connected.');
+        }
+
+        function goBT() {
+            Scratch.BT.requestDevice({
+                majorDeviceClass: 8,
+                minorDeviceClass: 1
+            }).then(
+                x => {
+                    addLine(`requestDevice resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`requestDevice rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function connect(peripheralId) {
+            Scratch.BT.connectDevice({
+                peripheralId: peripheralId
+            }).then(
+                x => {
+                    addLine(`connectDevice resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`connectDevice rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function sendMessage(message) {
+            Scratch.BT.sendMessage({
+                message: message,
+                encoding: 'base64'
+            }).then(
+                x => {
+                    addLine(`sendMessage resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`sendMessage rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function stringify(o) {
+            return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
+        }
+
+        const follow = document.getElementById('follow');
+        const log = document.getElementById('log');
+
+        const goBTButton = document.getElementById('goBT');
+        goBTButton.onclick = () => {
+            try {
+                goBT();
+            } catch (e) {
+                addLine(`Go BT button caught exception: ${stringify(e)}`);
             }
-        );
-    }
+        };
 
-    function requestPing() {
-        Scratch.BLE.sendRemoteRequest('pingMe').then(
-            x => {
-                addLine(`Ping request resolved with: ${stringify(x)}`);
-            },
-            e => {
-                addLine(`Ping request rejected with: ${stringify(e)}`);
+        const initBTButton = document.getElementById('initBT');
+        initBTButton.onclick = () => {
+            try {
+                initBT();
+            } catch (e) {
+                addLine(`Init BT button caught exception: ${stringify(e)}`);
             }
-        );
-    }
+        };
 
-    function connect (peripheralId) {
-        Scratch.BT.connectDevice({
-            peripheralId: peripheralId
-        }).then(
-            x => {
-                addLine(`connectDevice resolved to: ${stringify(x)}`);
-            },
-            e => {
-                addLine(`connectDevice rejected with: ${stringify(e)}`);
+        const connectButton = document.getElementById('connect');
+        connectButton.onclick = () => {
+            try {
+                const peripheralId = document.getElementById('peripheralId');
+                connect(peripheralId.value);
+            } catch (e) {
+                addLine(`Connect button caught exception: ${stringify(e)}`);
             }
-        );
-    }
+        };
 
-    function sendMessage (message) {
-        Scratch.BT.sendMessage({
-            message: message,
-            encoding: 'base64'
-        }).then(
-            x => {
-                addLine(`sendMessage resolved to: ${stringify(x)}`);
-            },
-            e => {
-                addLine(`sendMessage rejected with: ${stringify(e)}`);
+        const sendButton = document.getElementById('send');
+        sendButton.onclick = () => {
+            try {
+                const data = document.getElementById('messageBody');
+                sendMessage(data.value);
+            } catch (e) {
+                addLine(`Send button caught exception: ${stringify(e)}`);
             }
-        );
-    }
-
-    function stringify(o) {
-        return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
-    }
-
-    const follow = document.getElementById('follow');
-    const log = document.getElementById('log');
-
-    const goButton = document.getElementById('go');
-    goButton.onclick = () => {
-        try {
-            go();
-        } catch (e) {
-            addLine(`Go button caught exception: ${stringify(e)}`);
         }
-    };
 
-    const goBTButton = document.getElementById('goBT');
-    goBTButton.onclick = () => {
-        try {
-            goBT();
-        } catch (e) {
-            addLine(`Go BT button caught exception: ${stringify(e)}`);
+        const closeButton = document.getElementById('closeBT');
+        closeButton.onclick = () => {
+            self.Scratch.BT.dispose();
         }
-    };
 
-    const initButton = document.getElementById('init');
-    initButton.onclick = () => {
-        try {
-            init();
-        } catch (e) {
-            addLine(`Init button caught exception: ${stringify(e)}`);
+        function addLine(text) {
+            log.innerHTML += `${text}\n`;
+            if (follow.checked) {
+                log.scrollTop = log.scrollHeight;
+            }
         }
-    };
-
-    const initBTButton = document.getElementById('initBT');
-    initBTButton.onclick = () => {
-        try {
-            initBT();
-        } catch (e) {
-            addLine(`Init BT button caught exception: ${stringify(e)}`);
-        }
-    };
-
-    const pingButton = document.getElementById('ping');
-    pingButton.onclick = () => {
-        try {
-            requestPing();
-        } catch (e) {
-            addLine(`Ping button caught exception: ${stringify(e)}`);
-        }
-    };
-
-    const connectButton = document.getElementById('connect');
-    connectButton.onclick = () => {
-        try {
-            const peripheralId = document.getElementById('peripheralId');
-            connect(peripheralId.value);
-        } catch (e) {
-            addLine(`Connect button caught exception: ${stringify(e)}`);
-        }
-    };
-
-    const sendButton = document.getElementById('send');
-    sendButton.onclick = () => {
-        try {
-            const data = document.getElementById('messageBody');
-            sendMessage(data.value);
-        } catch (e) {
-            addLine(`Send button caught exception: ${stringify(e)}`);
-        }
-    }
-
-    const closeButton = document.getElementById('closeBT');
-    closeButton.onclick = () => {
-        self.Scratch.BT.dispose();
-    }
-
-    function addLine(text) {
-        log.innerHTML += `${text}\n`;
-        if (follow.checked) {
-            log.scrollTop = log.scrollHeight;
-        }
-    }
-
-</script>
+    </script>
+</body>
 </html>
