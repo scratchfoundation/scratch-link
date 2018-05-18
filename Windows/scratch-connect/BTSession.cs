@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.Rfcomm;
 using Windows.Devices.Enumeration;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
@@ -38,14 +38,27 @@ namespace scratch_connect
         private const string EV3PairingCode = "1234";
 
         private DeviceWatcher _watcher;
-        private readonly List<DeviceInformation> _devices;
         private StreamSocket _connectedSocket;
         private DataWriter _socketWriter;
         private DataReader _socketReader;
 
         internal BTSession(WebSocket webSocket) : base(webSocket)
         {
-            _devices = new List<DeviceInformation>();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (_watcher != null &&
+                (_watcher.Status == DeviceWatcherStatus.Started ||
+                 _watcher.Status == DeviceWatcherStatus.EnumerationCompleted))
+            {
+                _watcher.Stop();
+            }
+            if (_connectedSocket != null)
+            {
+                CloseConnection();
+            }
         }
 
         protected override async Task DidReceiveCall(string method, JObject parameters,
@@ -58,11 +71,11 @@ namespace scratch_connect
                     await completion(null, null);
                     break;
                 case "connect":
-                    if (_watcher.Status == DeviceWatcherStatus.Started)
+                    if (_watcher != null && _watcher.Status == DeviceWatcherStatus.Started)
                     {
                         _watcher.Stop();
                     }
-                    Connect(parameters);
+                    await Connect(parameters);
                     await completion(null, null);
                     break;
                 case "send":
@@ -95,8 +108,6 @@ namespace scratch_connect
                     BluetoothAddressPropertyName
                 });
                 _watcher.Added += PeripheralDiscovered;
-                _watcher.Removed += PeripheralLost;
-                _watcher.Updated += PeripheralUpdated;
                 _watcher.EnumerationCompleted += EnumerationCompleted;
                 _watcher.Stopped += EnumerationStopped;
                 _watcher.Start();
@@ -107,16 +118,27 @@ namespace scratch_connect
             }
         }
 
-        private async void Connect(JObject parameters)
+        private async Task Connect(JObject parameters)
         {
+            if (_connectedSocket?.Information.RemoteHostName != null)
+            {
+                throw JsonRpcException.InvalidRequest("Already connected");
+            }
             var id = parameters["peripheralId"]?.ToObject<string>();
             var address = Convert.ToUInt64(id, 16);
             var bluetoothDevice = await BluetoothDevice.FromBluetoothAddressAsync(address);
             if (!bluetoothDevice.DeviceInformation.Pairing.IsPaired)
             {
-                await Pair(bluetoothDevice);
+                var pairingResult = await Pair(bluetoothDevice);
+                if (pairingResult != DevicePairingResultStatus.Paired &&
+                    pairingResult != DevicePairingResultStatus.AlreadyPaired)
+                {
+                    throw JsonRpcException.ApplicationError("Could not automatically pair with peripheral");
+                }
             }
-            var services = await bluetoothDevice.GetRfcommServicesAsync(BluetoothCacheMode.Uncached);
+
+            var services = await bluetoothDevice.GetRfcommServicesForIdAsync(RfcommServiceId.SerialPort,
+                BluetoothCacheMode.Uncached);
             if (services.Services.Count > 0)
             {
                 _connectedSocket = new StreamSocket();
@@ -132,20 +154,22 @@ namespace scratch_connect
             }
         }
 
-        private async Task Pair(BluetoothDevice bluetoothDevice)
+        private async Task<DevicePairingResultStatus> Pair(BluetoothDevice bluetoothDevice)
         {
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
             var pairingResult =
                 await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(DevicePairingKinds.ProvidePin);
-            if (!(pairingResult.Status == DevicePairingResultStatus.Paired ||
-                pairingResult.Status == DevicePairingResultStatus.AlreadyPaired))
-            {
-                throw JsonRpcException.ApplicationError("Could not automatically pair with peripheral");
-            }
+            bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested -= CustomOnPairingRequested;
+            return pairingResult.Status;
         }
 
         private async Task<JToken> SendMessage(JObject parameters)
         {
+            if (_socketWriter == null)
+            {
+                throw JsonRpcException.InvalidRequest("Not connected to peripheral");
+            }
+
             var message = parameters["message"]?.ToObject<string>();
             var encoding = parameters["encoding"]?.ToObject<string>();
             if (string.IsNullOrEmpty(message))
@@ -157,40 +181,64 @@ namespace scratch_connect
                 throw JsonRpcException.InvalidParams("encoding must be base64"); // negotiable
             }
             var data = Convert.FromBase64String(message);
-            _socketWriter.WriteBytes(data);
-            await _socketWriter.StoreAsync();
+
+            try
+            {
+                _socketWriter.WriteBytes(data);
+                await _socketWriter.StoreAsync();
+            }
+            catch (ObjectDisposedException)
+            {
+                throw JsonRpcException.InvalidRequest("Not connected to peripheral");
+            }
             return data.Length;
         }
 
         private async void ListenForMessages()
         {
-            while (true)
+            try
             {
-                await _socketReader.LoadAsync(sizeof(UInt16));
-                var messageSize = _socketReader.ReadUInt16();
-                var headerBytes = BitConverter.GetBytes(messageSize);
-
-                var messageBytes = new byte[messageSize];
-                await _socketReader.LoadAsync(messageSize);
-                _socketReader.ReadBytes(messageBytes);
-
-                var totalBytes = new byte[headerBytes.Length + messageSize];
-                Array.Copy(headerBytes, totalBytes, headerBytes.Length);
-                Array.Copy(messageBytes, 0, totalBytes, headerBytes.Length, messageSize);
-                var message = Convert.ToBase64String(totalBytes);
-
-                var parameters = new JObject
+                while (true)
                 {
-                    new JProperty("message", message),
-                    new JProperty("encoding", "base64")
-                };
-                SendRemoteRequest("didReceiveMessage", parameters);
+                    await _socketReader.LoadAsync(sizeof(UInt16));
+                    var messageSize = _socketReader.ReadUInt16();
+                    var headerBytes = BitConverter.GetBytes(messageSize);
+
+                    var messageBytes = new byte[messageSize];
+                    await _socketReader.LoadAsync(messageSize);
+                    _socketReader.ReadBytes(messageBytes);
+
+                    var totalBytes = new byte[headerBytes.Length + messageSize];
+                    Array.Copy(headerBytes, totalBytes, headerBytes.Length);
+                    Array.Copy(messageBytes, 0, totalBytes, headerBytes.Length, messageSize);
+                    var message = Convert.ToBase64String(totalBytes);
+
+                    var parameters = new JObject
+                    {
+                        new JProperty("message", message),
+                        new JProperty("encoding", "base64")
+                    };
+                    SendRemoteRequest("didReceiveMessage", parameters);
+                }
             }
+            catch (Exception e)
+            {
+                Debug.Print($"Closing connection to peripheral: {e.Message}");
+                CloseConnection();
+            }
+        }
+
+        private void CloseConnection()
+        {
+            _socketReader.Dispose();
+            _socketWriter.Dispose();
+            _connectedSocket.Dispose();
         }
 
         #region Custom Pairing Event Handlers
 
-        private void CustomOnPairingRequested(DeviceInformationCustomPairing sender, DevicePairingRequestedEventArgs args)
+        private void CustomOnPairingRequested(DeviceInformationCustomPairing sender,
+            DevicePairingRequestedEventArgs args)
         {
             args.Accept(EV3PairingCode);
         }
@@ -202,15 +250,13 @@ namespace scratch_connect
         async void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
             if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
-                || (bool)isPresent == false)
+                || isPresent == null || (bool)isPresent == false)
             {
                 return;
             }
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
             var peripheralId = ((string) address)?.Replace(":", "");
-
-            _devices.Add(deviceInformation);
 
             var peripheralInfo = new JObject
             {
@@ -220,23 +266,6 @@ namespace scratch_connect
             };
 
             SendRemoteRequest("didDiscoverPeripheral", peripheralInfo);
-        }
-
-        async void PeripheralUpdated(DeviceWatcher sender, DeviceInformationUpdate deviceUpdate)
-        {
-            foreach (var device in _devices)
-            {
-                if (device.Id == deviceUpdate.Id)
-                {
-                    device.Update(deviceUpdate);
-                }
-            }
-        }
-
-        async void PeripheralLost(DeviceWatcher sender, DeviceInformationUpdate deviceUpdate)
-        {
-            var index = _devices.IndexOf(_devices.FirstOrDefault(d => d.Id == deviceUpdate.Id));
-            _devices.RemoveAt(index);
         }
 
         async void EnumerationCompleted(DeviceWatcher sender, object args)
@@ -255,10 +284,9 @@ namespace scratch_connect
                 Debug.Print("Enumeration stopped.");
             }
             _watcher.Added -= PeripheralDiscovered;
-            _watcher.Removed -= PeripheralLost;
-            _watcher.Updated -= PeripheralUpdated;
             _watcher.EnumerationCompleted -= EnumerationCompleted;
             _watcher.Stopped -= EnumerationStopped;
+            _watcher = null;
         }
 
         #endregion
