@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Enumeration;
 using Windows.Networking.Sockets;
+using Windows.Storage.Streams;
 
 namespace scratch_connect
 {
@@ -39,6 +40,8 @@ namespace scratch_connect
         private DeviceWatcher _watcher;
         private readonly List<DeviceInformation> _devices;
         private StreamSocket _connectedSocket;
+        private DataWriter _socketWriter;
+        private DataReader _socketReader;
 
         internal BTSession(WebSocket webSocket) : base(webSocket)
         {
@@ -61,6 +64,9 @@ namespace scratch_connect
                     }
                     Connect(parameters);
                     await completion(null, null);
+                    break;
+                case "send":
+                    await completion(await SendMessage(parameters), null);
                     break;
                 default:
                     throw JsonRpcException.MethodNotFound(method);
@@ -116,6 +122,9 @@ namespace scratch_connect
                 _connectedSocket = new StreamSocket();
                 await _connectedSocket.ConnectAsync(services.Services[0].ConnectionHostName,
                     services.Services[0].ConnectionServiceName);
+                _socketWriter = new DataWriter(_connectedSocket.OutputStream);
+                _socketReader = new DataReader(_connectedSocket.InputStream) {ByteOrder = ByteOrder.LittleEndian};
+                ListenForMessages();
             }
             else
             {
@@ -135,7 +144,51 @@ namespace scratch_connect
             }
         }
 
-        #region Custom Pairing Events
+        private async Task<JToken> SendMessage(JObject parameters)
+        {
+            var message = parameters["message"]?.ToObject<string>();
+            var encoding = parameters["encoding"]?.ToObject<string>();
+            if (string.IsNullOrEmpty(message))
+            {
+                throw JsonRpcException.InvalidParams("message is required");
+            }
+            if (!string.IsNullOrEmpty(encoding) && encoding != "base64")
+            {
+                throw JsonRpcException.InvalidParams("encoding must be base64"); // negotiable
+            }
+            var data = Convert.FromBase64String(message);
+            _socketWriter.WriteBytes(data);
+            await _socketWriter.StoreAsync();
+            return data.Length;
+        }
+
+        private async void ListenForMessages()
+        {
+            while (true)
+            {
+                await _socketReader.LoadAsync(sizeof(UInt16));
+                var messageSize = _socketReader.ReadUInt16();
+                var headerBytes = BitConverter.GetBytes(messageSize);
+
+                var messageBytes = new byte[messageSize];
+                await _socketReader.LoadAsync(messageSize);
+                _socketReader.ReadBytes(messageBytes);
+
+                var totalBytes = new byte[headerBytes.Length + messageSize];
+                Array.Copy(headerBytes, totalBytes, headerBytes.Length);
+                Array.Copy(messageBytes, 0, totalBytes, headerBytes.Length, messageSize);
+                var message = Convert.ToBase64String(totalBytes);
+
+                var parameters = new JObject
+                {
+                    new JProperty("message", message),
+                    new JProperty("encoding", "base64")
+                };
+                SendRemoteRequest("didReceiveMessage", parameters);
+            }
+        }
+
+        #region Custom Pairing Event Handlers
 
         private void CustomOnPairingRequested(DeviceInformationCustomPairing sender, DevicePairingRequestedEventArgs args)
         {
@@ -144,7 +197,7 @@ namespace scratch_connect
 
         #endregion
 
-        #region DeviceWatcher Events
+        #region DeviceWatcher Event Handlers
 
         async void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
