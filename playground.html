@@ -25,16 +25,17 @@
         <legend>BT / EV3</legend>
         <div>
             <button id="initBT">Connect to app (BT)</button>
-            <button id="goBT">Do a (BT) thing!</button>
+            <button id="discoverBT">Find BT devices</button>
             <button id="closeBT">Goodbye</button>
         </div>
         <div>
             <input id="peripheralId" value="0016533d0504" type="text" placeholder="Peripheral id">
-            <button id="connect">Make friends!</button>
+            <button id="connectBT">Make friends</button>
         </div>
         <div>
-            <input id="messageBody" value="DwAAAIAAAJQBgQKC6AOC6AM=" type="text" placeholder="data">
+            <input id="messageBody" style="width:20em;" value="DQAAAAAEAJkdAAAAAgFg" type="text" placeholder="data">
             <button id="send">Converse!</button>
+            <button id="beep">Yell</button>
         </div>
     </fieldset>
     <script>
@@ -365,7 +366,7 @@
             addLine('Connected.');
         }
 
-        function goBT() {
+        function discoverBT() {
             Scratch.BT.requestDevice({
                 majorDeviceClass: 8,
                 minorDeviceClass: 1
@@ -379,9 +380,9 @@
             );
         }
 
-        function connect(peripheralId) {
+        function connectBT() {
             Scratch.BT.connectDevice({
-                peripheralId: peripheralId
+                peripheralId: document.getElementById('peripheralId').value
             }).then(
                 x => {
                     addLine(`connectDevice resolved to: ${stringify(x)}`);
@@ -394,7 +395,7 @@
 
         function sendMessage(message) {
             Scratch.BT.sendMessage({
-                message: message,
+                message: document.getElementById('messageBody').value,
                 encoding: 'base64'
             }).then(
                 x => {
@@ -406,6 +407,20 @@
             );
         }
 
+        function beep() {
+            Scratch.BT.sendMessage({
+                message: 'DwAAAIAAAJQBgQKC6AOC6AM=',
+                encoding: 'base64'
+            }).then(
+                x => {
+                    addLine(`sendMessage resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`sendMessage rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+        
         function stringify(o) {
             return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
         }
@@ -413,48 +428,16 @@
         const follow = document.getElementById('follow');
         const log = document.getElementById('log');
 
-        const goBTButton = document.getElementById('goBT');
-        goBTButton.onclick = () => {
-            try {
-                goBT();
-            } catch (e) {
-                addLine(`Go BT button caught exception: ${stringify(e)}`);
-            }
-        };
-
-        const initBTButton = document.getElementById('initBT');
-        initBTButton.onclick = () => {
-            try {
-                initBT();
-            } catch (e) {
-                addLine(`Init BT button caught exception: ${stringify(e)}`);
-            }
-        };
-
-        const connectButton = document.getElementById('connect');
-        connectButton.onclick = () => {
-            try {
-                const peripheralId = document.getElementById('peripheralId');
-                connect(peripheralId.value);
-            } catch (e) {
-                addLine(`Connect button caught exception: ${stringify(e)}`);
-            }
-        };
-
-        const sendButton = document.getElementById('send');
-        sendButton.onclick = () => {
-            try {
-                const data = document.getElementById('messageBody');
-                sendMessage(data.value);
-            } catch (e) {
-                addLine(`Send button caught exception: ${stringify(e)}`);
-            }
-        }
-
         const closeButton = document.getElementById('closeBT');
         closeButton.onclick = () => {
             self.Scratch.BT.dispose();
         }
+
+        attachFunctionToButton('initBT', initBT);
+        attachFunctionToButton('discoverBT', discoverBT);
+        attachFunctionToButton('connectBT', connectBT);
+        attachFunctionToButton('send', sendMessage);
+        attachFunctionToButton('beep', beep);
 
         function addLine(text) {
             log.innerHTML += `${text}\n`;
