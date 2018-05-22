@@ -20,7 +20,7 @@ struct GATTBlockListStatus: OptionSet {
     ///   - service: A short UUID in integer form, a full UUID string, or an assigned number's name
     /// - returns: a UUID on success
     /// - throws: a JSONRpcError on failure
-    public static func GetUUID(forService service: Any) throws -> UUID {
+    public static func GetUUID(forService service: Any) throws -> CBUUID {
         return try ResolveUUID(fromName: service, withTable: AssignedServices)
     }
 
@@ -31,7 +31,7 @@ struct GATTBlockListStatus: OptionSet {
     ///   - service: A short UUID in integer form, a full UUID string, or an assigned number's name
     /// - returns: a UUID on success
     /// - throws: a JSONRpcError on failure
-    public static func GetUUID(forCharacteristic characteristic: Any) throws -> UUID {
+    public static func GetUUID(forCharacteristic characteristic: Any) throws -> CBUUID {
         return try ResolveUUID(fromName: characteristic, withTable: AssignedCharacteristics)
     }
 
@@ -45,7 +45,8 @@ struct GATTBlockListStatus: OptionSet {
     ///   - assignedNumbers: The table of assigned numbers to resolve integer names
     /// - returns: a UUID on success
     /// - throws: a JSONRpcError on failure
-    public static func ResolveUUID(fromName name: Any, withTable assignedNumbers: AssignedNumbersTable) throws -> UUID {
+    public static func ResolveUUID(
+            fromName name: Any, withTable assignedNumbers: AssignedNumbersTable) throws -> CBUUID {
         if let shortServiceNum = name as? uint32 {
             return CanonicalUUID(fromAlias: shortServiceNum)
         }
@@ -54,12 +55,7 @@ struct GATTBlockListStatus: OptionSet {
             if let validUuidRegex = try? NSRegularExpression(
                     pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") {
                 if validUuidRegex.numberOfMatches(in: nameString, range: NSMakeRange(0, nameString.count)) > 0 {
-                    if let result = UUID(uuidString: nameString) {
-                        return result
-                    } else {
-                        // This should never happen
-                        print("UUID failed to parse despite passing regex")
-                    }
+                    return CBUUID(string: nameString)
                 }
                 // else it's not a UUID string so continue below
             } else {
@@ -81,22 +77,22 @@ struct GATTBlockListStatus: OptionSet {
     /// - parameters:
     ///   - alias: A 16- or 32-bit UUID alias
     /// - returns: The associated canonical UUID
-    public static func CanonicalUUID(fromAlias alias: uint32) -> UUID {
-        let uuidRaw: uuid_t = (
+    public static func CanonicalUUID(fromAlias alias: uint32) -> CBUUID {
+        let uuidBytes: [uint8] = [
                 uint8((alias >> 24) & 0xff),
                 uint8((alias >> 16) & 0xff),
                 uint8((alias >> 8) & 0xff),
                 uint8(alias & 0xff),
                 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb
-        )
-        return UUID(uuid: uuidRaw)
+        ]
+        return CBUUID(data: Data(bytes: uuidBytes))
     }
 
     /// Check if a service, characteristic, or descriptor is blocked.
     /// - parameters:
     ///   - uuid: the UUID of a service, characteristic, or descriptor
     /// - returns: the status of the UUID on the block-list, or "Included" if it is not blocked.
-    public static func GetBlockListStatus(ofUUID uuid: UUID) -> GATTBlockListStatus {
+    public static func GetBlockListStatus(ofUUID uuid: CBUUID) -> GATTBlockListStatus {
         return BlockList[uuid] ?? .Include
     }
 
@@ -369,12 +365,12 @@ struct GATTBlockListStatus: OptionSet {
     /// [the Web Bluetooth Registries repository](https://github.com/WebBluetoothCG/registries) for more information.
     ///
     /// Collected from https://github.com/WebBluetoothCG/registries @ 693db2fe6050bee27d198e1584d11fc2732cdbd8
-    private static let BlockList: [UUID: GATTBlockListStatus] = [
+    private static let BlockList: [CBUUID: GATTBlockListStatus] = [
         // Services
 
         // org.bluetooth.service.human_interface_device
         // Direct access to HID devices like keyboards would let web pages become keyloggers.
-        UUID(uuidString: "00001812-0000-1000-8000-00805f9b34fb")!: .Exclude,
+        CBUUID(string: "00001812-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // Firmware update services that don't check the update's signature present a risk of devices'
         // software being modified by malicious web pages. Users may connect to a device believing they are
@@ -383,46 +379,46 @@ struct GATTBlockListStatus: OptionSet {
 
         // Nordic's Legacy Device Firmware Update service,
         // http://infocenter.nordicsemi.com/topic/com.nordic.infocenter.sdk5.v11.0.0/examples_ble_dfu.html
-        UUID(uuidString:"00001530-1212-efde-1523-785feabcd123")!: .Exclude,
+        CBUUID(string:"00001530-1212-efde-1523-785feabcd123"): .Exclude,
 
         // TI's Over-the-Air Download service, http://www.ti.com/lit/ug/swru271g/swru271g.pdf
-        UUID(uuidString:"f000ffc0-0451-4000-b000-000000000000")!: .Exclude,
+        CBUUID(string:"f000ffc0-0451-4000-b000-000000000000"): .Exclude,
 
         // Cypress's Bootloader service.
         // Documentation at http://www.cypress.com/file/175561/download requires an account.
         // Linked as CYPRESS BOOTLOADER SERVICE_001-97547.pdf from
         // http://www.cypress.com/documentation/software-and-drivers/cypresss-custom-ble-profiles-and-services
-        UUID(uuidString:"00060000-0000-1000-8000-00805f9b34fb")!: .Exclude,
+        CBUUID(string:"00060000-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // The FIDO Bluetooth Specification at
         // https://fidoalliance.org/specs/fido-u2f-bt-protocol-id-20150514.pdf
         // section 6.7.1 "Bluetooth pairing: Client considerations" warns that system-wide pairing poses
         // security risks. Specifically, a website could use raw GATT commands to impersonate another website
         // to the FIDO device.
-        UUID(uuidString:"0000fffd-0000-1000-8000-00805f9b34fb")!: .Exclude,
+        CBUUID(string:"0000fffd-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // Characteristics
 
         // org.bluetooth.characteristic.gap.peripheral_privacy_flag
         // Don't let web pages turn off privacy mode.
-        UUID(uuidString:"00002a02-0000-1000-8000-00805f9b34fb")!: .ExcludeWrites,
+        CBUUID(string:"00002a02-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
 
         // org.bluetooth.characteristic.gap.reconnection_address
         // Disallow messing with connection parameters
-        UUID(uuidString:"00002a03-0000-1000-8000-00805f9b34fb")!: .Exclude,
+        CBUUID(string:"00002a03-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // org.bluetooth.characteristic.serial_number_string
         // Block access to standardized unique identifiers, for privacy reasons.
-        UUID(uuidString:"00002a25-0000-1000-8000-00805f9b34fb")!: .Exclude,
+        CBUUID(string:"00002a25-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // Descriptors
 
         // org.bluetooth.descriptor.gatt.client_characteristic_configuration
         // Writing to this would let a web page interfere with other pages' notifications and indications.
-        UUID(uuidString:"00002902-0000-1000-8000-00805f9b34fb")!: .ExcludeWrites,
+        CBUUID(string:"00002902-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
 
         // org.bluetooth.descriptor.gatt.server_characteristic_configuration
         // Writing to this would let a web page interfere with the broadcasted services.
-        UUID(uuidString:"00002903-0000-1000-8000-00805f9b34fb")!: .ExcludeWrites,
+        CBUUID(string:"00002903-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
     ]
 }
