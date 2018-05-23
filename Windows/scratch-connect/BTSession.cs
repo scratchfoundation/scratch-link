@@ -170,18 +170,7 @@ namespace scratch_connect
                 throw JsonRpcException.InvalidRequest("Not connected to peripheral");
             }
 
-            var message = parameters["message"]?.ToObject<string>();
-            var encoding = parameters["encoding"]?.ToObject<string>();
-            if (string.IsNullOrEmpty(message))
-            {
-                throw JsonRpcException.InvalidParams("message is required");
-            }
-            if (!string.IsNullOrEmpty(encoding) && encoding != "base64")
-            {
-                throw JsonRpcException.InvalidParams("encoding must be base64"); // negotiable
-            }
-            var data = Convert.FromBase64String(message);
-
+            var data = EncodingHelpers.DecodeBuffer(parameters);
             try
             {
                 _socketWriter.WriteBytes(data);
@@ -211,13 +200,8 @@ namespace scratch_connect
                     var totalBytes = new byte[headerBytes.Length + messageSize];
                     Array.Copy(headerBytes, totalBytes, headerBytes.Length);
                     Array.Copy(messageBytes, 0, totalBytes, headerBytes.Length, messageSize);
-                    var message = Convert.ToBase64String(totalBytes);
 
-                    var parameters = new JObject
-                    {
-                        new JProperty("message", message),
-                        new JProperty("encoding", "base64")
-                    };
+                    var parameters = EncodingHelpers.EncodeBuffer(totalBytes, "base64");
                     SendRemoteRequest("didReceiveMessage", parameters);
                 }
             }
