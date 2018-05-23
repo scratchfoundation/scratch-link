@@ -11,6 +11,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
     private var filters: [BLEScanFilter]?
     private var optionalServices: Set<CBUUID>?
     private var reportedPeripherals: Set<CBUUID>?
+    private var allowedServices: Set<CBUUID>?
 
     enum BluetoothError: Error {
         case NotReady
@@ -69,6 +70,13 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
             newOptionalServices = nil
         }
 
+        var newAllowedServices = Set<CBUUID>(newOptionalServices ?? [])
+        for filter in newFilters {
+            if let filterServices = filter.RequiredServices {
+                newAllowedServices.formUnion(filterServices)
+            }
+        }
+
         // TODO: wait for ready?
         if !isReady {
             throw BluetoothError.NotReady
@@ -76,8 +84,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
 
         filters = newFilters
         optionalServices = newOptionalServices
+        allowedServices = newAllowedServices
         reportedPeripherals = Set<CBUUID>()
-        central.scanForPeripherals(withServices: nil)
+        central.scanForPeripherals(withServices: [CBUUID](allowedServices!))
     }
 
     // Work around bug(?) in 10.13 SDK
@@ -97,7 +106,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
             return
         }
 
-        if filters?.contains(where: { return $0.matches(peripheral) }) != true {
+        if filters?.contains(where: { return $0.matches(peripheral, advertisementData) }) != true {
             // no passing filters
             return
         }
@@ -170,7 +179,7 @@ struct BLEScanFilter {
     }
 
     // See https://webbluetoothcg.github.io/web-bluetooth/#matches-a-filter
-    public func matches(_ peripheral: CBPeripheral) -> Bool {
+    public func matches(_ peripheral: CBPeripheral, _ advertisementData: [String: Any]) -> Bool {
         if let peripheralName = peripheral.name {
             if let name = Name, !name.isEmpty, peripheralName != name {
                 // peripheral name doesn't match filter name
@@ -189,12 +198,14 @@ struct BLEScanFilter {
         }
 
         if let required = RequiredServices, !required.isEmpty {
-            if let available = peripheral.services?.map({$0.uuid}) {
-                return required.isSubset(of: available)
-            } else {
-                // we have required services but no available services
-                return false
+            var available = Set<CBUUID>()
+            if let services = peripheral.services {
+                available.formUnion(services.map{$0.uuid})
             }
+            if let serviceUUIDs = advertisementData["kCBAdvDataServiceUUIDs"] as? [CBUUID] {
+                available.formUnion(serviceUUIDs)
+            }
+            return required.isSubset(of: available)
         }
 
         return true
