@@ -382,7 +382,8 @@
 
         function connectBT() {
             Scratch.BT.connectDevice({
-                peripheralId: document.getElementById('peripheralId').value
+                peripheralId: document.getElementById('peripheralId').value,
+                pin: "1234"
             }).then(
                 x => {
                     addLine(`connectDevice resolved to: ${stringify(x)}`);

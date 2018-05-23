@@ -33,9 +33,9 @@ namespace scratch_connect
         private const string BluetoothAddressPropertyName = "System.Devices.Aep.DeviceAddress";
 
         /// <summary>
-        /// PIN code expected to pair with EV3
+        /// PIN code for auto-pairing
         /// </summary>
-        private const string EV3PairingCode = "1234";
+        private string _pairingCode = "0000";
 
         private DeviceWatcher _watcher;
         private StreamSocket _connectedSocket;
@@ -129,6 +129,10 @@ namespace scratch_connect
             var bluetoothDevice = await BluetoothDevice.FromBluetoothAddressAsync(address);
             if (!bluetoothDevice.DeviceInformation.Pairing.IsPaired)
             {
+                if (parameters.TryGetValue("pin", out var pin))
+                {
+                    _pairingCode = (string) pin;
+                }
                 var pairingResult = await Pair(bluetoothDevice);
                 if (pairingResult != DevicePairingResultStatus.Paired &&
                     pairingResult != DevicePairingResultStatus.AlreadyPaired)
@@ -157,8 +161,9 @@ namespace scratch_connect
         private async Task<DevicePairingResultStatus> Pair(BluetoothDevice bluetoothDevice)
         {
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
-            var pairingResult =
-                await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(DevicePairingKinds.ProvidePin);
+            var pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
+                DevicePairingKinds.ProvidePin | DevicePairingKinds.ConfirmOnly |
+                DevicePairingKinds.ConfirmPinMatch | DevicePairingKinds.DisplayPin);
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested -= CustomOnPairingRequested;
             return pairingResult.Status;
         }
@@ -224,7 +229,15 @@ namespace scratch_connect
         private void CustomOnPairingRequested(DeviceInformationCustomPairing sender,
             DevicePairingRequestedEventArgs args)
         {
-            args.Accept(EV3PairingCode);
+            switch (args.PairingKind)
+            {
+                case DevicePairingKinds.ProvidePin:
+                    args.Accept(_pairingCode);
+                    break;
+                default:
+                    args.Accept();
+                    break;
+            }
         }
 
         #endregion
