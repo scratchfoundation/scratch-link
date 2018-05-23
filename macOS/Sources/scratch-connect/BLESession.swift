@@ -18,6 +18,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     private var connectedPeripheral: CBPeripheral?
     private var connectionCompletion: JSONRPCCompletionHandler?
 
+    typealias CharacteristicDiscoveryCompletionHandler = (Error?) -> Void
+    private var characteristicDiscoveryCompletion: [CBUUID:[CharacteristicDiscoveryCompletionHandler]]
+
     enum BluetoothError: Error {
         case NotReady
     }
@@ -32,6 +35,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         self.central = CBCentralManager()
         self.centralDelegateHelper = CBCentralManagerDelegateHelper()
         self.peripheralDelegateHelper = CBPeripheralDelegateHelper()
+        self.characteristicDiscoveryCompletion = [:]
         super.init(withSocket: wss)
         self.centralDelegateHelper.delegate = self
         self.central.delegate = self.centralDelegateHelper
@@ -72,7 +76,12 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
         let newOptionalServices: Set<CBUUID>?
         if let jsonOptionalServices = params["optionalServices"] as? [String:Any] {
-            newOptionalServices = Set<CBUUID>(try jsonOptionalServices.map{try GATTHelpers.GetUUID(forService: $0)})
+            newOptionalServices = Set<CBUUID>(try jsonOptionalServices.compactMap({
+                guard let uuid = GATTHelpers.GetUUID(forService: $0) else {
+                    throw JSONRPCError.InvalidParams(data: "could not resolve UUID for optional service \($0)")
+                }
+                return uuid
+            }))
         } else {
             newOptionalServices = nil
         }
@@ -181,6 +190,101 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         connectionCompletion = nil
     }
 
+    func write(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) {
+        getEndpoint(for: "write request", withParams: params, blockedBy: .ExcludeWrites) { endpoint, error in
+            completion(42, nil)
+        }
+    }
+
+    private func getEndpoint(
+            for context:String, withParams params: [String: Any], blockedBy checkFlag: GATTBlockListStatus,
+            completion: @escaping JSONRPCCompletionHandler) {
+        guard let peripheral = connectedPeripheral else {
+            completion(nil, JSONRPCError.InvalidRequest(data: "not connected for \(context)"))
+            return
+        }
+
+        guard let serviceName = params["serviceId"] else {
+            completion(nil, JSONRPCError.InvalidParams(data: "missing service UUID for \(context)"))
+            return
+        }
+
+        guard let serviceId = GATTHelpers.GetUUID(forService: serviceName) else {
+            completion(nil, JSONRPCError.InvalidParams(data: "could not determine service UUID for \(serviceName)"))
+            return
+        }
+
+        if allowedServices?.contains(serviceId) != true {
+            completion(nil, JSONRPCError.InvalidParams(data: "attempt to access unexpected service: \(serviceName)"))
+            return
+        }
+
+        if let blockStatus = GATTHelpers.GetBlockListStatus(ofUUID: serviceId), blockStatus.contains(checkFlag) {
+            completion(nil, JSONRPCError.InvalidParams(data: "service is block-listed with \(blockStatus): \(serviceName)"))
+            return
+        }
+
+        guard let characteristicName = params["characteristicId"] else {
+            completion(nil, JSONRPCError.InvalidParams(data: "missing characteristic UUID for \(context)"))
+            return
+        }
+
+        guard let characteristicId = GATTHelpers.GetUUID(forCharacteristic: characteristicName) else {
+            completion(nil, JSONRPCError.InvalidParams(data: "could not determine characteristic UUID for \(characteristicName)"))
+            return
+        }
+
+        if let blockStatus = GATTHelpers.GetBlockListStatus(ofUUID: characteristicId) {
+            completion(nil, JSONRPCError.InvalidParams(data: "characteristic is block-listed with \(blockStatus): \(characteristicName)"))
+            return
+        }
+
+        guard let service = connectedPeripheral?.services?.first(where: {return $0.uuid == serviceId}) else {
+            completion(nil, JSONRPCError.InvalidParams(data: "could not find service \(serviceName)"))
+            return
+        }
+
+        func onCharacteristicsDiscovered(_ error: Error?) {
+            if let error = error {
+                completion(nil, JSONRPCError.ApplicationError(data: error.localizedDescription))
+                return
+            }
+
+            guard let characteristic = service.characteristics?.first(where: {return $0.uuid == characteristicId}) else {
+                completion(nil, JSONRPCError.InvalidParams(data: "could not find characteristic \(characteristicName) on service \(serviceName)"))
+                return
+            }
+
+            completion(characteristic, nil)
+        }
+
+        if service.characteristics == nil {
+            // There may be other handlers already waiting for discovery of characteristics on this service
+            // Merge the new one-element list of handlers with any existing list which might be present
+            characteristicDiscoveryCompletion.merge([serviceId: [onCharacteristicsDiscovered]]) { handlers1, handlers2 in
+                var combinedHandlers = [CharacteristicDiscoveryCompletionHandler]()
+                combinedHandlers.reserveCapacity(handlers1.count + handlers2.count)
+                combinedHandlers.append(contentsOf: handlers1)
+                combinedHandlers.append(contentsOf: handlers2)
+                return combinedHandlers
+            }
+            peripheral.discoverCharacteristics(nil, for: service)
+        } else {
+            onCharacteristicsDiscovered(nil)
+        }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+        guard let handlers = characteristicDiscoveryCompletion.removeValue(forKey: service.uuid) else {
+            print("didDiscoverCharacteristicsFor service but found no handlers")
+            return
+        }
+
+        for handler in handlers {
+            handler(error)
+        }
+    }
+
     override func didReceiveCall(_ method: String, withParams params: [String:Any],
                                  completion: @escaping JSONRPCCompletionHandler) throws {
         switch method {
@@ -189,6 +293,8 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             completion(nil, nil)
         case "connect":
             try connect(withParams: params, completion: completion)
+        case "write":
+            write(withParams: params, completion: completion)
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, error: JSONRPCError?) in
@@ -227,7 +333,12 @@ struct BLEScanFilter {
         }
 
         if let requiredServices = json["services"] as? [Any] {
-            RequiredServices = Set<CBUUID>(try requiredServices.map({ try GATTHelpers.GetUUID(forService: $0)}))
+            RequiredServices = Set<CBUUID>(try requiredServices.map({
+                guard let uuid = GATTHelpers.GetUUID(forService: $0) else {
+                    throw JSONRPCError.InvalidParams(data: "could not determine UUID for service \($0)")
+                }
+                return uuid
+            }))
         } else {
             RequiredServices = nil
         }

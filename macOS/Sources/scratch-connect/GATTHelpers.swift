@@ -18,10 +18,9 @@ class GATTHelpers {
     ///
     /// - parameters:
     ///   - service: A short UUID in integer form, a full UUID string, or an assigned number's name
-    /// - returns: a UUID on success
-    /// - throws: a JSONRpcError on failure
-    public static func GetUUID(forService service: Any) throws -> CBUUID {
-        return try ResolveUUID(fromName: service, withTable: AssignedServices)
+    /// - returns: a UUID on success or nil on failure
+    public static func GetUUID(forService service: Any) -> CBUUID? {
+        return ResolveUUID(fromName: service, withTable: AssignedServices)
     }
 
     /// Resolve a Web Bluetooth GATT characteristic name to a canonical UUID.
@@ -29,10 +28,9 @@ class GATTHelpers {
     ///
     /// - parameters:
     ///   - service: A short UUID in integer form, a full UUID string, or an assigned number's name
-    /// - returns: a UUID on success
-    /// - throws: a JSONRpcError on failure
-    public static func GetUUID(forCharacteristic characteristic: Any) throws -> CBUUID {
-        return try ResolveUUID(fromName: characteristic, withTable: AssignedCharacteristics)
+    /// - returns: a UUID on success or nil on failure
+    public static func GetUUID(forCharacteristic characteristic: Any) -> CBUUID? {
+        return ResolveUUID(fromName: characteristic, withTable: AssignedCharacteristics)
     }
 
     typealias AssignedNumbersTable = [String: uint16]
@@ -43,10 +41,9 @@ class GATTHelpers {
     /// - parameters:
     ///   - name: A short UUID in integer form, a full UUID, or the name of an assigned number
     ///   - assignedNumbers: The table of assigned numbers to resolve integer names
-    /// - returns: a UUID on success
+    /// - returns: a UUID on success or nil on failure
     /// - throws: a JSONRpcError on failure
-    public static func ResolveUUID(
-            fromName name: Any, withTable assignedNumbers: AssignedNumbersTable) throws -> CBUUID {
+    public static func ResolveUUID(fromName name: Any, withTable assignedNumbers: AssignedNumbersTable) -> CBUUID? {
         if let shortServiceNum = name as? uint32 {
             return CanonicalUUID(fromAlias: shortServiceNum)
         }
@@ -68,7 +65,7 @@ class GATTHelpers {
             }
         }
 
-        throw JSONRPCError.InvalidParams(data: "unknown or invalid GATT name: \(String(describing: name))")
+        return nil
     }
 
     /// Generate a full UUID given a 16-bit or 32-bit "short UUID" alias.
@@ -91,9 +88,9 @@ class GATTHelpers {
     /// Check if a service, characteristic, or descriptor is blocked.
     /// - parameters:
     ///   - uuid: the UUID of a service, characteristic, or descriptor
-    /// - returns: the status of the UUID on the block-list, or "Included" if it is not blocked.
-    public static func GetBlockListStatus(ofUUID uuid: CBUUID) -> GATTBlockListStatus {
-        return BlockList[uuid] ?? .Include
+    /// - returns: the status of the UUID on the block-list, if present.
+    public static func GetBlockListStatus(ofUUID uuid: CBUUID) -> GATTBlockListStatus? {
+        return BlockList[uuid]
     }
 
     /// Table of well-known GATT service UUIDs.
