@@ -49,4 +49,8 @@ struct JSONRPCError: Error {
     static func ServerError(code: Int, data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: code, message: "Server Error", data: data)
     }
+
+    static func ApplicationError(data: ErrorData? = nil) -> JSONRPCError {
+        return JSONRPCError(code: -32500, message: "Application Error", data: data)
+    }
 }

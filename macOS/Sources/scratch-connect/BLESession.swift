@@ -2,16 +2,21 @@ import CoreBluetooth
 import Foundation
 import Swifter
 
-class BLESession: Session, SwiftCBCentralManagerDelegate {
+class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDelegate {
     private static let MinimumSignalStrength:NSNumber = -70
 
     private let central: CBCentralManager
-    private let delegateHelper: CBCentralManagerDelegateHelper
+    private let centralDelegateHelper: CBCentralManagerDelegateHelper
+
+    private let peripheralDelegateHelper: CBPeripheralDelegateHelper
 
     private var filters: [BLEScanFilter]?
     private var optionalServices: Set<CBUUID>?
-    private var reportedPeripherals: Set<CBUUID>?
+    private var reportedPeripherals: [CBUUID:CBPeripheral]?
     private var allowedServices: Set<CBUUID>?
+
+    private var connectedPeripheral: CBPeripheral?
+    private var connectionCompletion: JSONRPCCompletionHandler?
 
     enum BluetoothError: Error {
         case NotReady
@@ -25,10 +30,12 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
 
     required init(withSocket wss: WebSocketSession) {
         self.central = CBCentralManager()
-        self.delegateHelper = CBCentralManagerDelegateHelper()
+        self.centralDelegateHelper = CBCentralManagerDelegateHelper()
+        self.peripheralDelegateHelper = CBPeripheralDelegateHelper()
         super.init(withSocket: wss)
-        self.delegateHelper.delegate = self
-        self.central.delegate = self.delegateHelper
+        self.centralDelegateHelper.delegate = self
+        self.central.delegate = self.centralDelegateHelper
+        self.peripheralDelegateHelper.delegate = self
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
@@ -82,10 +89,11 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
             throw BluetoothError.NotReady
         }
 
+        connectedPeripheral = nil
         filters = newFilters
         optionalServices = newOptionalServices
         allowedServices = newAllowedServices
-        reportedPeripherals = Set<CBUUID>()
+        reportedPeripherals = [:]
         central.scanForPeripherals(withServices: [CBUUID](allowedServices!))
     }
 
@@ -118,11 +126,59 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
             "RSSI": RSSI
         ]
 
-        reportedPeripherals!.insert(uuid)
+        reportedPeripherals![uuid] = peripheral
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
 
-    func connect(withParams params: [String:Any]) throws {
+    func connect(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
+        guard let peripheralIdString = params["peripheralId"] as? String else {
+            throw JSONRPCError.InvalidParams(data: "missing or invalid peripheralId")
+        }
+
+        // if this fails to parse then we won't find the result in reportedPeripherals
+        let peripheralId = CBUUID(string: peripheralIdString)
+
+        guard let peripheral = reportedPeripherals?[peripheralId] else {
+            throw JSONRPCError.InvalidParams(data: "invalid peripheralId: \(peripheralId)")
+        }
+
+        if connectionCompletion != nil {
+            throw JSONRPCError.InvalidRequest(data: "connection already pending")
+        }
+
+        connectionCompletion = completion
+        central.stopScan()
+        central.connect(peripheral)
+    }
+
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        connectedPeripheral = peripheral
+
+        // discover services before we report that we're connected
+        // TODO: the documentation says "setting the parameter to nil is considerably slower and is not recommended"
+        // but if I provide `allowedServices` then `peripheral.services` doesn't get populated...
+        peripheral.delegate = peripheralDelegateHelper
+        peripheral.discoverServices(nil)
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        if (peripheral != connectedPeripheral) {
+            print("didDiscoverServices on wrong peripheral")
+            return
+        }
+
+        guard let completion = connectionCompletion else {
+            print("didDiscoverServices with no completion handler")
+            return
+        }
+
+        if let error = error {
+            completion(nil, JSONRPCError.ApplicationError(data: error.localizedDescription))
+        } else {
+            completion(nil, nil)
+        }
+
+        connectionCompletion = nil
     }
 
     override func didReceiveCall(_ method: String, withParams params: [String:Any],
@@ -132,8 +188,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate {
             try discover(withParams: params)
             completion(nil, nil)
         case "connect":
-            try connect(withParams: params)
-            completion(nil, nil)
+            try connect(withParams: params, completion: completion)
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, error: JSONRPCError?) in
