@@ -109,6 +109,7 @@ namespace scratch_connect
                 });
                 _watcher.Added += PeripheralDiscovered;
                 _watcher.EnumerationCompleted += EnumerationCompleted;
+                _watcher.Updated += PeripheralUpdated;
                 _watcher.Stopped += EnumerationStopped;
                 _watcher.Start();
             }
@@ -244,7 +245,7 @@ namespace scratch_connect
 
         #region DeviceWatcher Event Handlers
 
-        async void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
+        private void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
             if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
                 || isPresent == null || (bool)isPresent == false)
@@ -265,12 +266,26 @@ namespace scratch_connect
             SendRemoteRequest("didDiscoverPeripheral", peripheralInfo);
         }
 
-        async void EnumerationCompleted(DeviceWatcher sender, object args)
+        /// <summary>
+        /// Handle event when a discovered peripheral is updated
+        /// </summary>
+        /// <remarks>
+        /// This method does nothing, but having an event handler for <see cref="DeviceWatcher.Updated"/> seems to
+        /// be necessary for timely "didDiscoverPeripheral" notifications. If there is no handler, all discovered
+        /// peripherals are notified right before enumeration completes.
+        /// </remarks>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void PeripheralUpdated(DeviceWatcher sender, DeviceInformationUpdate args)
+        {
+        }
+
+        private void EnumerationCompleted(DeviceWatcher sender, object args)
         {
             Debug.Print("Enumeration completed.");
         }
 
-        async void EnumerationStopped(DeviceWatcher sender, object args)
+        private void EnumerationStopped(DeviceWatcher sender, object args)
         {
             if (_watcher.Status == DeviceWatcherStatus.Aborted)
             {
@@ -282,6 +297,7 @@ namespace scratch_connect
             }
             _watcher.Added -= PeripheralDiscovered;
             _watcher.EnumerationCompleted -= EnumerationCompleted;
+            _watcher.Updated -= PeripheralUpdated;
             _watcher.Stopped -= EnumerationStopped;
             _watcher = null;
         }
