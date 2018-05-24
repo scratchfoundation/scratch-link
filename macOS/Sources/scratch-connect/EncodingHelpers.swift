@@ -1,7 +1,7 @@
 import Foundation
 
 /// Helper methods to deal with encoding and decoding JSON message payloads
-/*static*/ class EncodingHelpers {
+class EncodingHelpers {
 
     /// Decode the `message` property of `json` into a Data object.
     /// If the JSON has an `encoding` property, use that method. Otherwise, assume the message is Unicode text.
@@ -42,11 +42,10 @@ import Foundation
     ///   - destination: The optional object to encode into. If not null, the "message" and "encoding" properties will
     ///     be adjusted as necessary. If null, a new object will be created with "message" and (possibly) "encoding"
     ///     properties.
-    /// - returns: The object to which the encoded message was written, regardless of source.
-    /// - throws: a JSONRPCError if encoding fails.
+    /// - returns: The object to which the encoded message was written, or nil if the encoding is unsupported
     public static func encodeBuffer(
             _ data: Data, withEncoding encoding: String?, intoObject destination: [String: Any]? = nil)
-                    throws -> [String: Any] {
+                    -> [String: Any]? {
         var result = destination ?? [:]
 
         switch encoding {
@@ -57,7 +56,7 @@ import Foundation
             result.removeValue(forKey: "encoding")
             result["message"] = String.init(data: data, encoding: String.Encoding.utf8)
         default:
-            throw JSONRPCError.InvalidParams(data: "unsupported encoding: \(encoding!)")
+            return nil
         }
 
         return result

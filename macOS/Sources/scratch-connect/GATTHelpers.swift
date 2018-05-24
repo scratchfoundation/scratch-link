@@ -12,7 +12,7 @@ struct GATTBlockListStatus: OptionSet {
 /// Helper methods to deal with GATT names & UUID values.
 /// Most methods correspond to a similarly named item in the Web Bluetooth specification.
 /// See [here](https://webbluetoothcg.github.io/web-bluetooth/) for more info.
-/*static*/ class GATTHelpers {
+class GATTHelpers {
     /// Resolve a Web Bluetooth GATT service name to a canonical UUID.
     /// See [here](https://webbluetoothcg.github.io/web-bluetooth/) for more info.
     ///
