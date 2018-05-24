@@ -66,12 +66,12 @@ class CBPeripheralDelegateHelper: NSObject, CBPeripheralDelegate {
 
     @available(OSX 10.7, *)
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?) {
-        delegate?.peripheral?(peripheral, didUpdateValueFor: descriptor, error: error)
+        delegate?.peripheral?(peripheral, didUpdateValueForDescriptor: descriptor, error: error)
     }
 
     @available(OSX 10.7, *)
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor descriptor: CBDescriptor, error: Error?) {
-        delegate?.peripheral?(peripheral, didWriteValueFor: descriptor, error: error)
+        delegate?.peripheral?(peripheral, didWriteValueForDescriptor: descriptor, error: error)
     }
 
     @available(OSX 10.7, *)
@@ -121,10 +121,10 @@ class CBPeripheralDelegateHelper: NSObject, CBPeripheralDelegate {
     @objc optional func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?)
 
     @available(OSX 10.7, *)
-    @objc optional func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?)
+    @objc optional func peripheral(_ peripheral: CBPeripheral, didUpdateValueForDescriptor descriptor: CBDescriptor, error: Error?)
 
     @available(OSX 10.7, *)
-    @objc optional func peripheral(_ peripheral: CBPeripheral, didWriteValueFor descriptor: CBDescriptor, error: Error?)
+    @objc optional func peripheral(_ peripheral: CBPeripheral, didWriteValueForDescriptor descriptor: CBDescriptor, error: Error?)
 
     @available(OSX 10.7, *)
     @objc optional func peripheralIsReady(toSendWriteWithoutResponse peripheral: CBPeripheral)

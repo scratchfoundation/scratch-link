@@ -18,8 +18,12 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     private var connectedPeripheral: CBPeripheral?
     private var connectionCompletion: JSONRPCCompletionHandler?
 
-    typealias CharacteristicDiscoveryCompletionHandler = (Error?) -> Void
-    private var characteristicDiscoveryCompletion: [CBUUID:[CharacteristicDiscoveryCompletionHandler]]
+    typealias DelegateHandler = (Error?) -> Void
+
+    private var characteristicDiscoveryCompletion: [CBUUID:[DelegateHandler]]
+
+    private var valueUpdateHandlers: [CBCharacteristic:[DelegateHandler]]
+    private var watchedCharacteristics: Set<CBCharacteristic>
 
     enum BluetoothError: Error {
         case NotReady
@@ -35,6 +39,8 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         self.central = CBCentralManager()
         self.centralDelegateHelper = CBCentralManagerDelegateHelper()
         self.peripheralDelegateHelper = CBPeripheralDelegateHelper()
+        self.valueUpdateHandlers = [:]
+        self.watchedCharacteristics = []
         self.characteristicDiscoveryCompletion = [:]
         super.init(withSocket: wss)
         self.centralDelegateHelper.delegate = self
@@ -218,6 +224,99 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         }
     }
 
+    private func read(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
+        let requestedEncoding = params["encoding"] as? String ?? "base64"
+        let startNotifications = params["startNotifications"] as? Bool ?? false
+
+        getEndpoint(for: "read request", withParams: params, blockedBy: .ExcludeReads) { endpoint, error in
+            if let error = error {
+                completion(nil, error)
+                return
+            }
+
+            guard let peripheral = self.connectedPeripheral else {
+                // this should never happen
+                completion(nil, JSONRPCError.InternalError(data: "write request without connected peripheral"))
+                return
+            }
+
+            guard let endpoint = endpoint else {
+                // this should never happen
+                completion(nil, JSONRPCError.InternalError(data: "failed to find characteristic"))
+                return
+            }
+
+            self.addCallback(toRegistry: &self.valueUpdateHandlers, forKey: endpoint) { error in
+                if let error = error {
+                    completion(nil, JSONRPCError.ApplicationError(data: error.localizedDescription))
+                    return
+                }
+
+                guard let value = endpoint.value else {
+                    completion(nil, JSONRPCError.InternalError(data: "failed to retrieve value of characteristic"))
+                    return
+                }
+
+                guard let json = EncodingHelpers.encodeBuffer(value, withEncoding: requestedEncoding) else {
+                    completion(nil, JSONRPCError.InvalidRequest(
+                            data: "failed to encode read result with \(requestedEncoding)"))
+                    return
+                }
+
+                completion(json, nil)
+            }
+
+            if startNotifications {
+                self.watchedCharacteristics.insert(endpoint)
+            }
+
+            peripheral.readValue(for: endpoint)
+        }
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        if peripheral != connectedPeripheral {
+            print("didUpdateValueFor characteristic on wrong peripheral")
+            return
+        }
+
+        if let handlers = valueUpdateHandlers[characteristic] {
+            for handler in handlers {
+                handler(error)
+            }
+        }
+
+        if watchedCharacteristics.contains(characteristic) {
+            guard let value = characteristic.value else {
+                print("failed to retrieve value of watched characteristic")
+                return
+            }
+
+            // TODO: share this JSON with the handlers above to avoid encoding multiple times
+            guard let json = EncodingHelpers.encodeBuffer(value, withEncoding: "base64") else {
+                print("failed to encode value of watched characteristic")
+                return
+            }
+
+            sendRemoteRequest("characteristicDidChange", withParams: json)
+        }
+    }
+
+    private func stopNotifications(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) {
+        getEndpoint(for: "stopNotifications request", withParams: params, blockedBy: .ExcludeReads) { endpoint, error in
+            if let error = error {
+                completion(nil, error)
+            }
+
+            guard let endpoint = endpoint else {
+                completion(nil, JSONRPCError.InvalidRequest(data: "failed to find characteristic"))
+                return
+            }
+
+            self.watchedCharacteristics.remove(endpoint)
+        }
+    }
+
     typealias GetEndpointCompletionHandler = (_ result: CBCharacteristic?, _ error: JSONRPCError?) -> Void
     private func getEndpoint(
             for context:String, withParams params: [String: Any], blockedBy checkFlag: GATTBlockListStatus,
@@ -282,18 +381,21 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         }
 
         if service.characteristics == nil {
-            // There may be other handlers already waiting for discovery of characteristics on this service
-            // Merge the new one-element list of handlers with any existing list which might be present
-            characteristicDiscoveryCompletion.merge([serviceId: [onCharacteristicsDiscovered]]) { handlers1, handlers2 in
-                var combinedHandlers = [CharacteristicDiscoveryCompletionHandler]()
-                combinedHandlers.reserveCapacity(handlers1.count + handlers2.count)
-                combinedHandlers.append(contentsOf: handlers1)
-                combinedHandlers.append(contentsOf: handlers2)
-                return combinedHandlers
-            }
+            addCallback(
+                    toRegistry: &characteristicDiscoveryCompletion,
+                    forKey: serviceId,
+                    callback: onCharacteristicsDiscovered)
             peripheral.discoverCharacteristics(nil, for: service)
         } else {
             onCharacteristicsDiscovered(nil)
+        }
+    }
+
+    func addCallback<T, U>(toRegistry registry: inout [T: [U]], forKey key: T, callback: U) {
+        if var handlers = registry[key] {
+            handlers.append(callback)
+        } else {
+            registry[key] = [callback]
         }
     }
 
@@ -318,6 +420,10 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             try connect(withParams: params, completion: completion)
         case "write":
             try write(withParams: params, completion: completion)
+        case "read":
+            try read(withParams: params, completion: completion)
+        case "stopNotifications":
+            stopNotifications(withParams: params, completion: completion)
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, error: JSONRPCError?) in
