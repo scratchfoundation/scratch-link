@@ -190,15 +190,38 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         connectionCompletion = nil
     }
 
-    func write(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) {
+    func write(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
+        let buffer = try EncodingHelpers.decodeBuffer(fromJSON: params)
+
         getEndpoint(for: "write request", withParams: params, blockedBy: .ExcludeWrites) { endpoint, error in
-            completion(42, nil)
+            if let error = error {
+                completion(nil, error)
+                return
+            }
+
+            guard let peripheral = self.connectedPeripheral else {
+                // this should never happen
+                completion(nil, JSONRPCError.InternalError(data: "write request without connected peripheral"))
+                return
+            }
+
+            guard let endpoint = endpoint else {
+                // this should never happen
+                completion(nil, JSONRPCError.InternalError(data: "failed to find characteristic"))
+                return
+            }
+
+            // TODO: allow client to specify write type?
+            let writeType:CBCharacteristicWriteType =
+                    (endpoint.properties.contains(.writeWithoutResponse)) ? .withoutResponse : .withResponse
+            peripheral.writeValue(buffer, for: endpoint, type: writeType)
         }
     }
 
+    typealias GetEndpointCompletionHandler = (_ result: CBCharacteristic?, _ error: JSONRPCError?) -> Void
     private func getEndpoint(
             for context:String, withParams params: [String: Any], blockedBy checkFlag: GATTBlockListStatus,
-            completion: @escaping JSONRPCCompletionHandler) {
+            completion: @escaping GetEndpointCompletionHandler) {
         guard let peripheral = connectedPeripheral else {
             completion(nil, JSONRPCError.InvalidRequest(data: "not connected for \(context)"))
             return
@@ -294,7 +317,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         case "connect":
             try connect(withParams: params, completion: completion)
         case "write":
-            write(withParams: params, completion: completion)
+            try write(withParams: params, completion: completion)
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, error: JSONRPCError?) in
