@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56ED428E-4406-49E4-A454-B5B8EE848E66}"
 	ProjectSection(SolutionItems) = preProject
 		..\playground.html = ..\playground.html
+		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{3721552C-638C-48CC-A154-F995CEA87505}"
