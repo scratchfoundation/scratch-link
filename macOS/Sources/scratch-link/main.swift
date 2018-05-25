@@ -15,7 +15,7 @@ enum SerializationError: Error {
 
 // Provide Scratch access to hardware devices using a JSON-RPC 2.0 API over WebSockets.
 // See NetworkProtocol.md for details.
-class ScratchConnect {
+class ScratchLink {
     let server: HttpServer
     var sessionManagers = [SDMRoute: SessionManagerBase]()
 
@@ -38,7 +38,7 @@ class ScratchConnect {
     }
 }
 
-let app = ScratchConnect()
+let app = ScratchLink()
 
 let runLoop = RunLoop.current
 while runLoop.run(mode: .defaultRunLoopMode, before: .distantFuture) {
