@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Windows;
 
-namespace scratch_connect
+namespace scratch_link
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

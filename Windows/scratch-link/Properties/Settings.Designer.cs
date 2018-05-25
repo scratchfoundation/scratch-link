@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace scratch_connect.Properties
+namespace scratch_link.Properties
 {
 
 

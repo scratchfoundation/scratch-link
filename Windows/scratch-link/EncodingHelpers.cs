@@ -2,7 +2,7 @@
 using System.Text;
 using Newtonsoft.Json.Linq;
 
-namespace scratch_connect
+namespace scratch_link
 {
     public static class EncodingHelpers
     {

@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 
-namespace scratch_connect
+namespace scratch_link
 {
     /// <summary>
     /// Helper methods to deal with GATT names & UUID values.

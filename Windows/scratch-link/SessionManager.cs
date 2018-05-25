@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Net.WebSockets;
 
-namespace scratch_connect
+namespace scratch_link
 {
 
     internal class SessionManager

@@ -10,7 +10,7 @@ using Windows.Devices.Enumeration;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
-namespace scratch_connect
+namespace scratch_link
 {
     internal class BTSession : Session
     {

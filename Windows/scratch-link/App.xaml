@@ -1,7 +1,7 @@
-﻿<Application x:Class="scratch_connect.App"
+﻿<Application x:Class="scratch_link.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:scratch_connect"
+             xmlns:local="clr-namespace:scratch_link"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          
