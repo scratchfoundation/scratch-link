@@ -1,9 +1,18 @@
-# Codename: President Business
+# Scratch Link
 
-This is a work-in-progress intended as a replacement for LLK/scratch-device-manager as a means to connect Scratch to
-external hardware devices.
+Scratch Link is a helper application which allows Scratch 3.0 to communicate with hardware peripherals. Scratch Link
+replaces the Scratch Device Manager and Scratch Device Plug-in.
 
-## Getting started
+## Using Scratch Link with Scratch
+
+Scratch Link is a work in progress and is not yet ready for most users.
+
+## Development: Getting started
+
+### Documentation
+
+The general network protocol and all supported hardware protocols are documented in Markdown files in the
+`Documentation` subdirectory.
 
 ### macOS
 
