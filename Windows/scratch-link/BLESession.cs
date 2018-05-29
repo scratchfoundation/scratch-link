@@ -10,7 +10,7 @@ using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Newtonsoft.Json.Linq;
 
-namespace scratch_connect
+namespace scratch_link
 {
     /// <summary>
     /// A JSON-RPC session associated with a single Web Socket and single BLE peripheral.

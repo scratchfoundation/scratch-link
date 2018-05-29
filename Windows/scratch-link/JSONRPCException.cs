@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
-namespace scratch_connect
+namespace scratch_link
 {
     [JsonConverter(typeof(JsonRpcExceptionConverter))]
     internal class JsonRpcException : Exception

@@ -5,7 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 
-namespace scratch_connect
+namespace scratch_link
 {
     /// <summary>
     /// Interaction logic for App.xaml

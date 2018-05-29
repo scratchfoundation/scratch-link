@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace scratch_connect
+namespace scratch_link
 {
     using RequestId = UInt32;
 

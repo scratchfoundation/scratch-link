@@ -5,7 +5,7 @@ import Swifter
 class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
     private var inquiry: IOBluetoothDeviceInquiry
     private var connectedChannel: IOBluetoothRFCOMMChannel?
-    private let rfcommQueue = DispatchQueue(label: "ScratchConnect.BTSession.rfcommQueue")
+    private let rfcommQueue = DispatchQueue(label: "ScratchLink.BTSession.rfcommQueue")
     private var state: SessionState = .Initial
     
     enum SessionState {

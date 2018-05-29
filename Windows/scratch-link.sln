@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "scratch-connect", "scratch-connect\scratch-connect.csproj", "{711F5DBA-7A5D-447A-A9BA-50CB2096E00A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "scratch-link", "scratch-link\scratch-link.csproj", "{711F5DBA-7A5D-447A-A9BA-50CB2096E00A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56ED428E-4406-49E4-A454-B5B8EE848E66}"
 	ProjectSection(SolutionItems) = preProject
