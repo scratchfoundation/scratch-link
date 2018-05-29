@@ -163,8 +163,7 @@ namespace scratch_connect
         {
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
             var pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
-                DevicePairingKinds.ProvidePin | DevicePairingKinds.ConfirmOnly |
-                DevicePairingKinds.ConfirmPinMatch | DevicePairingKinds.DisplayPin);
+                DevicePairingKinds.ProvidePin);
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested -= CustomOnPairingRequested;
             return pairingResult.Status;
         }
@@ -230,15 +229,7 @@ namespace scratch_connect
         private void CustomOnPairingRequested(DeviceInformationCustomPairing sender,
             DevicePairingRequestedEventArgs args)
         {
-            switch (args.PairingKind)
-            {
-                case DevicePairingKinds.ProvidePin:
-                    args.Accept(_pairingCode);
-                    break;
-                default:
-                    args.Accept();
-                    break;
-            }
+            args.Accept(_pairingCode);
         }
 
         #endregion
