@@ -2,9 +2,10 @@ import Foundation
 import IOBluetooth
 import Swifter
 
-class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
+class BTSession: Session, SwiftIOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
     private var inquiry: IOBluetoothDeviceInquiry
     private var connectedChannel: IOBluetoothRFCOMMChannel?
+    private var connectedChannelDelegateHelper: IOBluetoothRFCOMMChannelDelegateHelper
     private let rfcommQueue = DispatchQueue(label: "ScratchLink.BTSession.rfcommQueue")
     private var state: SessionState = .Initial
     
@@ -16,8 +17,10 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     
     required init(withSocket wss: WebSocketSession) {
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
+        connectedChannelDelegateHelper = IOBluetoothRFCOMMChannelDelegateHelper()
         super.init(withSocket: wss)
         inquiry.delegate = self
+        connectedChannelDelegateHelper.delegate = self
     }
     
     override func didReceiveCall(_ method: String, withParams params: [String:Any],
@@ -68,6 +71,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     override func sessionWasClosed() {
         super.sessionWasClosed()
         inquiry.stop()
+        connectedChannelDelegateHelper.delegate = nil
         connectedChannel?.setDelegate(nil)
         connectedChannel?.close()
         connectedChannel = nil
@@ -97,7 +101,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             rfcommQueue.async {
                 let connectionResult = device.openRFCOMMChannelSync(&self.connectedChannel,
                      withChannelID: 1,
-                     delegate: self)
+                     delegate: self.connectedChannelDelegateHelper)
                 if (connectionResult != kIOReturnSuccess) {
                     completion(nil, JSONRPCError.ServerError(code: -32500, data:
                         "Connection process could not start or channel was not found"))
@@ -186,7 +190,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     }
     
     /*
-     * IOBluetoothRFCOMMChannelDelegate implementation
+     * SwiftIOBluetoothRFCOMMChannelDelegate implementation
      */
     
     func rfcommChannelData(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
