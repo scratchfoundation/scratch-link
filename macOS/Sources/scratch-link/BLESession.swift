@@ -25,13 +25,26 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     private var valueUpdateHandlers: [CBCharacteristic:[DelegateHandler]]
     private var watchedCharacteristics: Set<CBCharacteristic>
 
-    enum BluetoothError: Error {
-        case NotReady
+    private var onBluetoothReadyTasks: [(JSONRPCError?)->Void]
+
+    private enum BluetoothState {
+        case Unavailable
+        case Available
+        case Unknown
     }
 
-    public var isReady: Bool {
+    private var currentState: BluetoothState {
         get {
-            return central.state == .poweredOn
+            switch central.state {
+            case .unknown: return .Unknown
+            case .resetting: return .Unknown // probably the OS Bluetooth stack crashed and will "power on" again soon
+
+            case .unsupported: return .Unavailable
+            case .unauthorized: return .Unavailable
+            case .poweredOff: return .Unavailable
+
+            case .poweredOn: return .Available
+            }
         }
     }
 
@@ -42,6 +55,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         self.valueUpdateHandlers = [:]
         self.watchedCharacteristics = []
         self.characteristicDiscoveryCompletion = [:]
+        self.onBluetoothReadyTasks = []
         super.init(withSocket: wss)
         self.centralDelegateHelper.delegate = self
         self.central.delegate = self.centralDelegateHelper
@@ -49,6 +63,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        // debugging
         switch central.state {
         case .unknown:
             print("Bluetooth transitioned to unknown state")
@@ -63,9 +78,25 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         case .poweredOn:
             print("Bluetooth is now powered on")
         }
+
+        // actual work
+        let btState = self.currentState
+
+        if btState == .Unknown {
+            // just wait until the OS makes a decision
+            return
+        }
+
+        let error = (btState == .Unavailable) ?
+                JSONRPCError.ApplicationError(data: "Bluetooth became unavailable: \(String(describing: central.state))") :
+                nil
+
+        while let task = onBluetoothReadyTasks.popLast() {
+            task(error)
+        }
     }
 
-    func discover(withParams params: [String:Any]) throws {
+    func discover(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
         guard let jsonFilters = params["filters"] as? [[String: Any]] else {
             throw JSONRPCError.InvalidParams(data: "could not parse filters in discovery request")
         }
@@ -99,17 +130,29 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             }
         }
 
-        // TODO: wait for ready?
-        if !isReady {
-            throw BluetoothError.NotReady
+        func doDiscover(error: JSONRPCError?) {
+            if let error = error {
+                completion(nil, error)
+            } else {
+                connectedPeripheral = nil
+                filters = newFilters
+                optionalServices = newOptionalServices
+                allowedServices = newAllowedServices
+                reportedPeripherals = [:]
+                central.scanForPeripherals(withServices: [CBUUID](allowedServices!))
+
+                completion(nil, nil)
+            }
         }
 
-        connectedPeripheral = nil
-        filters = newFilters
-        optionalServices = newOptionalServices
-        allowedServices = newAllowedServices
-        reportedPeripherals = [:]
-        central.scanForPeripherals(withServices: [CBUUID](allowedServices!))
+        print("state is: \(central.state.rawValue)")
+        switch currentState {
+            case .Available: doDiscover(error: nil)
+        case .Unavailable:
+            completion(nil, JSONRPCError.ApplicationError(data: "Bluetooth became unavailable: \(String(describing: central.state))"))
+        case .Unknown:
+            onBluetoothReadyTasks.insert(doDiscover, at: 0)
+        }
     }
 
     // Work around bug(?) in 10.13 SDK
@@ -118,7 +161,8 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         return CBUUID(nsuuid: peripheral.value(forKey: "identifier") as! NSUUID as UUID)
     }
 
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
+                        advertisementData: [String: Any], rssi RSSI: NSNumber) {
         if RSSI.compare(BLESession.MinimumSignalStrength) == .orderedAscending {
             // signal too weak
             return
@@ -414,8 +458,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
                                  completion: @escaping JSONRPCCompletionHandler) throws {
         switch method {
         case "discover":
-            try discover(withParams: params)
-            completion(nil, nil)
+            try discover(withParams: params, completion: completion)
         case "connect":
             try connect(withParams: params, completion: completion)
         case "write":
