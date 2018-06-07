@@ -432,7 +432,7 @@
         const closeButton = document.getElementById('closeBT');
         closeButton.onclick = () => {
             self.Scratch.BT.dispose();
-        }
+        };
 
         attachFunctionToButton('initBT', initBT);
         attachFunctionToButton('discoverBT', discoverBT);
@@ -441,7 +441,9 @@
         attachFunctionToButton('beep', beep);
 
         function addLine(text) {
-            log.innerHTML += `${text}\n`;
+            const lines = log.innerHTML.split('\n').splice(-99);
+            lines.push(text);
+            log.innerText = lines.join('\n');
             if (follow.checked) {
                 log.scrollTop = log.scrollHeight;
             }

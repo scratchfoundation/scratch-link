@@ -268,6 +268,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
             if startNotifications {
                 self.watchedCharacteristics.insert(endpoint)
+                peripheral.setNotifyValue(true, for: endpoint)
             }
 
             peripheral.readValue(for: endpoint)
@@ -280,7 +281,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             return
         }
 
-        if let handlers = valueUpdateHandlers[characteristic] {
+        if let handlers = valueUpdateHandlers.removeValue(forKey: characteristic) {
             for handler in handlers {
                 handler(error)
             }
@@ -314,6 +315,8 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             }
 
             self.watchedCharacteristics.remove(endpoint)
+
+            endpoint.service.peripheral.setNotifyValue(false, for: endpoint)
         }
     }
 
