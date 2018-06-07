@@ -432,7 +432,7 @@
         const closeButton = document.getElementById('closeBT');
         closeButton.onclick = () => {
             self.Scratch.BT.dispose();
-        }
+        };
 
         attachFunctionToButton('initBT', initBT);
         attachFunctionToButton('discoverBT', discoverBT);
@@ -440,11 +440,39 @@
         attachFunctionToButton('send', sendMessage);
         attachFunctionToButton('beep', beep);
 
-        function addLine(text) {
-            log.innerHTML += `${text}\n`;
-            if (follow.checked) {
-                log.scrollTop = log.scrollHeight;
+        class LogDisplay {
+            constructor (logElement, lineCount = 256) {
+                this._logElement = logElement;
+                this._lineCount = lineCount;
+                this._lines = [];
+                this._dirty = false;
+                this._follow = true;
             }
+
+            addLine (text) {
+                this._lines.push(text);
+                if (!this._dirty) {
+                    this._dirty = true;
+                    requestAnimationFrame(() => {
+                        this._trim();
+                        this._logElement.innerText = this._lines.join('\n');
+                        if (this._follow) {
+                            this._logElement.scrollTop = this._logElement.scrollHeight;
+                        }
+                        this._dirty = false;
+                    });
+                }
+            }
+
+            _trim () {
+                this._lines = this._lines.splice(-this._lineCount);
+            }
+        }
+
+        const logDisplay = new LogDisplay(log);
+        function addLine(text) {
+            logDisplay.addLine(text);
+            logDisplay._follow = follow.checked;
         }
     </script>
 </body>
