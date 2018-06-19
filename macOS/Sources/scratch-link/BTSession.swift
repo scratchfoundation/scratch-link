@@ -109,6 +109,14 @@ class BTSession: Session, SwiftIOBluetoothRFCOMMChannelDelegate, IOBluetoothDevi
                     self.state = .Connected
                     completion(nil, nil)
                 }
+
+                // runloop specifically for this device: necessary to get delegate callbacks
+                var nextCheck = Date()
+                while (self.connectedChannel?.isOpen() ?? false) &&
+                              RunLoop.current.run(mode: .defaultRunLoopMode, before: nextCheck) {
+                    nextCheck.addTimeInterval(0.5)
+                }
+                print("RFCOMM run loop exited")
             }
         } else {
             completion(nil, JSONRPCError.InvalidRequest(data: "Device \(deviceId) not available for connection"))
@@ -126,7 +134,7 @@ class BTSession: Session, SwiftIOBluetoothRFCOMMChannelDelegate, IOBluetoothDevi
         let mtu = connectedChannel.getMTU()
         let maxMessageSize = Int(mtu)
         if message.count <= maxMessageSize {
-            rfcommQueue.async {
+            DispatchQueue.global(qos: .userInitiated).async {
                 let messageResult = connectedChannel.writeSync(&data, length: UInt16(message.count))
                 if messageResult != kIOReturnSuccess {
                     completion(nil, JSONRPCError.ServerError(code: -32500, data: "Failed to send message"))
@@ -140,7 +148,7 @@ class BTSession: Session, SwiftIOBluetoothRFCOMMChannelDelegate, IOBluetoothDevi
                 Array(data[$0..<min($0 + maxMessageSize, data.count)])
             }
             
-            rfcommQueue.async {
+            DispatchQueue.global(qos: .userInitiated).async {
                 var succeeded = 0
                 var bytesSent = 0
                 for chunk in chunks {
