@@ -342,7 +342,8 @@
         }
 
         function writeBLE() {
-            Scratch.BLE.write(0xf005, '5261da03-fa7e-42ab-850b-7c80220097cc', 'LINK').then(
+            const message = _encodeMessage('LINK');
+            Scratch.BLE.write(0xf005, '5261da02-fa7e-42ab-850b-7c80220097cc', message, 'base64').then(
                 x => {
                     addLine(`write resolved to: ${stringify(x)}`);
                 },
@@ -350,6 +351,21 @@
                     addLine(`write rejected with: ${stringify(e)}`);
                 }
             );
+        }
+
+        // micro:bit base64 encoding
+        // https://github.com/LLK/scratch-microbit-firmware/blob/master/protocol.md
+        function _encodeMessage(message) {
+            const output = new Uint8Array(message.length);
+            for (let i = 0; i < message.length; i++) {
+                output[i] = message.charCodeAt(i);
+            }
+            const output2 = new Uint8Array(output.length + 1);
+            output2[0] = 0x81; // CMD_DISPLAY_TEXT
+            for (let i = 0; i < output.length; i++) {
+                output2[i + 1] = output[i];
+            }
+            return base64 = window.btoa(String.fromCharCode.apply(null, output2));
         }
 
         attachFunctionToButton('initBLE', initBLE);
@@ -421,7 +437,7 @@
                 }
             );
         }
-        
+
         function stringify(o) {
             return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
         }
