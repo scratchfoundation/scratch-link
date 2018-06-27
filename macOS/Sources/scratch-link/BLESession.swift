@@ -265,6 +265,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             let writeType:CBCharacteristicWriteType =
                     (endpoint.properties.contains(.writeWithoutResponse)) ? .withoutResponse : .withResponse
             peripheral.writeValue(buffer, for: endpoint, type: writeType)
+            completion(buffer.count, nil)
         }
     }
 
