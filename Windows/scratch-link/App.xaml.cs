@@ -32,6 +32,7 @@ namespace scratch_link
             {
                 Icon = SystemIcons.Warning, // TODO: get a real icon
                 Text = scratch_link.Properties.Resources.AppTitle,
+                ContextMenu = MakeContextMenu(),
                 Visible = true
             };
 
@@ -50,13 +51,55 @@ namespace scratch_link
             UpdateIconText();
         }
 
+        private void PrepareToClose()
+        {
+            _icon.Visible = false;
+            _server.Close();
+        }
+
+        private ContextMenu MakeContextMenu()
+        {
+            var quitItem = new MenuItem
+            {
+                Index = 0,
+                Text = "E&xit"
+            };
+            quitItem.Click += OnExitClicked;
+
+            var menu = new ContextMenu()
+            {
+                MenuItems =
+                {
+                    quitItem
+                }
+            };
+
+            return menu;
+        }
+
+        private void OnExitClicked(object sender, EventArgs e)
+        {
+            PrepareToClose();
+            Environment.Exit(0);
+        }
+
         private void AcceptNextClient()
         {
-            _server.BeginGetContext(ClientDidConnect, null);
+            // If the server isn't listening the app is probably quitting
+            if (_server.IsListening)
+            {
+                _server.BeginGetContext(ClientDidConnect, null);
+            }
         }
 
         private async void ClientDidConnect(IAsyncResult ar)
         {
+            if (!_server.IsListening)
+            {
+                // App is probably quitting
+                return;
+            }
+
             // Get ready for another connection
             AcceptNextClient();
 
@@ -111,7 +154,7 @@ namespace scratch_link
 
         private void Application_Exit(object sender, System.Windows.ExitEventArgs e)
         {
-            _icon.Visible = false;
+            PrepareToClose();
         }
     }
 }
