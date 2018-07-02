@@ -30,10 +30,18 @@ namespace scratch_link
         {
             _icon = new NotifyIcon
             {
-                Icon = SystemIcons.Warning, // TODO: get a real icon
+                Icon = scratch_link.Properties.Resources.AppIcon,
                 Text = scratch_link.Properties.Resources.AppTitle,
-                ContextMenuStrip = MakeContextMenuStrip(),
-                Visible = true
+                Visible = true,
+                ContextMenuStrip = new ContextMenuStrip()
+                {
+                    Items =
+                    {
+                        new ToolStripLabel(scratch_link.Properties.Resources.AppTitle),
+                        new ToolStripSeparator(),
+                        new ToolStripMenuItem("E&xit", null, OnExitClicked)
+                    }
+                }
             };
 
             _sessionManagers = new SortedDictionary<string, SessionManager>
@@ -55,27 +63,6 @@ namespace scratch_link
         {
             _icon.Visible = false;
             _server.Close();
-        }
-
-        private ContextMenuStrip MakeContextMenuStrip()
-        {
-            var quitItem = new ToolStripButton
-            {
-                Text = "E&xit"
-            };
-            quitItem.Click += OnExitClicked;
-
-            var menu = new ContextMenuStrip()
-            {
-                Items =
-                {
-                    new ToolStripLabel(scratch_link.Properties.Resources.AppTitle),
-                    new ToolStripSeparator(),
-                    quitItem
-                }
-            };
-
-            return menu;
         }
 
         private void OnExitClicked(object sender, EventArgs e)
