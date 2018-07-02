@@ -32,7 +32,7 @@ namespace scratch_link
             {
                 Icon = SystemIcons.Warning, // TODO: get a real icon
                 Text = scratch_link.Properties.Resources.AppTitle,
-                ContextMenu = MakeContextMenu(),
+                ContextMenuStrip = MakeContextMenuStrip(),
                 Visible = true
             };
 
@@ -57,19 +57,20 @@ namespace scratch_link
             _server.Close();
         }
 
-        private ContextMenu MakeContextMenu()
+        private ContextMenuStrip MakeContextMenuStrip()
         {
-            var quitItem = new MenuItem
+            var quitItem = new ToolStripButton
             {
-                Index = 0,
                 Text = "E&xit"
             };
             quitItem.Click += OnExitClicked;
 
-            var menu = new ContextMenu()
+            var menu = new ContextMenuStrip()
             {
-                MenuItems =
+                Items =
                 {
+                    new ToolStripLabel(scratch_link.Properties.Resources.AppTitle),
+                    new ToolStripSeparator(),
                     quitItem
                 }
             };
