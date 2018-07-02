@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Linq;
 using System.Net;
-using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Windows.Forms;
 
 namespace scratch_link
 {
@@ -20,12 +22,20 @@ namespace scratch_link
             public const string BT = "/scratch/bt";
         }
 
+        private readonly NotifyIcon _icon;
         private readonly HttpListener _server;
-        private readonly Dictionary<string, SessionManager> _sessionManagers;
+        private readonly SortedDictionary<string, SessionManager> _sessionManagers;
 
         private App()
         {
-            _sessionManagers = new Dictionary<string, SessionManager>
+            _icon = new NotifyIcon
+            {
+                Icon = SystemIcons.Warning, // TODO: get a real icon
+                Text = scratch_link.Properties.Resources.AppTitle,
+                Visible = true
+            };
+
+            _sessionManagers = new SortedDictionary<string, SessionManager>
             {
                 [SDMPath.BLE] = new SessionManager(webSocket => new BLESession(webSocket)),
                 [SDMPath.BT] = new SessionManager(webSocket => new BTSession(webSocket))
@@ -37,6 +47,7 @@ namespace scratch_link
             _server.Start();
 
             AcceptNextClient();
+            UpdateIconText();
         }
 
         private void AcceptNextClient()
@@ -77,6 +88,30 @@ namespace scratch_link
                 listenerContext.Response.Close();
                 Debug.Print($"Client tried to connect to unknown path: {listenerContext.Request.Url.AbsolutePath}");
             }
+
+            UpdateIconText();
+        }
+
+        private void UpdateIconText()
+        {
+            int totalSessions = _sessionManagers.Values.Aggregate(0,
+                (total, sessionManager) =>
+                {
+                    return total + sessionManager.ActiveSessionCount;
+                }
+            );
+
+            string text = scratch_link.Properties.Resources.AppTitle;
+            if (totalSessions > 0)
+            {
+                text += $"{Environment.NewLine}{totalSessions} active {(totalSessions == 1 ? "session" : "sessions")}";
+            }
+            _icon.Text = text;
+        }
+
+        private void Application_Exit(object sender, System.Windows.ExitEventArgs e)
+        {
+            _icon.Visible = false;
         }
     }
 }

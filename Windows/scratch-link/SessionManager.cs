@@ -4,13 +4,15 @@ using System.Net.WebSockets;
 
 namespace scratch_link
 {
-
     internal class SessionManager
     {
+        public int ActiveSessionCount { get; private set; }
+
         private readonly Func<WebSocket, Session> _sessionCreationDelegate;
 
         internal SessionManager(Func<WebSocket, Session> sessionCreationDelegate)
         {
+            ActiveSessionCount = 0;
             _sessionCreationDelegate = sessionCreationDelegate;
         }
 
@@ -21,6 +23,7 @@ namespace scratch_link
             try
             {
                 session = _sessionCreationDelegate(webSocket);
+                ++ActiveSessionCount;
                 await session.Start();
             }
             catch (Exception e)
@@ -29,6 +32,7 @@ namespace scratch_link
             }
             finally
             {
+                --ActiveSessionCount;
                 session?.Dispose();
                 webSocket?.Dispose();
             }
