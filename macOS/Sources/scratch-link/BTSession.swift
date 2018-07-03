@@ -50,17 +50,9 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             }
             if connectedChannel == nil || connectedChannel?.isOpen() == false {
                 completion(nil, JSONRPCError.InvalidRequest(data: "No peripheral connected"))
-            } else if let message = params["message"] as? String, let encoding = params["encoding"] as? String {
-                if encoding == "base64" {
-                    let decodedMessage = base64Decode(message)
-                    if decodedMessage.count > 0 {
-                        sendMessage(decodedMessage, completion: completion)
-                    } else {
-                        completion(nil, JSONRPCError.InvalidParams(data: "Invalid base64 string"))
-                    }
-                } else {
-                    completion(nil, JSONRPCError.InvalidParams(data: "Unsupported encoding"))
-                }
+            } else {
+                let decodedMessage = try EncodingHelpers.decodeBuffer(fromJSON: params)
+                sendMessage(decodedMessage, completion: completion)
             }
         }
     }
@@ -120,7 +112,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         }
     }
     
-    func sendMessage(_ message: [UInt8],
+    func sendMessage(_ message: Data,
                      completion: @escaping JSONRPCCompletionHandler) {
         guard let connectedChannel = connectedChannel else {
             completion(nil, JSONRPCError.ServerError(code: -32500, data: "No peripheral connected"))
@@ -131,7 +123,9 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         let maxMessageSize = Int(mtu)
         if message.count <= maxMessageSize {
             DispatchQueue.global(qos: .userInitiated).async {
-                let messageResult = connectedChannel.writeSync(&data, length: UInt16(message.count))
+                let messageResult = data.withUnsafeMutableBytes { bytes in
+                    return connectedChannel.writeSync(bytes, length: UInt16(message.count))
+                }
                 if messageResult != kIOReturnSuccess {
                     completion(nil, JSONRPCError.ServerError(code: -32500, data: "Failed to send message"))
                 } else {
@@ -200,31 +194,12 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     func rfcommChannelData(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
                            data dataPointer: UnsafeMutableRawPointer!,
                            length dataLength: Int) {
-        let encodedMessage = base64Encode(dataPointer, length: dataLength)
-        let responseData: [String: Any] = [
-            "message": encodedMessage,
-            "encoding": "base64"
-        ]
+        let value = Data(bytesNoCopy: dataPointer, count: dataLength, deallocator: .none)
+        guard let responseData = EncodingHelpers.encodeBuffer(value, withEncoding: "base64") else {
+            // TODO: should this send a default or error message so the client knows something's wrong?
+            print("failed to encode RFCOMM data")
+            return
+        }
         sendRemoteRequest("didReceiveMessage", withParams: responseData)
-    }
-    
-    /*
-     * Helper methods
-     */
-    
-    func base64Encode(_ buffer: UnsafeMutableRawPointer, length: Int) -> String {
-        var array: [UInt8] = Array(repeating: 0, count: length)
-        for index in 0..<length {
-            array[index] = buffer.load(fromByteOffset: index, as: UInt8.self)
-        }
-        let data = Data(array)
-        return data.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
-    }
-    
-    func base64Decode(_ base64String: String) -> [UInt8] {
-        if let data = Data(base64Encoded: base64String) {
-            return [UInt8](data)
-        }
-        return []
     }
 }
