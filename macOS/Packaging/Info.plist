@@ -5,7 +5,7 @@
     <key>CFBundleDisplayName</key>
     <string>Scratch Link</string>
     <key>CFBundleExecutable</key>
-    <string>Scratch Link</string>
+    <string>scratch-link</string>
     <key>CFBundleIconFile</key>
     <string>Scratch Link.icns</string>
     <key>CFBundleIdentifier</key>

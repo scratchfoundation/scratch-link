@@ -1,11 +1,12 @@
 SIGN_ID=Code-to-Learn\ Foundation
 APP_ID=edu.mit.scratch.scratch-link
 APP_BUNDLE=Scratch\ Link.app
-APP_VERSION=1.0.0
+APP_VERSION=1.0
 
 BIN_PATH=$(shell swift build --configuration release --show-bin-path)
 
 APP_DEST=Release/$(APP_ID)/Library/Scratch/$(APP_BUNDLE)
+APP_VERSION_EXT=$(APP_VERSION).$(shell date -u "+%Y%m%d%H%M")
 
 .PHONY: all clean distclean uninstall
 
@@ -19,7 +20,8 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_PATH)/scratch-link "$@/Contents/MacOS/"
 	cp Packaging/Info.plist "$@/Contents/"
-	plutil -replace "CFBundleVersion" -string "${APP_VERSION}" "$@/Contents/Info.plist"
+	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
+	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
 	codesign --sign $(SIGN_ID) --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
@@ -47,7 +49,7 @@ Release/$(APP_ID)/Library/LaunchAgents/$(APP_ID).plist: Packaging/launchd.plist
 	cp "$<" "$@"
 
 Release/scratch-link.pkg: $(APP_DEST) Release/$(APP_ID)/Library/LaunchAgents/$(APP_ID).plist
-	productbuild --version $(APP_VERSION) --root Release/$(APP_ID) / --sign "Code-to-Learn Foundation" "$@"
+	productbuild --identifier $(APP_ID) --product Packaging/requirements.plist --version $(APP_VERSION) --root Release/$(APP_ID) / --sign "Code-to-Learn Foundation" "$@"
 
 clean:
 	rm -rf Release "$(BIN_PATH)/scratch-link"
