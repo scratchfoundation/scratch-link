@@ -38,6 +38,10 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         statusBarItem.button?.image = NSImage(named: NSImage.Name.applicationIcon)
         statusBarItem.menu = menu
         self.statusBarItem = statusBarItem
+
+        // Hide the dock icon now that we have another way to quit
+        var thisProcess = ProcessSerialNumber(highLongOfPSN: 0, lowLongOfPSN: UInt32(kCurrentProcess))
+        TransformProcessType(&thisProcess, ProcessApplicationTransformState(kProcessTransformToUIElementApplication))
     }
 
     func initServer() {
