@@ -19,8 +19,28 @@ enum SerializationError: Error {
 class ScratchLink: NSObject, NSApplicationDelegate {
     let server: HttpServer = HttpServer()
     var sessionManagers = [SDMRoute: SessionManagerBase]()
+    var statusBarItem: NSStatusItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        initUI()
+        initServer()
+    }
+
+    func initUI() {
+        let menu = NSMenu(title: "Scratch Link")
+        menu.addItem(withTitle: "Scratch Link", action: nil, keyEquivalent: "")
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Quit", action: #selector(onQuitSelected), keyEquivalent: "q")
+
+        let systemStatusBar = NSStatusBar.system
+
+        let statusBarItem = systemStatusBar.statusItem(withLength: NSStatusItem.squareLength)
+        statusBarItem.button?.image = NSImage(named: NSImage.Name.applicationIcon)
+        statusBarItem.menu = menu
+        self.statusBarItem = statusBarItem
+    }
+
+    func initServer() {
         sessionManagers[SDMRoute.BLE] = SessionManager<BLESession>()
         sessionManagers[SDMRoute.BT] = SessionManager<BTSession>()
 
@@ -36,8 +56,9 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         }
     }
 
-    public func applicationWillTerminate(_ notification: Notification) {
-        print("Good bye...")
+    @objc
+    private func onQuitSelected() {
+        NSApplication.shared.terminate(nil)
     }
 }
 
