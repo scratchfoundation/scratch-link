@@ -1,3 +1,4 @@
+import Cocoa
 import Foundation
 import Swifter
 
@@ -15,13 +16,11 @@ enum SerializationError: Error {
 
 // Provide Scratch access to hardware devices using a JSON-RPC 2.0 API over WebSockets.
 // See NetworkProtocol.md for details.
-class ScratchLink {
-    let server: HttpServer
+class ScratchLink: NSObject, NSApplicationDelegate {
+    let server: HttpServer = HttpServer()
     var sessionManagers = [SDMRoute: SessionManagerBase]()
 
-    init() {
-        server = HttpServer()
-
+    func applicationDidFinishLaunching(_ notification: Notification) {
         sessionManagers[SDMRoute.BLE] = SessionManager<BLESession>()
         sessionManagers[SDMRoute.BT] = SessionManager<BTSession>()
 
@@ -36,12 +35,14 @@ class ScratchLink {
             print("Failed to start server: \(error)")
         }
     }
+
+    public func applicationWillTerminate(_ notification: Notification) {
+        print("Good bye...")
+    }
 }
 
-let app = ScratchLink()
+let application = NSApplication.shared
+application.setActivationPolicy(.regular)
 
-let runLoop = RunLoop.current
-while runLoop.run(mode: .defaultRunLoopMode, before: .distantFuture) {
-    // use select() to accept socket connections from tray icon / admin panel / something?
-    print("Loop")
-}
+application.delegate = ScratchLink()
+application.run()
