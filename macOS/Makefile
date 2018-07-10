@@ -15,7 +15,7 @@ all: Release/scratch-link.pkg
 $(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift)
 	swift build --configuration release --static-swift-stdlib
 
-$(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset
+$(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
 	rm -rf "$@"
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_PATH)/scratch-link "$@/Contents/MacOS/"
@@ -24,6 +24,7 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
+	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "Release/iconTemplate.iconset"
 	codesign --sign $(SIGN_ID) --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	codesign --display -vv "$@"
 
@@ -32,6 +33,11 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 # icon_16x16@2x.png, icon_32x32@2x.png, icon_128x128@2x.png, icon_256x256@2x.png
 # The @2x files should be stored at 144 pixels per inch while the others should be stored at 72 pixels per inch.
 Release/Scratch\ Link.iconset: ../Images/icon_1024x1024.png
+
+# Status bar icon template
+Release/iconTemplate.iconset: Images/iconTemplate.png
+
+%.iconset:
 	mkdir -p "$@"
 	sips -s dpiWidth 72 -s dpiHeight 72 -z 16 16 "$<" --out "$@/icon_16x16.png"
 	sips -s dpiWidth 72 -s dpiHeight 72 -z 32 32 "$<" --out "$@/icon_32x32.png"

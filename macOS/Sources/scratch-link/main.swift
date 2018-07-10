@@ -35,8 +35,14 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         let systemStatusBar = NSStatusBar.system
 
         let statusBarItem = systemStatusBar.statusItem(withLength: NSStatusItem.squareLength)
-        statusBarItem.button?.image = NSImage(named: NSImage.Name.applicationIcon)
+        if let button = statusBarItem.button {
+            button.imageScaling = .scaleProportionallyUpOrDown
+            if let statusBarIcon = NSImage(named: NSImage.Name("iconTemplate")) ?? NSImage(named: NSImage.Name.caution) {
+                button.image = statusBarIcon
+            }
+        }
         statusBarItem.menu = menu
+
         self.statusBarItem = statusBarItem
 
         // Hide the dock icon now that we have another way to quit
