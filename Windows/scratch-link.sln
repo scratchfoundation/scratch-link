@@ -18,6 +18,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		..\Documentation\NetworkProtocol.md = ..\Documentation\NetworkProtocol.md
 	EndProjectSection
 EndProject
+Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "store-packaging", "store-packaging\store-packaging.wapproj", "{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,6 +30,12 @@ Global
 		{711F5DBA-7A5D-447A-A9BA-50CB2096E00A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{711F5DBA-7A5D-447A-A9BA-50CB2096E00A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{711F5DBA-7A5D-447A-A9BA-50CB2096E00A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
