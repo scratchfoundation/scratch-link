@@ -75,5 +75,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
 let application = NSApplication.shared
 application.setActivationPolicy(.regular)
 
-application.delegate = ScratchLink()
+let appDelegate = ScratchLink()
+application.delegate = appDelegate
+
 application.run()
