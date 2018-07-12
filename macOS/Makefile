@@ -14,7 +14,7 @@ APP_VERSION_EXT=$(APP_VERSION).$(shell date -u "+%Y%m%d%H%M")
 all: $(APP_DEST)
 
 dist: $(APP_DEST)
-	productbuild --sign "Code-to-Learn Foundation" --component "$<" \ /Applications \
+	productbuild --sign "Code-to-Learn Foundation" --component "$<" /Applications \
 	    "Release/scratch-link-`plutil -extract CFBundleVersion xml1 -o - Release/Scratch\ Link.app/Contents/Info.plist | xmllint -xpath '/plist/string/text()' -`.pkg"
 
 $(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift)
