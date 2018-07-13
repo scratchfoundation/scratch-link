@@ -289,21 +289,31 @@ namespace scratch_link
                 : "base64";
             var startNotifications = parameters["startNotifications"]?.ToObject<bool>() ?? false;
 
-            var result = await endpoint.ReadValueAsync(BluetoothCacheMode.Uncached);
+            var readResult = await endpoint.ReadValueAsync(BluetoothCacheMode.Uncached);
 
             if (startNotifications)
             {
-                endpoint.ValueChanged += OnValueChanged;
+                var notificationRequestResult = await
+                    endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
+                        GattClientCharacteristicConfigurationDescriptorValue.Notify);
+                if (notificationRequestResult == GattCommunicationStatus.Success)
+                {
+                    endpoint.ValueChanged += OnValueChanged;
+                }
+                else
+                {
+                    throw JsonRpcException.ApplicationError($"could not start notifications: {notificationRequestResult}");
+                }
             }
 
-            switch (result.Status)
+            switch (readResult.Status)
             {
                 case GattCommunicationStatus.Success:
-                    return EncodingHelpers.EncodeBuffer(result.Value.ToArray(), encoding);
+                    return EncodingHelpers.EncodeBuffer(readResult.Value.ToArray(), encoding);
                 case GattCommunicationStatus.Unreachable:
                     throw JsonRpcException.ApplicationError("destination unreachable");
                 default:
-                    throw JsonRpcException.ApplicationError($"unknown result from read: {result.Status}");
+                    throw JsonRpcException.ApplicationError($"unknown result from read: {readResult.Status}");
             }
         }
 
@@ -315,6 +325,8 @@ namespace scratch_link
         {
             var endpoint = await GetEndpoint("stopNotifications request", parameters, GattHelpers.BlockListStatus.ExcludeReads);
             endpoint.ValueChanged -= OnValueChanged;
+            await endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
+                GattClientCharacteristicConfigurationDescriptorValue.None);
         }
 
         /// <summary>
