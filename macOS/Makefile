@@ -9,7 +9,7 @@ BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 APP_DEST=Release/$(APP_BUNDLE)
 APP_VERSION_EXT=$(APP_VERSION).$(shell date -u "+%Y%m%d%H%M")
 
-.PHONY: all clean distclean uninstall
+.PHONY: all clean distclean uninstall xcodeproj
 
 all: $(APP_DEST)
 
@@ -17,8 +17,14 @@ dist: $(APP_DEST)
 	productbuild --sign "Code-to-Learn Foundation" --component "$<" /Applications \
 	    "Release/scratch-link-`plutil -extract CFBundleVersion xml1 -o - Release/Scratch\ Link.app/Contents/Info.plist | xmllint -xpath '/plist/string/text()' -`.pkg"
 
-$(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift)
-	swift build --configuration $(CONFIG) --static-swift-stdlib
+$(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift) Carthage
+	swift build --configuration $(CONFIG) --static-swift-stdlib -Xswiftc -F -Xswiftc Carthage/Build/Mac/
+
+Carthage:
+	carthage update --platform macOS && touch Carthage
+
+xcodeproj:
+	swift package generate-xcodeproj --xcconfig-overrides Carthage.xcconfig
 
 $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
 	rm -rf "$@"
