@@ -199,7 +199,7 @@
 
         class ScratchBLE extends JSONRPCWebSocket {
             constructor() {
-                super(new WebSocket('ws://localhost:20110/scratch/ble'));
+                super(new WebSocket('wss://device-manager.scratch.mit.edu:20110/scratch/ble'));
 
                 this.discoveredPeripheralId = null;
             }
@@ -241,7 +241,7 @@
 
         class ScratchBT extends JSONRPCWebSocket {
             constructor() {
-                super(new WebSocket('ws://localhost:20110/scratch/bt'));
+                super(new WebSocket('wss://device-manager.scratch.mit.edu:20110/scratch/bt'));
             }
 
             requestDevice(options) {
