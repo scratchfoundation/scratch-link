@@ -1,24 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Net.WebSockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using Fleck;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace scratch_link
 {
-    using RequestId = UInt32;
-
     using CompletionHandler = Func<JToken /*result*/, JsonRpcException /*error*/, Task>;
+    using RequestId = UInt32;
 
     internal abstract class Session: IDisposable
     {
         private static readonly Encoding Encoding = Encoding.UTF8;
 
-        private readonly WebSocket _webSocket;
+        private readonly IWebSocketConnection _webSocket;
         private readonly ArraySegment<byte> _readBuffer;
         private readonly char[] _decodeBuffer;
         private readonly int _maxMessageSize;
@@ -26,7 +24,7 @@ namespace scratch_link
         private RequestId _nextId;
         private readonly Dictionary<RequestId, CompletionHandler> _completionHandlers;
 
-        protected Session(WebSocket webSocket, int bufferSize = 4096, int maxMessageSize = 1024 * 1024)
+        protected Session(IWebSocketConnection webSocket, int bufferSize = 4096, int maxMessageSize = 1024 * 1024)
         {
             _webSocket = webSocket;
             _readBuffer = new ArraySegment<byte>(new byte[bufferSize]);
@@ -40,7 +38,7 @@ namespace scratch_link
         {
             if (disposing)
             {
-                _webSocket?.Dispose();
+                _webSocket?.Close();
             }
         }
 
@@ -83,9 +81,7 @@ namespace scratch_link
             try
             {
                 var requestText = JsonConvert.SerializeObject(request);
-                var requestData = Encoding.GetBytes(requestText);
-                await _webSocket.SendAsync(
-                    new ArraySegment<byte>(requestData), WebSocketMessageType.Text, true, CancellationToken.None);
+                await _webSocket.Send(requestText);
             }
             catch (Exception e)
             {
@@ -94,68 +90,23 @@ namespace scratch_link
             }
         }
 
-        public async Task Start()
+        public async Task OnMessage(string message)
         {
-            // Suppress warning about .Array potentially being null
-            if (_readBuffer.Array == null) throw new NullReferenceException();
-
-            for (;;)
-            {
-                var receiveResult = await _webSocket.ReceiveAsync(_readBuffer, CancellationToken.None);
-                if (receiveResult.CloseStatus.HasValue)
-                {
-                    await _webSocket.CloseAsync(receiveResult.CloseStatus.Value, receiveResult.CloseStatusDescription,
-                        CancellationToken.None);
-                    return;
-                }
-
-                if (receiveResult.EndOfMessage)
-                {
-                    var message = Encoding.GetString(_readBuffer.Array, 0, receiveResult.Count);
-                    DidReceiveMessage(message, receiveResult.MessageType);
-                }
-                else // fragmented message
-                {
-                    var decoder = Encoding.GetDecoder();
-                    var messageBuilder = new StringBuilder();
-
-                    void DecodeFragment()
-                    {
-                        var numDecodedCharacters = decoder.GetChars(
-                            _readBuffer.Array, 0, receiveResult.Count,
-                            _decodeBuffer, 0, receiveResult.EndOfMessage);
-                        if (messageBuilder.Length + numDecodedCharacters > _maxMessageSize)
-                        {
-                            throw new ApplicationException("Incoming message too big");
-                        }
-
-                        messageBuilder.Append(_decodeBuffer, 0, numDecodedCharacters);
-                    }
-
-                    DecodeFragment();
-                    while (!receiveResult.EndOfMessage)
-                    {
-                        receiveResult = await _webSocket.ReceiveAsync(_readBuffer, CancellationToken.None);
-                        if (receiveResult.CloseStatus.HasValue)
-                        {
-                            await _webSocket.CloseAsync(receiveResult.CloseStatus.Value,
-                                receiveResult.CloseStatusDescription, CancellationToken.None);
-                            Debug.Print("Socket closed before end of fragmented message");
-                            return;
-                        }
-                        DecodeFragment();
-                    }
-
-                    var message = messageBuilder.ToString();
-                    DidReceiveMessage(message, receiveResult.MessageType);
-                }
-            }
+            await DidReceiveMessage(message, async response => await _webSocket.Send(response));
         }
 
-        private async void DidReceiveMessage(string message, WebSocketMessageType messageType)
+        public async Task OnBinary(byte[] messageBytes)
         {
-            Debug.Assert(messageType != WebSocketMessageType.Close);
+            // the message MUST be a string encoded in UTF-8 format
+            var message = Encoding.UTF8.GetString(messageBytes);
+            await DidReceiveMessage(message, async response => {
+                var responseBytes = Encoding.UTF8.GetBytes(response);
+                await _webSocket.Send(responseBytes);
+            });
+        }
 
+        private async Task DidReceiveMessage(string message, Func<string, Task> sendResponseText)
+        {
             var encoding = Encoding.UTF8;
             JToken responseId = null;
 
@@ -168,10 +119,8 @@ namespace scratch_link
                 );
 
                 var responseText = JsonConvert.SerializeObject(response);
-                var responseBytes = encoding.GetBytes(responseText);
 
-                await _webSocket.SendAsync(
-                    new ArraySegment<byte>(responseBytes), messageType, true, CancellationToken.None);
+                await sendResponseText(responseText);
             }
 
             async Task SendResponse(JToken result, JsonRpcException error)

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Fleck;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;
 using Windows.Devices.Enumeration;
@@ -42,7 +42,7 @@ namespace scratch_link
         private DataWriter _socketWriter;
         private DataReader _socketReader;
 
-        internal BTSession(WebSocket webSocket) : base(webSocket)
+        internal BTSession(IWebSocketConnection webSocket) : base(webSocket)
         {
         }
 
