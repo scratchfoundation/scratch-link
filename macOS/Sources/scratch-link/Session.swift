@@ -1,16 +1,17 @@
 import Foundation
-import Swifter
+import Telegraph
 
+// TODO: implement remaining JSON-RPC 2.0 features like batching
 class Session {
     typealias RequestID = Int
     typealias JSONRPCCompletionHandler = (_ result: Any?, _ error: JSONRPCError?) -> Void
 
-    private let wss: WebSocketSession
+    private let webSocket: WebSocket
     private var nextId: RequestID
     private var completionHandlers: [RequestID:JSONRPCCompletionHandler]
 
-    required init(withSocket wss: WebSocketSession) {
-        self.wss = wss
+    required init(withSocket webSocket: WebSocket) {
+        self.webSocket = webSocket
         self.nextId = 0
         self.completionHandlers = [RequestID:JSONRPCCompletionHandler]()
     }
@@ -21,6 +22,37 @@ class Session {
             print("Warning: session was closed with \(completionHandlers.count) pending requests")
             for (_, completionHandler) in completionHandlers {
                 completionHandler(nil, JSONRPCError.InternalError(data: "Session closed"))
+            }
+        }
+    }
+
+    func didReceiveMessage(_ message: WebSocketMessage) {
+        switch message.payload {
+        case let .text(text):
+            didReceiveText(text)
+        case let .binary(data):
+            didReceiveBinary(data)
+        default:
+            break
+        }
+    }
+
+    func didReceiveText(_ text: String) {
+        didReceiveData(text.utf8Data) { jsonResponseData in
+            if let jsonResponseData = jsonResponseData {
+                if let jsonResponseText = String(data: jsonResponseData, encoding: .utf8) {
+                    self.webSocket.send(text: jsonResponseText)
+                } else {
+                    print("Failed to decode response")
+                }
+            }
+        }
+    }
+
+    func didReceiveBinary(_ data: Data) {
+        didReceiveData(data) { jsonResponseData in
+            if let jsonResponseData = jsonResponseData {
+                self.webSocket.send(data: jsonResponseData)
             }
         }
     }
@@ -57,7 +89,7 @@ class Session {
         do {
             let requestData = try JSONSerialization.data(withJSONObject: request)
             if let requestText = String(bytes: requestData, encoding: .utf8) {
-                wss.writeText(requestText)
+                webSocket.send(text: requestText)
             } else {
                 print("Error encoding request text. Request: \(request)")
             }
