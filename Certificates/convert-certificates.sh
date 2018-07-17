@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ######
 
@@ -16,10 +16,18 @@
 mkdir -p int out
 
 # Extract each certificate from the PEM: ours, intermediate, CA
-split -p "-----BEGIN CERTIFICATE-----" dm.pem int/cert-
-mv int/{cert-aa,scratch-device-manager.pem}
-mv int/{cert-ab,int.pem}
-mv int/{cert-ac,ca.pem}
+if [ "`uname`" == "Darwin" ]; then
+	split -p "-----BEGIN CERTIFICATE-----" dm.pem int/cert-
+	mv int/{cert-aa,scratch-device-manager.pem}
+	mv int/{cert-ab,int.pem}
+	mv int/{cert-ac,ca.pem}
+else
+	csplit -f int/cert- dm.pem '/-----BEGIN CERTIFICATE-----/' '{2}'
+	rm int/cert-00 # empty
+	mv int/{cert-01,scratch-device-manager.pem}
+	mv int/{cert-02,int.pem}
+	mv int/{cert-03,ca.pem}
+fi
 
 # Mac and Windows both want a single PFX containing the certificate along with its private key
 openssl pkcs12 \
