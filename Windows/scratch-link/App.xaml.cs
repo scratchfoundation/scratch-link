@@ -49,7 +49,7 @@ namespace scratch_link
                 [SDMPath.BT] = new SessionManager(webSocket => new BTSession(webSocket))
             };
 
-            var certificate = new X509Certificate2(scratch_link.Properties.Resources.WssCertificate);
+            var certificate = new X509Certificate2(scratch_link.Properties.Resources.WssCertificate, "Scratch");
             _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}")
             {
                 RestartAfterListenError = true,
