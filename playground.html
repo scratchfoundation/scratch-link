@@ -471,7 +471,7 @@
                     this._dirty = true;
                     requestAnimationFrame(() => {
                         this._trim();
-                        this._logElement.innerText = this._lines.join('\n');
+                        this._logElement.textContent = this._lines.join('\n');
                         if (this._follow) {
                             this._logElement.scrollTop = this._logElement.scrollHeight;
                         }
