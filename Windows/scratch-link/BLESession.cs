@@ -340,7 +340,9 @@ namespace scratch_link
             switch (readResult.Status)
             {
                 case GattCommunicationStatus.Success:
-                    return EncodingHelpers.EncodeBuffer(readResult.Value.ToArray(), encoding);
+                    // Calling ToArray() on a buffer of length 0 throws an ArgumentException
+                    var resultBytes = readResult.Value.Length > 0 ? readResult.Value.ToArray() : new byte[0];
+                    return EncodingHelpers.EncodeBuffer(resultBytes, encoding);
                 case GattCommunicationStatus.Unreachable:
                     throw JsonRpcException.ApplicationError("destination unreachable");
                 default:
