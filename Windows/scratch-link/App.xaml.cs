@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Fleck;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
-using System.Net.WebSockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 
 namespace scratch_link
@@ -22,7 +22,7 @@ namespace scratch_link
         }
 
         private readonly NotifyIcon _icon;
-        private readonly HttpListener _server;
+        private readonly WebSocketServer _server;
         private readonly SortedDictionary<string, SessionManager> _sessionManagers;
 
         private App()
@@ -49,19 +49,21 @@ namespace scratch_link
                 [SDMPath.BT] = new SessionManager(webSocket => new BTSession(webSocket))
             };
 
-            _server = new HttpListener();
-            // "http://+:{SDMPort}" would be better but requires elevated privileges
-            _server.Prefixes.Add($"http://127.0.0.1:{SDMPort}/");
-            _server.Start();
+            var certificate = new X509Certificate2(scratch_link.Properties.Resources.WssCertificate, "Scratch");
+            _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}")
+            {
+                RestartAfterListenError = true,
+                Certificate = certificate
+            };
+            _server.Start(OnNewSocket);
 
-            AcceptNextClient();
             UpdateIconText();
         }
 
         private void PrepareToClose()
         {
             _icon.Visible = false;
-            _server.Close();
+            _server.Dispose();
         }
 
         private void OnExitClicked(object sender, EventArgs e)
@@ -70,59 +72,23 @@ namespace scratch_link
             Environment.Exit(0);
         }
 
-        private void AcceptNextClient()
+        private void OnNewSocket(IWebSocketConnection websocket)
         {
-            // If the server isn't listening the app is probably quitting
-            if (_server.IsListening)
-            {
-                _server.BeginGetContext(ClientDidConnect, null);
-            }
-        }
-
-        private async void ClientDidConnect(IAsyncResult ar)
-        {
-            if (!_server.IsListening)
-            {
-                // App is probably quitting
-                return;
-            }
-
-            // Get ready for another connection
-            AcceptNextClient();
-
-            // Process this connection
-            WebSocket webSocket;
-
-            var listenerContext = _server.EndGetContext(ar);
-            try
-            {
-                var websocketContext = await listenerContext.AcceptWebSocketAsync(null);
-                webSocket = websocketContext.WebSocket;
-            }
-            catch (Exception e)
-            {
-                listenerContext.Response.StatusCode = 500;
-                listenerContext.Response.Close();
-                Debug.Print($"Exception attempting to accept a web socket connection: {e}");
-                return;
-            }
-
-            var sessionManager = _sessionManagers[listenerContext.Request.Url.AbsolutePath];
+            var sessionManager = _sessionManagers[websocket.ConnectionInfo.Path];
             if (sessionManager != null)
             {
-                sessionManager.ClientDidConnect(webSocket);
+                sessionManager.ClientDidConnect(websocket);
             }
             else
             {
-                listenerContext.Response.StatusCode = 404;
-                listenerContext.Response.Close();
-                Debug.Print($"Client tried to connect to unknown path: {listenerContext.Request.Url.AbsolutePath}");
+                // TODO: reply with a message indicating that the client connected to an unknown/invalid path
+                // See https://github.com/statianzo/Fleck/issues/199
+                websocket.OnOpen = () => websocket.Close();
+                Debug.Print($"Client tried to connect to unknown path: {websocket.ConnectionInfo.Path}");
             }
-
-            UpdateIconText();
         }
 
-        private void UpdateIconText()
+        internal void UpdateIconText()
         {
             int totalSessions = _sessionManagers.Values.Aggregate(0,
                 (total, sessionManager) =>

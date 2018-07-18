@@ -1,6 +1,6 @@
-﻿using System;
-using System.Diagnostics;
-using System.Net.WebSockets;
+﻿using Fleck;
+using System;
+using System.Windows;
 
 namespace scratch_link
 {
@@ -8,34 +8,33 @@ namespace scratch_link
     {
         public int ActiveSessionCount { get; private set; }
 
-        private readonly Func<WebSocket, Session> _sessionCreationDelegate;
+        private readonly Func<IWebSocketConnection, Session> _sessionCreationDelegate;
 
-        internal SessionManager(Func<WebSocket, Session> sessionCreationDelegate)
+        internal SessionManager(Func<IWebSocketConnection, Session> sessionCreationDelegate)
         {
             ActiveSessionCount = 0;
             _sessionCreationDelegate = sessionCreationDelegate;
         }
 
-        public async void ClientDidConnect(WebSocket webSocket)
+        public void ClientDidConnect(IWebSocketConnection webSocket)
         {
             Session session = null;
 
-            try
+            webSocket.OnOpen = () =>
             {
                 session = _sessionCreationDelegate(webSocket);
                 ++ActiveSessionCount;
-                await session.Start();
-            }
-            catch (Exception e)
-            {
-                Debug.Print($"Exception causing WebSocket session to close: ${e}");
-            }
-            finally
+                ((App)(Application.Current)).UpdateIconText();
+            };
+            webSocket.OnMessage = async message => await session?.OnMessage(message);
+            webSocket.OnBinary = async message => await session?.OnBinary(message);
+            webSocket.OnClose = () =>
             {
                 --ActiveSessionCount;
+                ((App)(Application.Current)).UpdateIconText();
                 session?.Dispose();
-                webSocket?.Dispose();
-            }
+                webSocket?.Close();
+            };
         }
     }
 }

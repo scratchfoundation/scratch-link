@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Fleck;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using Newtonsoft.Json.Linq;
 
 namespace scratch_link
 {
@@ -56,7 +56,7 @@ namespace scratch_link
         /// Create a session dedicated to this Web Socket.
         /// </summary>
         /// <param name="webSocket"></param>
-        internal BLESession(WebSocket webSocket) : base(webSocket)
+        internal BLESession(IWebSocketConnection webSocket) : base(webSocket)
         {
             _reportedPeripherals = new HashSet<ulong>();
         }

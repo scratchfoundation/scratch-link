@@ -6,10 +6,13 @@ CONFIG=release
 
 BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 
+# TODO: don't hard-code this. Probably `swift` or `swiftc` or `xcodebuild` or something knows...
+SWIFT_LIB_PATH=/Library/Developer/CommandLineTools/usr/lib/swift/macosx
+
 APP_DEST=Release/$(APP_BUNDLE)
 APP_VERSION_EXT=$(APP_VERSION).$(shell date -u "+%Y%m%d%H%M")
 
-.PHONY: all clean distclean uninstall
+.PHONY: all clean distclean uninstall xcodeproj
 
 all: $(APP_DEST)
 
@@ -17,17 +20,27 @@ dist: $(APP_DEST)
 	productbuild --sign "Code-to-Learn Foundation" --component "$<" /Applications \
 	    "Release/scratch-link-`plutil -extract CFBundleVersion xml1 -o - Release/Scratch\ Link.app/Contents/Info.plist | xmllint -xpath '/plist/string/text()' -`.pkg"
 
-$(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift)
-	swift build --configuration $(CONFIG) --static-swift-stdlib
+$(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift) Carthage
+	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xswiftc -F -Xswiftc Carthage/Build/Mac/ -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
+
+Carthage:
+	carthage update --platform macOS && touch Carthage
+
+xcodeproj:
+	swift package generate-xcodeproj --xcconfig-overrides Carthage.xcconfig
 
 $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
 	rm -rf "$@"
+	mkdir -p "$@/Contents"
+	cp -av "Carthage/Build/Mac/" "$@/Contents/Frameworks/"
+	cp -av $(SWIFT_LIB_PATH)/libswift{AppKit,Core{,Data,Foundation,Graphics,Image},Darwin,Dispatch,Foundation,IOKit,Metal,ObjectiveC,QuartzCore,XPC,os}.dylib "$@/Contents/Frameworks/"
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_PATH)/scratch-link "$@/Contents/MacOS/"
 	cp Packaging/Info.plist "$@/Contents/"
 	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
+	cp -rv ../Certificates/out/* "$@/Contents/Resources/"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
 	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "Release/iconTemplate.iconset"
 	codesign --sign $(SIGN_ID) --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"

@@ -9,9 +9,6 @@
 //------------------------------------------------------------------------------
 
 namespace scratch_link.Properties {
-    using System;
-
-
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -76,6 +73,16 @@ namespace scratch_link.Properties {
         internal static string AppTitle {
             get {
                 return ResourceManager.GetString("AppTitle", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] WssCertificate {
+            get {
+                object obj = ResourceManager.GetObject("WssCertificate", resourceCulture);
+                return ((byte[])(obj));
             }
         }
     }

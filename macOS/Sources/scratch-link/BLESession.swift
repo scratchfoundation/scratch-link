@@ -1,6 +1,6 @@
 import CoreBluetooth
 import Foundation
-import Swifter
+import Telegraph
 
 class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDelegate {
     private static let MinimumSignalStrength:NSNumber = -70
@@ -48,7 +48,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         }
     }
 
-    required init(withSocket wss: WebSocketSession) {
+    required init(withSocket webSocket: WebSocket) {
         self.central = CBCentralManager()
         self.centralDelegateHelper = CBCentralManagerDelegateHelper()
         self.peripheralDelegateHelper = CBPeripheralDelegateHelper()
@@ -56,7 +56,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         self.watchedCharacteristics = []
         self.characteristicDiscoveryCompletion = [:]
         self.onBluetoothReadyTasks = []
-        super.init(withSocket: wss)
+        super.init(withSocket: webSocket)
         self.centralDelegateHelper.delegate = self
         self.central.delegate = self.centralDelegateHelper
         self.peripheralDelegateHelper.delegate = self

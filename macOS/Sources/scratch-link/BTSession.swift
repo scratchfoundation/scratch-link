@@ -1,6 +1,6 @@
 import Foundation
 import IOBluetooth
-import Swifter
+import Telegraph
 
 class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
     private var inquiry: IOBluetoothDeviceInquiry
@@ -14,9 +14,9 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         case Connected
     }
     
-    required init(withSocket wss: WebSocketSession) {
+    required init(withSocket webSocket: WebSocket) {
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
-        super.init(withSocket: wss)
+        super.init(withSocket: webSocket)
         inquiry.delegate = self
     }
     
