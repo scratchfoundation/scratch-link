@@ -77,7 +77,7 @@ namespace scratch_link
                     await completion(null, null);
                     break;
                 case "connect":
-                    Connect(parameters);
+                    await Connect(parameters);
                     await completion(null, null);
                     break;
                 case "write":
@@ -205,7 +205,7 @@ namespace scratch_link
         /// <param name="parameters">
         /// A JSON object containing the UUID of a peripheral found by the most recent discovery request
         /// </param>
-        private async void Connect(JObject parameters)
+        private async Task Connect(JObject parameters)
         {
             if (_services != null)
             {
@@ -371,11 +371,11 @@ namespace scratch_link
             if (endpointInfo.TryGetValue("serviceId", out var serviceToken))
             {
                 serviceId = GattHelpers.GetServiceUuid(serviceToken);
-                service = _services.FirstOrDefault(s => s.Uuid == serviceId);
+                service = _services?.FirstOrDefault(s => s.Uuid == serviceId);
             }
             else
             {
-                service = _services.FirstOrDefault(); // could in theory be null
+                service = _services?.FirstOrDefault(); // could in theory be null
                 serviceId = service?.Uuid;
             }
 
@@ -384,7 +384,7 @@ namespace scratch_link
                 throw JsonRpcException.InvalidParams($"Could not determine service UUID for {errorContext}");
             }
 
-            if (!_allowedServices.Contains(serviceId.Value))
+            if (_allowedServices?.Contains(serviceId.Value) != true)
             {
                 throw JsonRpcException.InvalidParams($"attempt to access unexpected service: {serviceId}");
             }
