@@ -44,10 +44,16 @@ namespace scratch_link
         private readonly HashSet<ulong> _reportedPeripherals;
 
         /// <summary>
+        /// The characteristics for which notification has been requested.
+        /// </summary>
+        private readonly HashSet<GattCharacteristic> _notifyCharacteristics;
+
+        /// <summary>
         /// In addition to the services mentioned in _filters, the client will have access to these if present.
         /// </summary>
         private HashSet<Guid> _optionalServices;
 
+        private BluetoothLEDevice _peripheral;
         private IReadOnlyList<GattDeviceService> _services;
         private BluetoothLEAdvertisementWatcher _watcher;
         private HashSet<Guid> _allowedServices;
@@ -59,6 +65,30 @@ namespace scratch_link
         internal BLESession(IWebSocketConnection webSocket) : base(webSocket)
         {
             _reportedPeripherals = new HashSet<ulong>();
+            _notifyCharacteristics = new HashSet<GattCharacteristic>();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (var characteristic in _notifyCharacteristics) {
+                    _ = StopNotifications(characteristic);
+                }
+                _notifyCharacteristics.Clear();
+
+                if (_services != null)
+                {
+                    foreach (var service in _services)
+                    {
+                        service.Dispose();
+                    }
+                    _services = null;
+                }
+
+                _peripheral?.Dispose();
+                _peripheral = null;
+            }
         }
 
         /// <summary>
@@ -77,7 +107,7 @@ namespace scratch_link
                     await completion(null, null);
                     break;
                 case "connect":
-                    Connect(parameters);
+                    await Connect(parameters);
                     await completion(null, null);
                     break;
                 case "write":
@@ -205,7 +235,7 @@ namespace scratch_link
         /// <param name="parameters">
         /// A JSON object containing the UUID of a peripheral found by the most recent discovery request
         /// </param>
-        private async void Connect(JObject parameters)
+        private async Task Connect(JObject parameters)
         {
             if (_services != null)
             {
@@ -219,8 +249,8 @@ namespace scratch_link
                 throw JsonRpcException.InvalidParams($"invalid peripheral ID: {peripheralId}");
             }
 
-            var peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
-            var servicesResult = await peripheral.GetGattServicesAsync(BluetoothCacheMode.Uncached);
+            _peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
+            var servicesResult = await _peripheral.GetGattServicesAsync(BluetoothCacheMode.Uncached);
             if (servicesResult.Status != GattCommunicationStatus.Success)
             {
                 throw JsonRpcException.ApplicationError($"failed to enumerate GATT services: {servicesResult.Status}");
@@ -289,21 +319,32 @@ namespace scratch_link
                 : "base64";
             var startNotifications = parameters["startNotifications"]?.ToObject<bool>() ?? false;
 
-            var result = await endpoint.ReadValueAsync(BluetoothCacheMode.Uncached);
+            var readResult = await endpoint.ReadValueAsync(BluetoothCacheMode.Uncached);
 
             if (startNotifications)
             {
-                endpoint.ValueChanged += OnValueChanged;
+                _notifyCharacteristics.Add(endpoint);
+                var notificationRequestResult = await
+                    endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
+                        GattClientCharacteristicConfigurationDescriptorValue.Notify);
+                if (notificationRequestResult == GattCommunicationStatus.Success)
+                {
+                    endpoint.ValueChanged += OnValueChanged;
+                }
+                else
+                {
+                    throw JsonRpcException.ApplicationError($"could not start notifications: {notificationRequestResult}");
+                }
             }
 
-            switch (result.Status)
+            switch (readResult.Status)
             {
                 case GattCommunicationStatus.Success:
-                    return EncodingHelpers.EncodeBuffer(result.Value.ToArray(), encoding);
+                    return EncodingHelpers.EncodeBuffer(readResult.Value.ToArray(), encoding);
                 case GattCommunicationStatus.Unreachable:
                     throw JsonRpcException.ApplicationError("destination unreachable");
                 default:
-                    throw JsonRpcException.ApplicationError($"unknown result from read: {result.Status}");
+                    throw JsonRpcException.ApplicationError($"unknown result from read: {readResult.Status}");
             }
         }
 
@@ -314,7 +355,15 @@ namespace scratch_link
         private async Task StopNotifications(JObject parameters)
         {
             var endpoint = await GetEndpoint("stopNotifications request", parameters, GattHelpers.BlockListStatus.ExcludeReads);
+            _notifyCharacteristics.Remove(endpoint);
+            await StopNotifications(endpoint);
+        }
+
+        private async Task StopNotifications(GattCharacteristic endpoint)
+        {
             endpoint.ValueChanged -= OnValueChanged;
+            await endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
+                GattClientCharacteristicConfigurationDescriptorValue.None);
         }
 
         /// <summary>
@@ -359,11 +408,11 @@ namespace scratch_link
             if (endpointInfo.TryGetValue("serviceId", out var serviceToken))
             {
                 serviceId = GattHelpers.GetServiceUuid(serviceToken);
-                service = _services.FirstOrDefault(s => s.Uuid == serviceId);
+                service = _services?.FirstOrDefault(s => s.Uuid == serviceId);
             }
             else
             {
-                service = _services.FirstOrDefault(); // could in theory be null
+                service = _services?.FirstOrDefault(); // could in theory be null
                 serviceId = service?.Uuid;
             }
 
@@ -372,7 +421,7 @@ namespace scratch_link
                 throw JsonRpcException.InvalidParams($"Could not determine service UUID for {errorContext}");
             }
 
-            if (!_allowedServices.Contains(serviceId.Value))
+            if (_allowedServices?.Contains(serviceId.Value) != true)
             {
                 throw JsonRpcException.InvalidParams($"attempt to access unexpected service: {serviceId}");
             }
