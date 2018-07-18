@@ -53,6 +53,7 @@ namespace scratch_link
         /// </summary>
         private HashSet<Guid> _optionalServices;
 
+        private BluetoothLEDevice _peripheral;
         private IReadOnlyList<GattDeviceService> _services;
         private BluetoothLEAdvertisementWatcher _watcher;
         private HashSet<Guid> _allowedServices;
@@ -75,6 +76,18 @@ namespace scratch_link
                     _ = StopNotifications(characteristic);
                 }
                 _notifyCharacteristics.Clear();
+
+                if (_services != null)
+                {
+                    foreach (var service in _services)
+                    {
+                        service.Dispose();
+                    }
+                    _services = null;
+                }
+
+                _peripheral?.Dispose();
+                _peripheral = null;
             }
         }
 
@@ -236,8 +249,8 @@ namespace scratch_link
                 throw JsonRpcException.InvalidParams($"invalid peripheral ID: {peripheralId}");
             }
 
-            var peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
-            var servicesResult = await peripheral.GetGattServicesAsync(BluetoothCacheMode.Uncached);
+            _peripheral = await BluetoothLEDevice.FromBluetoothAddressAsync(peripheralId);
+            var servicesResult = await _peripheral.GetGattServicesAsync(BluetoothCacheMode.Uncached);
             if (servicesResult.Status != GattCommunicationStatus.Success)
             {
                 throw JsonRpcException.ApplicationError($"failed to enumerate GATT services: {servicesResult.Status}");
