@@ -44,6 +44,11 @@ namespace scratch_link
         private readonly HashSet<ulong> _reportedPeripherals;
 
         /// <summary>
+        /// The characteristics for which notification has been requested.
+        /// </summary>
+        private readonly HashSet<GattCharacteristic> _notifyCharacteristics;
+
+        /// <summary>
         /// In addition to the services mentioned in _filters, the client will have access to these if present.
         /// </summary>
         private HashSet<Guid> _optionalServices;
@@ -59,6 +64,18 @@ namespace scratch_link
         internal BLESession(WebSocket webSocket) : base(webSocket)
         {
             _reportedPeripherals = new HashSet<ulong>();
+            _notifyCharacteristics = new HashSet<GattCharacteristic>();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (var characteristic in _notifyCharacteristics) {
+                    _ = StopNotifications(characteristic);
+                }
+                _notifyCharacteristics.Clear();
+            }
         }
 
         /// <summary>
@@ -293,6 +310,7 @@ namespace scratch_link
 
             if (startNotifications)
             {
+                _notifyCharacteristics.Add(endpoint);
                 var notificationRequestResult = await
                     endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
                         GattClientCharacteristicConfigurationDescriptorValue.Notify);
@@ -324,6 +342,12 @@ namespace scratch_link
         private async Task StopNotifications(JObject parameters)
         {
             var endpoint = await GetEndpoint("stopNotifications request", parameters, GattHelpers.BlockListStatus.ExcludeReads);
+            _notifyCharacteristics.Remove(endpoint);
+            await StopNotifications(endpoint);
+        }
+
+        private async Task StopNotifications(GattCharacteristic endpoint)
+        {
             endpoint.ValueChanged -= OnValueChanged;
             await endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
                 GattClientCharacteristicConfigurationDescriptorValue.None);
