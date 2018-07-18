@@ -33,7 +33,7 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 	rm -rf "$@"
 	mkdir -p "$@/Contents"
 	cp -av "Carthage/Build/Mac/" "$@/Contents/Frameworks/"
-	cp -av $(SWIFT_LIB_PATH)/libswift{AppKit,Core{,Data,Foundation,Graphics,Image},Darwin,Dispatch,Foundation,IOKit,Metal,ObjectiveC,QuartzCore,XPC,os}.dylib "$@/Contents/Frameworks/"
+	cp -av $(SWIFT_LIB_PATH)/libswift*.dylib "$@/Contents/Frameworks/"
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_PATH)/scratch-link "$@/Contents/MacOS/"
 	cp Packaging/Info.plist "$@/Contents/"
