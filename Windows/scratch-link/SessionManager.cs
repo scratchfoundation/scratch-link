@@ -18,22 +18,21 @@ namespace scratch_link
 
         public void ClientDidConnect(IWebSocketConnection webSocket)
         {
-            Session session = null;
+            var session = _sessionCreationDelegate(webSocket);
 
             webSocket.OnOpen = () =>
             {
-                session = _sessionCreationDelegate(webSocket);
                 ++ActiveSessionCount;
                 ((App)(Application.Current)).UpdateIconText();
             };
-            webSocket.OnMessage = async message => await session?.OnMessage(message);
-            webSocket.OnBinary = async message => await session?.OnBinary(message);
+            webSocket.OnMessage = async message => await session.OnMessage(message);
+            webSocket.OnBinary = async message => await session.OnBinary(message);
             webSocket.OnClose = () =>
             {
                 --ActiveSessionCount;
                 ((App)(Application.Current)).UpdateIconText();
-                session?.Dispose();
-                webSocket?.Close();
+                session.Dispose();
+                session = null;
             };
         }
     }
