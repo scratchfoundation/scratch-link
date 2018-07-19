@@ -66,5 +66,11 @@ The build is primarily controlled through `make`:
 The Windows version of this project is in the `Windows` subdirectory. It uses Visual Studio 2017 and targets Windows
 10.0.15063.0 and higher.
 
-* Ensure that the Windows 10.0.15063 SDK is installed
-* Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio 2017
+Prerequisites:
+* Windows 10.0.15063 SDK
+* [WiX Toolset](http://wixtoolset.org/releases/) (tested with 3.11.1)
+* [WiX Toolset Visual Studio Extension](
+  https://marketplace.visualstudio.com/items?itemName=RobMensching.WixToolsetVisualStudio2017Extension)
+  (tested with 0.9.21.62588)
+
+Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio 2017.
