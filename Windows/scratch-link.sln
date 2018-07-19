@@ -18,7 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		..\Documentation\NetworkProtocol.md = ..\Documentation\NetworkProtocol.md
 	EndProjectSection
 EndProject
-Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "store-packaging", "store-packaging\store-packaging.wapproj", "{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}"
+Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "ScratchLinkAPPX", "ScratchLinkAPPX\ScratchLinkAPPX.wapproj", "{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
