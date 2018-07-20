@@ -74,3 +74,12 @@ Prerequisites:
   (tested with 0.9.21.62588)
 
 Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio 2017.
+
+#### Known Issues
+
+1. Building the `ScratchLinkSetup` project may fail with a `System.IO.DirectoryNotFoundException` if the Windows case
+   sensitivity flag is enabled on any directory in the path to the Scratch Link project files. This flag can become
+   enabled when WSL is used to create or manipulate directories.
+   * Solution: Use `fsutil file queryCaseSensitiveInfo myDirName` to check if `myDirName` has its case sensitivity
+     flag set. If so, use `fsutil file setCaseSensitiveInfo myDirName disable` to clear the flag.
+   * More detail: https://github.com/wixtoolset/issues/issues/5809

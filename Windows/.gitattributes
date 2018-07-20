@@ -19,4 +19,6 @@
 *.settings text eol=crlf
 *.sln text eol=crlf
 *.wapproj text eol=crlf
+*.wixproj text eol=crlf
+*.wxs text eol=crlf
 *.xaml text eol=crlf
