@@ -14,9 +14,9 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         case Connected
     }
     
-    required init(withSocket webSocket: WebSocket) {
+    required init(withSocket webSocket: WebSocket) throws {
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
-        super.init(withSocket: webSocket)
+        try super.init(withSocket: webSocket)
         inquiry.delegate = self
     }
     

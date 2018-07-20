@@ -2,11 +2,11 @@ import Foundation
 import Telegraph
 
 protocol SessionManagerBase {
-    func makeSession(forSocket webSocket: WebSocket) -> Session
+    func makeSession(forSocket webSocket: WebSocket) throws -> Session
 }
 
 class SessionManager<SessionType: Session>: SessionManagerBase {
-    func makeSession(forSocket webSocket: WebSocket) -> Session {
-        return SessionType.init(withSocket: webSocket)
+    func makeSession(forSocket webSocket: WebSocket) throws -> Session {
+        return try SessionType.init(withSocket: webSocket)
     }
 }
