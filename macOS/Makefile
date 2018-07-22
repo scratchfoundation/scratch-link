@@ -10,7 +10,8 @@ BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 SWIFT_LIB_PATH=/Library/Developer/CommandLineTools/usr/lib/swift/macosx
 
 APP_DEST=Release/$(APP_BUNDLE)
-APP_VERSION_EXT=$(APP_VERSION).$(shell date -u "+%Y%m%d%H%M")
+VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%Y%m%d%H%M')
+APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
 
 .PHONY: all clean distclean uninstall xcodeproj
 
