@@ -1,4 +1,4 @@
-SIGN_ID=Code-to-Learn\ Foundation
+SIGN_ID=Code-to-Learn Foundation
 APP_ID=edu.mit.scratch.scratch-link
 APP_BUNDLE=Scratch\ Link.app
 APP_VERSION=1.0
@@ -12,14 +12,39 @@ SWIFT_LIB_PATH=/Library/Developer/CommandLineTools/usr/lib/swift/macosx
 APP_DEST=Release/$(APP_BUNDLE)
 VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%Y%m%d%H%M')
 APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
+PACKAGE_FILE="scratch-link-$(APP_VERSION_EXT).pkg"
 
-.PHONY: all clean distclean uninstall xcodeproj
+.PHONY: all clean dist dist-mas dist-devid distclean uninstall xcodeproj
 
 all: $(APP_DEST)
 
-dist: $(APP_DEST)
-	productbuild --sign "Code-to-Learn Foundation" --component "$<" /Applications \
-	    "Release/scratch-link-`plutil -extract CFBundleVersion xml1 -o - Release/Scratch\ Link.app/Contents/Info.plist | xmllint -xpath '/plist/string/text()' -`.pkg"
+dist: dist-mas dist-devid
+
+# For distribution to the Mac App Store
+dist-mas: Release/mas-$(PACKAGE_FILE)
+
+Release/mas-$(PACKAGE_FILE): Release/mas/$(APP_BUNDLE)
+	productbuild --sign "3rd Party Mac Developer Installer: $(SIGN_ID)" --component "$<" /Applications "$@"
+
+Release/mas/$(APP_BUNDLE): Release/$(APP_BUNDLE)
+	rm -rf Release/mas/
+	mkdir -p Release/mas/
+	cp -aR "$<" "$@"
+	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
+	codesign --display -vv "$@"
+
+# For "Developer ID" distrution outside the Mac App Store
+dist-devid: Release/$(PACKAGE_FILE)
+
+Release/$(PACKAGE_FILE): Release/devid/$(APP_BUNDLE)
+	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component "$<" /Applications "$@"
+
+Release/devid/$(APP_BUNDLE): Release/$(APP_BUNDLE)
+	rm -rf Release/devid
+	mkdir -p Release/devid
+	cp -aR "$<" "$@"
+	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
+	codesign --display -vv "$@"
 
 $(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift) Carthage
 	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xswiftc -F -Xswiftc Carthage/Build/Mac/ -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
@@ -44,8 +69,6 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 	cp -rv ../Certificates/out/* "$@/Contents/Resources/"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
 	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "Release/iconTemplate.iconset"
-	codesign --sign $(SIGN_ID) --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
-	codesign --display -vv "$@"
 
 Release/Scratch\ Link.iconset: ../Images/icon_1024x1024.png
 
