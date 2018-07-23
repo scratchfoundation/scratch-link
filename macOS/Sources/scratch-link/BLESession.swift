@@ -48,7 +48,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         }
     }
 
-    required init(withSocket webSocket: WebSocket) {
+    required init(withSocket webSocket: WebSocket) throws {
         self.central = CBCentralManager()
         self.centralDelegateHelper = CBCentralManagerDelegateHelper()
         self.peripheralDelegateHelper = CBPeripheralDelegateHelper()
@@ -56,7 +56,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         self.watchedCharacteristics = []
         self.characteristicDiscoveryCompletion = [:]
         self.onBluetoothReadyTasks = []
-        super.init(withSocket: webSocket)
+        try super.init(withSocket: webSocket)
         self.centralDelegateHelper.delegate = self
         self.central.delegate = self.centralDelegateHelper
         self.peripheralDelegateHelper.delegate = self

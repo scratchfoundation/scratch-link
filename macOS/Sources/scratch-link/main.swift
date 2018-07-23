@@ -101,8 +101,12 @@ class ScratchLink: NSObject, NSApplicationDelegate, ServerWebSocketDelegate {
     func server(_ server: Server, webSocketDidConnect webSocket: WebSocket, handshake: HTTPRequest) {
         print(handshake.uri.path)
         if let sessionManager = sessionManagers[handshake.uri.path] {
-            let session = sessionManager.makeSession(forSocket: webSocket)
-            sessions[ObjectIdentifier(webSocket)] = session
+            if let session = try? sessionManager.makeSession(forSocket: webSocket) {
+                sessions[ObjectIdentifier(webSocket)] = session
+            } else {
+                webSocket.send(text: "Error making session for connection at path: \(handshake.uri.path)")
+                webSocket.close(immediately: false)
+            }
         } else {
             webSocket.send(text: "Unrecognized path: \(handshake.uri.path)")
             webSocket.close(immediately: false)
