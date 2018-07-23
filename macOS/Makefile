@@ -24,7 +24,7 @@ dist: dist-mas dist-devid
 dist-mas: Release/mas-$(PACKAGE_FILE)
 
 Release/mas-$(PACKAGE_FILE): Release/mas/$(APP_BUNDLE)
-	productbuild --sign "3rd Party Mac Developer Installer: $(SIGN_ID)" --component "$<" /Applications "$@"
+	productbuild --sign "3rd Party Mac Developer Installer: $(SIGN_ID)" --component-compression auto --component "$<" /Applications "$@"
 
 Release/mas/$(APP_BUNDLE): Release/$(APP_BUNDLE)
 	rm -rf Release/mas/
@@ -37,7 +37,7 @@ Release/mas/$(APP_BUNDLE): Release/$(APP_BUNDLE)
 dist-devid: Release/$(PACKAGE_FILE)
 
 Release/$(PACKAGE_FILE): Release/devid/$(APP_BUNDLE)
-	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component "$<" /Applications "$@"
+	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component-compression auto --component "$<" /Applications "$@"
 
 Release/devid/$(APP_BUNDLE): Release/$(APP_BUNDLE)
 	rm -rf Release/devid
