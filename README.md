@@ -66,5 +66,20 @@ The build is primarily controlled through `make`:
 The Windows version of this project is in the `Windows` subdirectory. It uses Visual Studio 2017 and targets Windows
 10.0.15063.0 and higher.
 
-* Ensure that the Windows 10.0.15063 SDK is installed
-* Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio 2017
+Prerequisites:
+* Windows 10.0.15063 SDK
+* [WiX Toolset](http://wixtoolset.org/releases/) (tested with 3.11.1)
+* [WiX Toolset Visual Studio Extension](
+  https://marketplace.visualstudio.com/items?itemName=RobMensching.WixToolsetVisualStudio2017Extension)
+  (tested with 0.9.21.62588)
+
+Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio 2017.
+
+#### Known Issues
+
+1. Building the `ScratchLinkSetup` project may fail with a `System.IO.DirectoryNotFoundException` if the Windows case
+   sensitivity flag is enabled on any directory in the path to the Scratch Link project files. This flag can become
+   enabled when WSL is used to create or manipulate directories.
+   * Solution: Use `fsutil file queryCaseSensitiveInfo myDirName` to check if `myDirName` has its case sensitivity
+     flag set. If so, use `fsutil file setCaseSensitiveInfo myDirName disable` to clear the flag.
+   * More detail: https://github.com/wixtoolset/issues/issues/5809

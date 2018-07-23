@@ -18,7 +18,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		..\Documentation\NetworkProtocol.md = ..\Documentation\NetworkProtocol.md
 	EndProjectSection
 EndProject
-Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "store-packaging", "store-packaging\store-packaging.wapproj", "{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}"
+Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "ScratchLinkAPPX", "ScratchLinkAPPX\ScratchLinkAPPX.wapproj", "{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "ScratchLinkSetup", "ScratchLinkSetup\ScratchLinkSetup.wixproj", "{5AC1AA26-9C7C-4A81-99B7-21222DA0D89E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +38,8 @@ Global
 		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{5AC1AA26-9C7C-4A81-99B7-21222DA0D89E}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{5AC1AA26-9C7C-4A81-99B7-21222DA0D89E}.Release|Any CPU.ActiveCfg = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
