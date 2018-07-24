@@ -48,7 +48,9 @@ The build is primarily controlled through `make`:
   4. Copy all necessary frameworks and dylibs into the app bundle
   5. Generate and/or copy other resources into the app bundle (certificates, icons, etc.)
   6. Sign the app bundle with a certificate from your keychain
-* Prepare a PKG, ready to submit to the Mac App Store, with `make dist`
+* Build PKG installers with `make dist`, which runs both of these:
+  * Build a PKG for the Mac App Store with `make dist-mas`
+  * Build a PKG for non-Store distribution ("Developer ID") with `make dist-devid`
 * Run the app in any of these ways:
   * Use Finder to activate the `Scratch Link` bundle in the `Release` directory
   * Run `"Release/Scratch Link.app/Contents/MacOS/scratch-link"`

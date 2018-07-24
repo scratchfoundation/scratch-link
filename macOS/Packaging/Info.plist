@@ -19,7 +19,7 @@
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.education</string>
     <key>LSMinimumSystemVersion</key>
-    <string>10.10</string>
+    <string>10.13</string>
     <key>LSMultipleInstancesProhibited</key>
     <true/>
     <key>NSHighResolutionCapable</key>
