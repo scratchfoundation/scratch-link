@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-	<Product Id="*" Name="Scratch Link" Language="1033" Version="1.0.0.0" Manufacturer="Scratch Foundation" UpgradeCode="0a6bd3c0-5b66-45e7-ab43-b728cf40644d">
-		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-    
+  <Product
+    Id="C4942605-48C4-42E4-B656-E70FB6813020"
+    UpgradeCode="0a6bd3c0-5b66-45e7-ab43-b728cf40644d"
+    Name="Scratch Link"
+    Language="1033"
+    Version="1.0.0.0"
+    Manufacturer="Scratch Foundation"
+    >
+    <Package Id="*" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
     <UI Id="UserInterface">
       <Property Id="WIXUI_INSTALLDIR" Value="TARGETDIR" />
       <Property Id="WixUI_Mode" Value="Custom" />
@@ -26,31 +33,48 @@
       <Publish Dialog="WelcomeDlg" Control="Next" Event="EndDialog" Value="Return" Order="2"></Publish>
     </UI>
     <UIRef Id="WixUI_Common" />
-    
+
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Scratch Link" />
     <Property Id="WixShellExecTarget" Value="[#ScratchLink.exe]" />
     <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
 
-		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-		<MediaTemplate EmbedCab="yes" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
 
-		<Feature Id="ProductFeature" Title="Scratch Link" Level="1">
-			<ComponentGroupRef Id="ProductComponents" />
-		</Feature>
-	</Product>
+    <Feature Id="ProductFeature" Title="Scratch Link" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+    </Feature>
+  </Product>
 
-	<Fragment>
-		<Directory Id="TARGETDIR" Name="SourceDir">
-			<Directory Id="ProgramFilesFolder">
-				<Directory Id="INSTALLFOLDER" Name="Scratch Link" />
-			</Directory>
-		</Directory>
-	</Fragment>
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Scratch Link" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ProgramMenuDir" Name="Scratch Link">
+          <Component Id="ProgramMenuDir" Guid="4D38C3D7-F5B8-495D-BFD6-CDF4A810341B">
+            <RemoveFolder Id="ProgramMenuDir" On="uninstall"/>
+            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+  </Fragment>
 
-	<Fragment>
-		<ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-			<Component Id="Application">
-        <File Id="ScratchLink.exe" Source="$(var.ScratchLink.TargetPath)" />
+  <Fragment>
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="Application">
+        <File Id="ScratchLink.exe" Source="$(var.ScratchLink.TargetPath)" KeyPath="yes">
+          <Shortcut
+            Id="ScratchLink.shortcut"
+            Name="Scratch Link"
+            Directory="ProgramMenuDir"
+            WorkingDirectory="INSTALLFOLDER"
+            Icon="ScratchLink.exe" IconIndex="0"
+            Advertise="yes"
+          />
+        </File>
         <File Source="$(var.ScratchLink.TargetPath).config" />
         <File Source="$(var.ScratchLink.TargetDir)$(var.ScratchLink.TargetName).pdb" />
       </Component>
@@ -63,6 +87,8 @@
       <Component>
         <File Source="$(var.ScratchLink.TargetDir)System.Runtime.WindowsRuntime.dll" />
       </Component>
-		</ComponentGroup>
-	</Fragment>
+      <ComponentRef Id="ProgramMenuDir"/>
+    </ComponentGroup>
+    <Icon Id="ScratchLink.exe" SourceFile="$(var.ScratchLink.TargetPath)" />
+  </Fragment>
 </Wix>
