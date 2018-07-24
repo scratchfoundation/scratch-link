@@ -6,9 +6,6 @@ CONFIG=release
 
 BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 
-# TODO: don't hard-code this. Probably `swift` or `swiftc` or `xcodebuild` or something knows...
-SWIFT_LIB_PATH=/Library/Developer/CommandLineTools/usr/lib/swift/macosx
-
 APP_DEST=Release/$(APP_BUNDLE)
 VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%Y%m%d%H%M')
 APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
@@ -57,11 +54,10 @@ xcodeproj:
 
 $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
 	rm -rf "$@"
-	mkdir -p "$@/Contents"
-	cp -av "Carthage/Build/Mac/" "$@/Contents/Frameworks/"
-	cp -av $(SWIFT_LIB_PATH)/libswift*.dylib "$@/Contents/Frameworks/"
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_PATH)/scratch-link "$@/Contents/MacOS/"
+	cp -av "Carthage/Build/Mac/" "$@/Contents/Frameworks/"
+	xcrun swift-stdlib-tool --verbose --copy --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	cp Packaging/Info.plist "$@/Contents/"
 	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
@@ -94,7 +90,7 @@ clean:
 	rm -rf Release "$(BIN_PATH)/scratch-link"
 
 distclean: clean
-	rm -rf .build
+	rm -rf .build Carthage
 
 uninstall:
 	@echo "These steps will probably fail unless run with sudo..."
