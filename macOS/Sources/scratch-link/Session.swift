@@ -1,5 +1,8 @@
 import Foundation
-import Telegraph
+import PerfectHTTP
+import PerfectWebSockets
+
+let MaxMessageBytes = 1024 * 1024
 
 enum SessionError: Error {
     case MutexInit(Int32)
@@ -10,6 +13,7 @@ class Session {
     typealias RequestID = Int
     typealias JSONRPCCompletionHandler = (_ result: Any?, _ error: JSONRPCError?) -> Void
 
+    let socketProtocol: String? = nil // must match client sub-protocol
     private let webSocket: WebSocket
     private var nextId: RequestID
     private var completionHandlers: [RequestID:JSONRPCCompletionHandler]
@@ -45,6 +49,29 @@ class Session {
         return try task()
     }
 
+    func handleSession(request req: HTTPRequest, socket: WebSocket) {
+        var message = Data()
+        socket.readBytesMessage { bytes, op, isFinal in
+            guard let bytes = bytes else {
+                // This block will be executed if, for example, the browser window is closed.
+                socket.close()
+                return
+            }
+            message.append(contentsOf: bytes)
+            if message.count > MaxMessageBytes {
+                message.removeAll()
+                socket.sendStringMessage(string: "Message too big", final: true) {
+                    socket.close()
+                }
+                return
+            }
+            if isFinal {
+                self.didReceiveBinary(message)
+                message.removeAll()
+            }
+        }
+    }
+
     // Override this to clean up session-specific resources, if any.
     func sessionWasClosed() {
         usingMutex(&sessionMutex) {
@@ -57,36 +84,11 @@ class Session {
         }
     }
 
-    func didReceiveMessage(_ message: WebSocketMessage) {
-        switch message.payload {
-        case let .text(text):
-            didReceiveText(text)
-        case let .binary(data):
-            didReceiveBinary(data)
-        default:
-            break
-        }
-    }
-
-    func didReceiveText(_ text: String) {
-        didReceiveData(text.utf8Data) { jsonResponseData in
-            if let jsonResponseData = jsonResponseData {
-                if let jsonResponseText = String(data: jsonResponseData, encoding: .utf8) {
-                    self.usingMutex(&self.socketMutex) {
-                        self.webSocket.send(text: jsonResponseText)
-                    }
-                } else {
-                    print("Failed to decode response")
-                }
-            }
-        }
-    }
-
     func didReceiveBinary(_ data: Data) {
         didReceiveData(data) { jsonResponseData in
             if let jsonResponseData = jsonResponseData {
                 self.usingMutex(&self.socketMutex) {
-                    self.webSocket.send(data: jsonResponseData)
+                    self.webSocket.sendBinaryMessage(bytes: [UInt8](jsonResponseData), final: true) {}
                 }
             }
         }
@@ -126,12 +128,8 @@ class Session {
 
         do {
             let requestData = try JSONSerialization.data(withJSONObject: request)
-            if let requestText = String(bytes: requestData, encoding: .utf8) {
-                self.usingMutex(&socketMutex) {
-                    self.webSocket.send(text: requestText)
-                }
-            } else {
-                print("Error encoding request text. Request: \(request)")
+            self.usingMutex(&socketMutex) {
+                self.webSocket.sendBinaryMessage(bytes: [UInt8](requestData), final: true) {}
             }
         } catch {
             print("Error serializing request JSON: \(error)")

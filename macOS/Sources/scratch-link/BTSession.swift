@@ -1,6 +1,6 @@
 import Foundation
 import IOBluetooth
-import Telegraph
+import PerfectWebSockets
 
 class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
     private var inquiry: IOBluetoothDeviceInquiry

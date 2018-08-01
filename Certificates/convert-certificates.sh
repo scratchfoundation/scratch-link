@@ -29,7 +29,7 @@ else
 	mv int/{cert-03,ca.pem}
 fi
 
-# Mac and Windows both want a single PFX containing the certificate along with its private key
+# Windows wants a single PFX containing the certificate along with its private key
 openssl pkcs12 \
 	-inkey scratch-device-manager.key \
 	-in int/scratch-device-manager.pem \
@@ -37,9 +37,9 @@ openssl pkcs12 \
 	-passout pass:Scratch \
 	-export -out out/scratch-device-manager.pfx
 
-# Mac wants a DER file for the CA & intermediates (just one intermediate in our case)
-openssl x509 -in int/int.pem -outform der -out out/int.der
-openssl x509 -in int/ca.pem -outform der -out out/ca.der
+# Perfect on Mac wants a single PEM containing the certificate and key
+# Using grep this way enforces newlines between files
+grep -h ^ int/{scratch-device-manager,int,ca}.pem scratch-device-manager.key | dos2unix > out/scratch-device-manager.pem
 
 # Copy the PFX for the Windows build (the Mac Makefile "pulls" its certificates)
 cp -v out/scratch-device-manager.pfx ../Windows/scratch-link/Resources/
