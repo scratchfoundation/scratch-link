@@ -8,7 +8,6 @@ protocol SessionManagerBase {
 
 class SessionManager<SessionType: Session>: SessionManagerBase, WebSocketSessionHandler {
     let socketProtocol: String? = nil
-    var sessions = [SessionType]()
 
     func makeSessionHandler(forRequest request: HTTPRequest) throws -> WebSocketHandler {
         return WebSocketHandler(handlerProducer: {
@@ -19,7 +18,8 @@ class SessionManager<SessionType: Session>: SessionManagerBase, WebSocketSession
 
     func handleSession(request req: HTTPRequest, socket: WebSocket) {
         do {
-            sessions.append(try SessionType.init(withSocket: socket))
+            let session = try SessionType.init(withSocket: socket)
+            session.handleSession(request: req, socket: socket)
         } catch {
             let webMessage = "Session init failed for path \(req.path)"
             print("\(webMessage): \(error)")

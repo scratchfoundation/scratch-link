@@ -2,8 +2,6 @@ import Foundation
 import PerfectHTTP
 import PerfectWebSockets
 
-let MaxMessageBytes = 1024 * 1024
-
 enum SessionError: Error {
     case MutexInit(Int32)
 }
@@ -50,25 +48,22 @@ class Session {
     }
 
     func handleSession(request req: HTTPRequest, socket: WebSocket) {
-        var message = Data()
-        socket.readBytesMessage { bytes, op, isFinal in
-            guard let bytes = bytes else {
+        var message = ""
+        // Perfect will automatically convert binary messages to look like text messages
+        // TODO: consider inspecting `op` for text/binary so we can send a matched response
+        socket.readStringMessage { text, op, isFinal in
+            guard let text = text else {
                 // This block will be executed if, for example, the browser window is closed.
                 socket.close()
                 return
             }
-            message.append(contentsOf: bytes)
-            if message.count > MaxMessageBytes {
-                message.removeAll()
-                socket.sendStringMessage(string: "Message too big", final: true) {
-                    socket.close()
-                }
-                return
-            }
+            message.append(contentsOf: text)
             if isFinal {
-                self.didReceiveBinary(message)
+                self.didReceiveText(message)
                 message.removeAll()
             }
+            // "recurse" to continue the session
+            self.handleSession(request: req, socket: socket)
         }
     }
 
@@ -84,11 +79,19 @@ class Session {
         }
     }
 
-    func didReceiveBinary(_ data: Data) {
-        didReceiveData(data) { jsonResponseData in
+    func didReceiveText(_ text: String) {
+        guard let messageData = text.data(using: .utf8) else {
+            print("Failed to convert client text to UTF8")
+            return
+        }
+        didReceiveData(messageData) { jsonResponseData in
             if let jsonResponseData = jsonResponseData {
-                self.usingMutex(&self.socketMutex) {
-                    self.webSocket.sendBinaryMessage(bytes: [UInt8](jsonResponseData), final: true) {}
+                if let jsonResponseText = String(data: jsonResponseData, encoding: .utf8) {
+                    self.usingMutex(&self.socketMutex) {
+                        self.webSocket.sendStringMessage(string: jsonResponseText, final: true) {}
+                    }
+                } else {
+                    print("Failed to decode response")
                 }
             }
         }
@@ -128,8 +131,11 @@ class Session {
 
         do {
             let requestData = try JSONSerialization.data(withJSONObject: request)
+            guard let requestText = String(data: requestData, encoding: .utf8) else {
+                throw SerializationError.Internal("Could not serialize request before sending to client")
+            }
             self.usingMutex(&socketMutex) {
-                self.webSocket.sendBinaryMessage(bytes: [UInt8](requestData), final: true) {}
+                self.webSocket.sendStringMessage(string: requestText, final: true) {}
             }
         } catch {
             print("Error serializing request JSON: \(error)")
