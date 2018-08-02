@@ -16,14 +16,17 @@ class SessionManager<SessionType: Session>: SessionManagerBase, WebSocketSession
         })
     }
 
+    func logMessage(socket: WebSocket, webMessage: String, localDetails: String, completion: @escaping (() -> ()) = {}) {
+        print("\(webMessage): \(localDetails)")
+        socket.sendStringMessage(string: webMessage, final: true, completion: completion)
+    }
+
     func handleSession(request req: HTTPRequest, socket: WebSocket) {
         do {
             let session = try SessionType.init(withSocket: socket)
             session.handleSession(request: req, socket: socket)
         } catch {
-            let webMessage = "Session init failed for path \(req.path)"
-            print("\(webMessage): \(error)")
-            socket.sendStringMessage(string: webMessage, final: true) {
+            logMessage(socket: socket, webMessage: "Session init failed for path \(req.path)", localDetails: error.localizedDescription) {
                 socket.close()
             }
         }

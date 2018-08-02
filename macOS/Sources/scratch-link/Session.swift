@@ -54,7 +54,7 @@ class Session {
         socket.readStringMessage { text, op, isFinal in
             guard let text = text else {
                 // This block will be executed if, for example, the browser window is closed.
-                socket.close()
+                self.sessionWasClosed()
                 return
             }
             message.append(contentsOf: text)
