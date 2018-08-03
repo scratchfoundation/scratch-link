@@ -1,8 +1,10 @@
 import Cocoa
 import Foundation
-import Telegraph
+import PerfectHTTP
+import PerfectHTTPServer
+import PerfectWebSockets
 
-let SDMPort: in_port_t = 20110
+let SDMPort: Int = 20110
 
 enum SDMRoute: String {
     case BLE = "/scratch/ble"
@@ -20,8 +22,9 @@ enum SerializationError: Error {
 
 // Provide Scratch access to hardware devices using a JSON-RPC 2.0 API over WebSockets.
 // See NetworkProtocol.md for details.
-class ScratchLink: NSObject, NSApplicationDelegate, ServerWebSocketDelegate {
-    var server: Server?
+class ScratchLink: NSObject, NSApplicationDelegate {
+    var socketProtocol: String?
+
     var sessionManagers = [String: SessionManagerBase]()
     var sessions = [ObjectIdentifier: Session]()
     var statusBarItem: NSStatusItem?
@@ -66,80 +69,41 @@ class ScratchLink: NSObject, NSApplicationDelegate, ServerWebSocketDelegate {
     }
 
     func initServer() throws {
-        let caChain = try ["ca", "int"].map { name -> Certificate in
-            guard let url = Bundle.main.url(forResource: name, withExtension: "der") else {
-                throw InitializationError.Server("Could not build path for certificate: \(name)")
-            }
-            guard let certificate = Certificate(derURL: url) else {
-                throw InitializationError.Server("Coult not load certificate: \(name)")
-            }
-            return certificate
-        }
-        guard let idCertificatePath = Bundle.main.url(forResource: "scratch-device-manager", withExtension: "pfx") else {
-            throw InitializationError.Server("Could not build ID certificate path")
-        }
-        guard let idCertificate = CertificateIdentity(p12URL: idCertificatePath, passphrase: "Scratch") else {
-            throw InitializationError.Server("Could not load ID certificate")
-        }
-
-        let server = Server(identity: idCertificate, caCertificates: caChain)
-        self.server = server
-        server.webSocketDelegate = self
-
         sessionManagers[SDMRoute.BLE.rawValue] = SessionManager<BLESession>()
         sessionManagers[SDMRoute.BT.rawValue] = SessionManager<BTSession>()
 
-        print("Starting server...")
-        do {
-            try server.start(onPort: SDMPort)
-            print("Server started")
-        } catch let error {
-            print("Failed to start server: \(error)")
+        guard let certPath = Bundle.main.path(forResource: "scratch-device-manager", ofType: "pem") else {
+            throw InitializationError.Server("Failed to find certificate resource")
         }
+        var routes = Routes()
+        routes.add(method: .get, uri: "/scratch/*", handler: requestHandler)
+        print("Starting server...")
+        try HTTPServer.launch(wait: false, HTTPServer.Server(
+            tlsConfig: TLSConfiguration(certPath: certPath),
+            name: "device-manager.scratch.mit.edu",
+            port: SDMPort,
+            routes: routes
+        ))
+        print("Server started")
     }
 
-    func server(_ server: Server, webSocketDidConnect webSocket: WebSocket, handshake: HTTPRequest) {
-        print(handshake.uri.path)
-        if let sessionManager = sessionManagers[handshake.uri.path] {
-            if let session = try? sessionManager.makeSession(forSocket: webSocket) {
-                sessions[ObjectIdentifier(webSocket)] = session
-            } else {
-                webSocket.send(text: "Error making session for connection at path: \(handshake.uri.path)")
-                webSocket.close(immediately: false)
+    func requestHandler(request: HTTPRequest, response: HTTPResponse) {
+        print("request path: \(request.path)")
+        if let sessionManager = sessionManagers[request.path] {
+            do {
+                try sessionManager
+                    .makeSessionHandler(forRequest: request)
+                    .handleRequest(request: request, response: response)
+            } catch {
+                response.setBody(string: "Session init failed")
+                response.setHeader(.contentLength, value: "\(response.bodyBytes.count)")
+                response.completed(status: .internalServerError)
             }
         } else {
-            webSocket.send(text: "Unrecognized path: \(handshake.uri.path)")
-            webSocket.close(immediately: false)
+            response.setBody(string: "Unrecognized path: \(request.path)")
+            response.setHeader(.contentLength, value: "\(response.bodyBytes.count)")
+            response.completed(status: .notFound)
         }
-    }
-
-    func server(_ server: Server, webSocketDidDisconnect webSocket: WebSocket, error: Error?) {
-        if let error = error {
-            print("WebSocket disconnecting due to error: \(error)")
-        } else {
-            print("WebSocket disconnecting without error")
-        }
-        if let session = sessions.removeValue(forKey: ObjectIdentifier(webSocket)) {
-            session.sessionWasClosed()
-        }
-    }
-
-    func server(_ server: Server, webSocket: WebSocket, didReceiveMessage message: WebSocketMessage) {
-        if let session = sessions[ObjectIdentifier(webSocket)] {
-            session.didReceiveMessage(message)
-        } else {
-            webSocket.send(text: "No session for this socket")
-            webSocket.close(immediately: false)
-            print("Closing WebSocket on unrecognized path")
-        }
-    }
-
-    func server(_ server: Server, webSocket: WebSocket, didSendMessage message: WebSocketMessage) {
-        // do nothing
-    }
-
-    func serverDidDisconnect(_ server: Server) {
-        print("Server disconnecting")
     }
 }
 

@@ -43,26 +43,22 @@ Release/devid/$(APP_BUNDLE): Release/$(APP_BUNDLE)
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	codesign --display -vv "$@"
 
-$(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift) Carthage
-	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xswiftc -F -Xswiftc Carthage/Build/Mac/ -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
-
-Carthage:
-	carthage update --platform macOS && touch Carthage
+$(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift)
+	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
 
 xcodeproj:
-	swift package generate-xcodeproj --xcconfig-overrides Carthage.xcconfig
+	swift package generate-xcodeproj
 
 $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
 	rm -rf "$@"
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_PATH)/scratch-link "$@/Contents/MacOS/"
-	cp -av "Carthage/Build/Mac/" "$@/Contents/Frameworks/"
 	xcrun swift-stdlib-tool --verbose --copy --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	cp Packaging/Info.plist "$@/Contents/"
 	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
-	cp -rv ../Certificates/out/* "$@/Contents/Resources/"
+	cp -rv ../Certificates/out/scratch-device-manager.pem "$@/Contents/Resources/"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
 	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "Release/iconTemplate.iconset"
 
@@ -90,7 +86,7 @@ clean:
 	rm -rf Release "$(BIN_PATH)/scratch-link"
 
 distclean: clean
-	rm -rf .build Carthage
+	rm -rf .build
 
 uninstall:
 	@echo "These steps will probably fail unless run with sudo..."

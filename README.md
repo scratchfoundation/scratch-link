@@ -36,18 +36,15 @@ To prepare certificates for Scratch Link development:
 
 ### macOS
 
-The macOS version of this project is in the `macOS` subdirectory. It uses Swift 4.1, the Swift Package Manager, and
-[Carthage](https://github.com/Carthage/Carthage#installing-carthage). Ensure that Carthage is installed before
-attempting to build Scratch Link for macOS.
+The macOS version of this project is in the `macOS` subdirectory. It uses Swift 4.1 and the Swift Package Manager.
 
 The build is primarily controlled through `make`:
 * Build the app bundle with `make`, which will automatically:
-  1. Run `Carthage` to download and build frameworks used by Scratch Link
-  2. Compile Scratch Link code using `swift build`
-  3. Create an app bundle at `Release/Scratch Link.app`
-  4. Copy all necessary frameworks and dylibs into the app bundle
-  5. Generate and/or copy other resources into the app bundle (certificates, icons, etc.)
-  6. Sign the app bundle with a certificate from your keychain
+  1. Compile Scratch Link code using `swift build`
+  2. Create an app bundle at `Release/Scratch Link.app`
+  3. Copy all necessary frameworks and dylibs into the app bundle
+  4. Generate and/or copy other resources into the app bundle (certificates, icons, etc.)
+  5. Sign the app bundle with a certificate from your keychain
 * Build PKG installers with `make dist`, which runs both of these:
   * Build a PKG for the Mac App Store with `make dist-mas`
   * Build a PKG for non-Store distribution ("Developer ID") with `make dist-devid`

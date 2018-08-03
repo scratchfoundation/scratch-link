@@ -1,6 +1,6 @@
 import CoreBluetooth
 import Foundation
-import Telegraph
+import PerfectWebSockets
 
 class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDelegate {
     private static let MinimumSignalStrength:NSNumber = -70
