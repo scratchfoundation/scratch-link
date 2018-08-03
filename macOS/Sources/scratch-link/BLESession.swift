@@ -112,7 +112,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         }
 
         let newOptionalServices: Set<CBUUID>?
-        if let jsonOptionalServices = params["optionalServices"] as? [String:Any] {
+        if let jsonOptionalServices = params["optionalServices"] as? [String] {
             newOptionalServices = Set<CBUUID>(try jsonOptionalServices.compactMap({
                 guard let uuid = GATTHelpers.GetUUID(forService: $0) else {
                     throw JSONRPCError.InvalidParams(data: "could not resolve UUID for optional service \($0)")
