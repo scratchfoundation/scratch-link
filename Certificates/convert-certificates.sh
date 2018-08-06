@@ -39,7 +39,7 @@ openssl pkcs12 \
 
 # Perfect on Mac wants a single PEM containing the certificate and key
 # Using grep this way enforces newlines between files
-grep -h ^ int/{scratch-device-manager,int,ca}.pem scratch-device-manager.key | dos2unix > out/scratch-device-manager.pem
+grep -h ^ int/{scratch-device-manager,int,ca}.pem scratch-device-manager.key | tr -d '\r' > out/scratch-device-manager.pem
 
 # Copy the PFX for the Windows build (the Mac Makefile "pulls" its certificates)
 cp -v out/scratch-device-manager.pfx ../Windows/scratch-link/Resources/
