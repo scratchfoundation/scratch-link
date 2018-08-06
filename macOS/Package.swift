@@ -10,6 +10,6 @@ let package = Package(
     targets: [
         .target(
             name: "scratch-link",
-            dependencies: ["PerfectHTTPServer", "PerfectWebSockets"]),
+            dependencies: ["PerfectHTTPServer", "PerfectWebSockets"])
     ]
 )

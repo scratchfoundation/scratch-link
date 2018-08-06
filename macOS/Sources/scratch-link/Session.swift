@@ -3,7 +3,7 @@ import PerfectHTTP
 import PerfectWebSockets
 
 enum SessionError: Error {
-    case MutexInit(Int32)
+    case mutexInit(Int32)
 }
 
 // TODO: implement remaining JSON-RPC 2.0 features like batching
@@ -14,7 +14,7 @@ class Session {
     let socketProtocol: String? = nil // must match client sub-protocol
     private let webSocket: WebSocket
     private var nextId: RequestID
-    private var completionHandlers: [RequestID:JSONRPCCompletionHandler]
+    private var completionHandlers: [RequestID: JSONRPCCompletionHandler]
 
     // Mutex for the WebSocket
     private var socketMutex = pthread_mutex_t()
@@ -25,16 +25,16 @@ class Session {
     required init(withSocket webSocket: WebSocket) throws {
         self.webSocket = webSocket
         self.nextId = 0
-        self.completionHandlers = [RequestID:JSONRPCCompletionHandler]()
+        self.completionHandlers = [RequestID: JSONRPCCompletionHandler]()
 
         let sessionMutexInit = pthread_mutex_init(&sessionMutex, nil)
         if sessionMutexInit != 0 {
-            throw SessionError.MutexInit(sessionMutexInit)
+            throw SessionError.mutexInit(sessionMutexInit)
         }
 
         let socketMutexInit = pthread_mutex_init(&socketMutex, nil)
         if socketMutexInit != 0 {
-            throw SessionError.MutexInit(socketMutexInit)
+            throw SessionError.mutexInit(socketMutexInit)
         }
     }
 
@@ -51,7 +51,7 @@ class Session {
         var message = ""
         // Perfect will automatically convert binary messages to look like text messages
         // TODO: consider inspecting `op` for text/binary so we can send a matched response
-        socket.readStringMessage { text, op, isFinal in
+        socket.readStringMessage { text, _, isFinal in
             guard let text = text else {
                 // This block will be executed if, for example, the browser window is closed.
                 self.sessionWasClosed()
@@ -73,7 +73,7 @@ class Session {
             if completionHandlers.count > 0 {
                 print("Warning: session was closed with \(completionHandlers.count) pending requests")
                 for (_, completionHandler) in completionHandlers {
-                    completionHandler(nil, JSONRPCError.InternalError(data: "Session closed"))
+                    completionHandler(nil, JSONRPCError.internalError(data: "Session closed"))
                 }
             }
         }
@@ -102,14 +102,14 @@ class Session {
     // - pass your call's "return value" (or nil) as `result` on success
     // - pass an instance of `JSONRPCError` for `error` on failure
     // You may also throw a `JSONRPCError` (or any other `Error`) iff it is encountered synchronously.
-    func didReceiveCall(_ method: String, withParams params: [String:Any],
+    func didReceiveCall(_ method: String, withParams params: [String: Any],
                         completion: @escaping JSONRPCCompletionHandler) throws {
         preconditionFailure("Must override didReceiveCall")
     }
 
     // Pass nil for the completion handler to send a Notification
     // Note that the closure is automatically @escaping by virtue of being part of an aggregate (Optional)
-    func sendRemoteRequest(_ method: String, withParams params: [String:Any]? = nil,
+    func sendRemoteRequest(_ method: String, withParams params: [String: Any]? = nil,
                            completion: JSONRPCCompletionHandler? = nil) {
         var request: [String: Any?] = [
             "jsonrpc": "2.0",
@@ -132,7 +132,7 @@ class Session {
         do {
             let requestData = try JSONSerialization.data(withJSONObject: request)
             guard let requestText = String(data: requestData, encoding: .utf8) else {
-                throw SerializationError.Internal("Could not serialize request before sending to client")
+                throw SerializationError.internalError("Could not serialize request before sending to client")
             }
             self.usingMutex(&socketMutex) {
                 self.webSocket.sendStringMessage(string: requestText, final: true) {}
@@ -190,7 +190,7 @@ class Session {
 
         do {
             guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-                throw JSONRPCError.ParseError(data: "unrecognized message structure")
+                throw JSONRPCError.parseError(data: "unrecognized message structure")
             }
 
             // do this as early as possible so that error responses can include it. If it's not present, use null.
@@ -198,7 +198,7 @@ class Session {
 
             // property "jsonrpc" must be exactly "2.0"
             if json["jsonrpc"] as? String != "2.0" {
-                throw JSONRPCError.InvalidRequest(data: "unrecognized JSON-RPC version string")
+                throw JSONRPCError.invalidRequest(data: "unrecognized JSON-RPC version string")
             }
 
             if json.keys.contains("method") {
@@ -206,7 +206,7 @@ class Session {
             } else if json.keys.contains("result") || json.keys.contains("error") {
                 try didReceiveResponse(json)
             } else {
-                throw JSONRPCError.InvalidRequest(data: "message is neither request nor response")
+                throw JSONRPCError.invalidRequest(data: "message is neither request nor response")
             }
         } catch let error where error is JSONRPCError {
             sendResponse(nil, error as? JSONRPCError)
@@ -218,7 +218,7 @@ class Session {
 
     func didReceiveRequest(_ json: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         guard let method = json["method"] as? String else {
-            throw JSONRPCError.InvalidRequest(data: "method value missing or not a string")
+            throw JSONRPCError.invalidRequest(data: "method value missing or not a string")
         }
 
         // optional: dictionary of parameters by name
@@ -231,17 +231,17 @@ class Session {
     }
 
     func didReceiveResponse(_ json: [String: Any]) throws {
-        guard let id = json["id"] as? RequestID else {
-            throw JSONRPCError.InvalidRequest(data: "response ID value missing or wrong type")
+        guard let requestId = json["id"] as? RequestID else {
+            throw JSONRPCError.invalidRequest(data: "response ID value missing or wrong type")
         }
 
         guard let completionHandler = (usingMutex(&sessionMutex) {
-            return completionHandlers.removeValue(forKey: id)
+            return completionHandlers.removeValue(forKey: requestId)
         }) else {
-            throw JSONRPCError.InvalidRequest(data: "response ID does not correspond to any open request")
+            throw JSONRPCError.invalidRequest(data: "response ID does not correspond to any open request")
         }
 
-        if let errorJSON = json["error"] as? [String:Any] {
+        if let errorJSON = json["error"] as? [String: Any] {
             let error = JSONRPCError(fromJSON: errorJSON)
             usingMutex(&sessionMutex) {
                 completionHandler(nil, error)
@@ -256,8 +256,8 @@ class Session {
     }
 
     private func getNextId() -> RequestID {
-        let result = self.nextId;
-        self.nextId += 1;
-        return result;
+        let result = self.nextId
+        self.nextId += 1
+        return result
     }
 }

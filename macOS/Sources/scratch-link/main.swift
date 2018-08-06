@@ -7,17 +7,17 @@ import PerfectWebSockets
 let SDMPort: Int = 20110
 
 enum SDMRoute: String {
-    case BLE = "/scratch/ble"
-    case BT = "/scratch/bt"
+    case bluetoothLowEnergy = "/scratch/ble"
+    case bluetooth = "/scratch/bt"
 }
 
 enum InitializationError: Error {
-    case Server(String)
+    case server(String)
 }
 
 enum SerializationError: Error {
-    case Invalid(String)
-    case Internal(String)
+    case invalid(String)
+    case internalError(String)
 }
 
 // Provide Scratch access to hardware devices using a JSON-RPC 2.0 API over WebSockets.
@@ -33,8 +33,8 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         do {
             initUI()
             try initServer()
-        } catch let e {
-            print("Quitting due to initialization failure: \(e)")
+        } catch {
+            print("Quitting due to initialization failure: \(error)")
             onQuitSelected()
         }
     }
@@ -55,7 +55,8 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         let statusBarItem = systemStatusBar.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusBarItem.button {
             button.imageScaling = .scaleProportionallyUpOrDown
-            if let statusBarIcon = NSImage(named: NSImage.Name("iconTemplate")) ?? NSImage(named: NSImage.Name.caution) {
+            if let statusBarIcon = NSImage(
+                named: NSImage.Name("iconTemplate")) ?? NSImage(named: NSImage.Name.caution) {
                 button.image = statusBarIcon
             }
         }
@@ -69,11 +70,11 @@ class ScratchLink: NSObject, NSApplicationDelegate {
     }
 
     func initServer() throws {
-        sessionManagers[SDMRoute.BLE.rawValue] = SessionManager<BLESession>()
-        sessionManagers[SDMRoute.BT.rawValue] = SessionManager<BTSession>()
+        sessionManagers[SDMRoute.bluetoothLowEnergy.rawValue] = SessionManager<BLESession>()
+        sessionManagers[SDMRoute.bluetooth.rawValue] = SessionManager<BTSession>()
 
         guard let certPath = Bundle.main.path(forResource: "scratch-device-manager", ofType: "pem") else {
-            throw InitializationError.Server("Failed to find certificate resource")
+            throw InitializationError.server("Failed to find certificate resource")
         }
         var routes = Routes()
         routes.add(method: .get, uri: "/scratch/*", handler: requestHandler)
@@ -84,7 +85,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
             port: SDMPort,
             routes: routes
         ))
-        print("Server started")
+        print("server started")
     }
 
     func requestHandler(request: HTTPRequest, response: HTTPResponse) {

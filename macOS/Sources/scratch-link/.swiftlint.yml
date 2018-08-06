@@ -1,0 +1,4 @@
+disabled_rules:
+  - file_length # File should contain 400 lines or less
+  - type_body_length # Type body should span 200 lines or less excluding comments and whitespace
+  - function_body_length # Function body should span 40 lines or less excluding comments and whitespace

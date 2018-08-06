@@ -13,7 +13,7 @@ struct JSONRPCError: Error {
         self.data = data
     }
 
-    init(fromJSON json: [String:Any]) {
+    init(fromJSON json: [String: Any]) {
         if let code = json["code"] as? Int, let message = json["message"] as? String {
             self.code = code
             self.message = message
@@ -26,31 +26,31 @@ struct JSONRPCError: Error {
         }
     }
 
-    static func ParseError(data: ErrorData? = nil) -> JSONRPCError {
+    static func parseError(data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: -32700, message: "Parse Error", data: data)
     }
 
-    static func InvalidRequest(data: ErrorData? = nil) -> JSONRPCError {
+    static func invalidRequest(data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: -32600, message: "Invalid Request", data: data)
     }
 
-    static func MethodNotFound(data: ErrorData? = nil) -> JSONRPCError {
+    static func methodNotFound(data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: -32601, message: "Method Not Found", data: data)
     }
 
-    static func InvalidParams(data: ErrorData? = nil) -> JSONRPCError {
+    static func invalidParams(data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: -32602, message: "Invalid Params", data: data)
     }
 
-    static func InternalError(data: ErrorData? = nil) -> JSONRPCError {
+    static func internalError(data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: -32603, message: "Internal Error", data: data)
     }
 
-    static func ServerError(code: Int, data: ErrorData? = nil) -> JSONRPCError {
+    static func serverError(code: Int, data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: code, message: "Server Error", data: data)
     }
 
-    static func ApplicationError(data: ErrorData? = nil) -> JSONRPCError {
+    static func applicationError(data: ErrorData? = nil) -> JSONRPCError {
         return JSONRPCError(code: -32500, message: "Application Error", data: data)
     }
 }

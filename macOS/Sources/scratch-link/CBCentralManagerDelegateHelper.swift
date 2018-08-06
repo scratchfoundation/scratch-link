@@ -47,11 +47,11 @@ class CBCentralManagerDelegateHelper: NSObject, CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager)
 
     @available(OSX 10.7, *)
-    @objc optional func centralManager(_ central: CBCentralManager, willRestoreState dict: [String : Any])
+    @objc optional func centralManager(_ central: CBCentralManager, willRestoreState dict: [String: Any])
 
     @available(OSX 10.7, *)
     @objc optional func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
-                                       advertisementData: [String : Any], rssi RSSI: NSNumber)
+                                       advertisementData: [String: Any], rssi RSSI: NSNumber)
 
     @available(OSX 10.7, *)
     @objc optional func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral)

@@ -12,7 +12,7 @@ class EncodingHelpers {
     /// - throws: a `JSONRPCError` if the message could not be decoded
     public static func decodeBuffer(fromJSON json: [String: Any]) throws -> Data {
         guard let message = json["message"] as? String else {
-            throw JSONRPCError.InvalidParams(data: "missing message property")
+            throw JSONRPCError.invalidParams(data: "missing message property")
         }
         let encoding = json["encoding"] as? String
 
@@ -21,16 +21,16 @@ class EncodingHelpers {
             if let result = Data(base64Encoded: message) {
                 return result
             } else {
-                throw JSONRPCError.InvalidParams(data: "failed to decode Base64 message")
+                throw JSONRPCError.invalidParams(data: "failed to decode Base64 message")
             }
         case .none: // "message" is a Unicode string with no additional encoding
             if let result = message.data(using: .utf8) {
                 return result
             } else {
-                throw JSONRPCError.InternalError(data: "failed to transcode message to UTF-8")
+                throw JSONRPCError.internalError(data: "failed to transcode message to UTF-8")
             }
         default:
-            throw JSONRPCError.InvalidParams(data: "unsupported encoding: \(encoding!)")
+            throw JSONRPCError.invalidParams(data: "unsupported encoding: \(encoding!)")
         }
     }
 

@@ -3,7 +3,7 @@ import Foundation
 import PerfectWebSockets
 
 class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDelegate {
-    private static let MinimumSignalStrength:NSNumber = -70
+    private static let MinimumSignalStrength: NSNumber = -70
 
     private let central: CBCentralManager
     private let centralDelegateHelper: CBCentralManagerDelegateHelper
@@ -12,7 +12,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
     private var filters: [BLEScanFilter]?
     private var optionalServices: Set<CBUUID>?
-    private var reportedPeripherals: [CBUUID:CBPeripheral]?
+    private var reportedPeripherals: [CBUUID: CBPeripheral]?
     private var allowedServices: Set<CBUUID>?
 
     private var connectedPeripheral: CBPeripheral?
@@ -20,31 +20,29 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
     typealias DelegateHandler = (Error?) -> Void
 
-    private var characteristicDiscoveryCompletion: [CBUUID:[DelegateHandler]]
+    private var characteristicDiscoveryCompletion: [CBUUID: [DelegateHandler]]
 
-    private var valueUpdateHandlers: [CBCharacteristic:[DelegateHandler]]
+    private var valueUpdateHandlers: [CBCharacteristic: [DelegateHandler]]
     private var watchedCharacteristics: Set<CBCharacteristic>
 
-    private var onBluetoothReadyTasks: [(JSONRPCError?)->Void]
+    private var onBluetoothReadyTasks: [(JSONRPCError?) -> Void]
 
     private enum BluetoothState {
-        case Unavailable
-        case Available
-        case Unknown
+        case unavailable
+        case available
+        case unknown
     }
 
     private var currentState: BluetoothState {
-        get {
-            switch central.state {
-            case .unknown: return .Unknown
-            case .resetting: return .Unknown // probably the OS Bluetooth stack crashed and will "power on" again soon
+        switch central.state {
+        case .unknown: return .unknown
+        case .resetting: return .unknown // probably the OS Bluetooth stack crashed and will "power on" again soon
 
-            case .unsupported: return .Unavailable
-            case .unauthorized: return .Unavailable
-            case .poweredOff: return .Unavailable
+        case .unsupported: return .unavailable
+        case .unauthorized: return .unavailable
+        case .poweredOff: return .unavailable
 
-            case .poweredOn: return .Available
-            }
+        case .poweredOn: return .available
         }
     }
 
@@ -82,40 +80,40 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         // actual work
         let btState = self.currentState
 
-        if btState == .Unknown {
+        if btState == .unknown {
             // just wait until the OS makes a decision
             return
         }
 
-        let error = (btState == .Unavailable) ?
-                JSONRPCError.ApplicationError(data: "Bluetooth became unavailable: \(String(describing: central.state))") :
-                nil
+        let error = (btState == .unavailable) ?
+            JSONRPCError.applicationError(data: "Bluetooth became unavailable: \(String(describing: central.state))") :
+            nil
 
         while let task = onBluetoothReadyTasks.popLast() {
             task(error)
         }
     }
 
-    func discover(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
+    func discover(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         guard let jsonFilters = params["filters"] as? [[String: Any]] else {
-            throw JSONRPCError.InvalidParams(data: "could not parse filters in discovery request")
+            throw JSONRPCError.invalidParams(data: "could not parse filters in discovery request")
         }
 
         if jsonFilters.count < 1 {
-            throw JSONRPCError.InvalidParams(data: "discovery request must include filters")
+            throw JSONRPCError.invalidParams(data: "discovery request must include filters")
         }
 
         let newFilters = try jsonFilters.map({ try BLEScanFilter(fromJSON: $0) })
 
         if newFilters.contains(where: { $0.isEmpty }) {
-            throw JSONRPCError.InvalidParams(data: "discovery request includes empty filter")
+            throw JSONRPCError.invalidParams(data: "discovery request includes empty filter")
         }
 
         let newOptionalServices: Set<CBUUID>?
         if let jsonOptionalServices = params["optionalServices"] as? [String] {
             newOptionalServices = Set<CBUUID>(try jsonOptionalServices.compactMap({
-                guard let uuid = GATTHelpers.GetUUID(forService: $0) else {
-                    throw JSONRPCError.InvalidParams(data: "could not resolve UUID for optional service \($0)")
+                guard let uuid = GATTHelpers.getUUID(forService: $0) else {
+                    throw JSONRPCError.invalidParams(data: "could not resolve UUID for optional service \($0)")
                 }
                 return uuid
             }))
@@ -125,7 +123,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
         var newAllowedServices = Set<CBUUID>(newOptionalServices ?? [])
         for filter in newFilters {
-            if let filterServices = filter.RequiredServices {
+            if let filterServices = filter.requiredServices {
                 newAllowedServices.formUnion(filterServices)
             }
         }
@@ -147,10 +145,11 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
         print("state is: \(central.state.rawValue)")
         switch currentState {
-            case .Available: doDiscover(error: nil)
-        case .Unavailable:
-            completion(nil, JSONRPCError.ApplicationError(data: "Bluetooth became unavailable: \(String(describing: central.state))"))
-        case .Unknown:
+        case .available: doDiscover(error: nil)
+        case .unavailable:
+            completion(nil, JSONRPCError.applicationError(
+                data: "Bluetooth became unavailable: \(String(describing: central.state))"))
+        case .unknown:
             onBluetoothReadyTasks.insert(doDiscover, at: 0)
         }
     }
@@ -158,7 +157,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     // Work around bug(?) in 10.13 SDK
     // see https://forums.developer.apple.com/thread/84375
     func getUUID(forPeripheral peripheral: CBPeripheral) -> CBUUID {
+        // swiftlint:disable force_cast
         return CBUUID(nsuuid: peripheral.value(forKey: "identifier") as! NSUUID as UUID)
+        // swiftlint:enable force_cast
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
@@ -189,20 +190,20 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
 
-    func connect(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
+    func connect(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         guard let peripheralIdString = params["peripheralId"] as? String else {
-            throw JSONRPCError.InvalidParams(data: "missing or invalid peripheralId")
+            throw JSONRPCError.invalidParams(data: "missing or invalid peripheralId")
         }
 
         // if this fails to parse then we won't find the result in reportedPeripherals
         let peripheralId = CBUUID(string: peripheralIdString)
 
         guard let peripheral = reportedPeripherals?[peripheralId] else {
-            throw JSONRPCError.InvalidParams(data: "invalid peripheralId: \(peripheralId)")
+            throw JSONRPCError.invalidParams(data: "invalid peripheralId: \(peripheralId)")
         }
 
         if connectionCompletion != nil {
-            throw JSONRPCError.InvalidRequest(data: "connection already pending")
+            throw JSONRPCError.invalidRequest(data: "connection already pending")
         }
 
         connectionCompletion = completion
@@ -221,7 +222,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        if (peripheral != connectedPeripheral) {
+        if peripheral != connectedPeripheral {
             print("didDiscoverServices on wrong peripheral")
             return
         }
@@ -232,7 +233,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         }
 
         if let error = error {
-            completion(nil, JSONRPCError.ApplicationError(data: error.localizedDescription))
+            completion(nil, JSONRPCError.applicationError(data: error.localizedDescription))
         } else {
             completion(nil, nil)
         }
@@ -240,7 +241,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         connectionCompletion = nil
     }
 
-    func write(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
+    func write(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         let buffer = try EncodingHelpers.decodeBuffer(fromJSON: params)
 
         getEndpoint(for: "write request", withParams: params, blockedBy: .ExcludeWrites) { endpoint, error in
@@ -251,25 +252,25 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
             guard let peripheral = self.connectedPeripheral else {
                 // this should never happen
-                completion(nil, JSONRPCError.InternalError(data: "write request without connected peripheral"))
+                completion(nil, JSONRPCError.internalError(data: "write request without connected peripheral"))
                 return
             }
 
             guard let endpoint = endpoint else {
                 // this should never happen
-                completion(nil, JSONRPCError.InternalError(data: "failed to find characteristic"))
+                completion(nil, JSONRPCError.internalError(data: "failed to find characteristic"))
                 return
             }
 
             // TODO: allow client to specify write type?
-            let writeType:CBCharacteristicWriteType =
+            let writeType: CBCharacteristicWriteType =
                     (endpoint.properties.contains(.writeWithoutResponse)) ? .withoutResponse : .withResponse
             peripheral.writeValue(buffer, for: endpoint, type: writeType)
             completion(buffer.count, nil)
         }
     }
 
-    private func read(withParams params: [String:Any], completion: @escaping JSONRPCCompletionHandler) throws {
+    private func read(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         let requestedEncoding = params["encoding"] as? String ?? "base64"
         let startNotifications = params["startNotifications"] as? Bool ?? false
 
@@ -281,29 +282,29 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
             guard let peripheral = self.connectedPeripheral else {
                 // this should never happen
-                completion(nil, JSONRPCError.InternalError(data: "write request without connected peripheral"))
+                completion(nil, JSONRPCError.internalError(data: "write request without connected peripheral"))
                 return
             }
 
             guard let endpoint = endpoint else {
                 // this should never happen
-                completion(nil, JSONRPCError.InternalError(data: "failed to find characteristic"))
+                completion(nil, JSONRPCError.internalError(data: "failed to find characteristic"))
                 return
             }
 
             self.addCallback(toRegistry: &self.valueUpdateHandlers, forKey: endpoint) { error in
                 if let error = error {
-                    completion(nil, JSONRPCError.ApplicationError(data: error.localizedDescription))
+                    completion(nil, JSONRPCError.applicationError(data: error.localizedDescription))
                     return
                 }
 
                 guard let value = endpoint.value else {
-                    completion(nil, JSONRPCError.InternalError(data: "failed to retrieve value of characteristic"))
+                    completion(nil, JSONRPCError.internalError(data: "failed to retrieve value of characteristic"))
                     return
                 }
 
                 guard let json = EncodingHelpers.encodeBuffer(value, withEncoding: requestedEncoding) else {
-                    completion(nil, JSONRPCError.InvalidRequest(
+                    completion(nil, JSONRPCError.invalidRequest(
                             data: "failed to encode read result with \(requestedEncoding)"))
                     return
                 }
@@ -355,7 +356,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             }
 
             guard let endpoint = endpoint else {
-                completion(nil, JSONRPCError.InvalidRequest(data: "failed to find characteristic"))
+                completion(nil, JSONRPCError.invalidRequest(data: "failed to find characteristic"))
                 return
             }
 
@@ -367,61 +368,66 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
     typealias GetEndpointCompletionHandler = (_ result: CBCharacteristic?, _ error: JSONRPCError?) -> Void
     private func getEndpoint(
-            for context:String, withParams params: [String: Any], blockedBy checkFlag: GATTBlockListStatus,
+            for context: String, withParams params: [String: Any], blockedBy checkFlag: GATTBlockListStatus,
             completion: @escaping GetEndpointCompletionHandler) {
         guard let peripheral = connectedPeripheral else {
-            completion(nil, JSONRPCError.InvalidRequest(data: "not connected for \(context)"))
+            completion(nil, JSONRPCError.invalidRequest(data: "not connected for \(context)"))
             return
         }
 
         guard let serviceName = params["serviceId"] else {
-            completion(nil, JSONRPCError.InvalidParams(data: "missing service UUID for \(context)"))
+            completion(nil, JSONRPCError.invalidParams(data: "missing service UUID for \(context)"))
             return
         }
 
-        guard let serviceId = GATTHelpers.GetUUID(forService: serviceName) else {
-            completion(nil, JSONRPCError.InvalidParams(data: "could not determine service UUID for \(serviceName)"))
+        guard let serviceId = GATTHelpers.getUUID(forService: serviceName) else {
+            completion(nil, JSONRPCError.invalidParams(data: "could not determine service UUID for \(serviceName)"))
             return
         }
 
         if allowedServices?.contains(serviceId) != true {
-            completion(nil, JSONRPCError.InvalidParams(data: "attempt to access unexpected service: \(serviceName)"))
+            completion(nil, JSONRPCError.invalidParams(data: "attempt to access unexpected service: \(serviceName)"))
             return
         }
 
-        if let blockStatus = GATTHelpers.GetBlockListStatus(ofUUID: serviceId), blockStatus.contains(checkFlag) {
-            completion(nil, JSONRPCError.InvalidParams(data: "service is block-listed with \(blockStatus): \(serviceName)"))
+        if let blockStatus = GATTHelpers.getBlockListStatus(ofUUID: serviceId), blockStatus.contains(checkFlag) {
+            completion(nil, JSONRPCError.invalidParams(
+                data: "service is block-listed with \(blockStatus): \(serviceName)"))
             return
         }
 
         guard let characteristicName = params["characteristicId"] else {
-            completion(nil, JSONRPCError.InvalidParams(data: "missing characteristic UUID for \(context)"))
+            completion(nil, JSONRPCError.invalidParams(data: "missing characteristic UUID for \(context)"))
             return
         }
 
-        guard let characteristicId = GATTHelpers.GetUUID(forCharacteristic: characteristicName) else {
-            completion(nil, JSONRPCError.InvalidParams(data: "could not determine characteristic UUID for \(characteristicName)"))
+        guard let characteristicId = GATTHelpers.getUUID(forCharacteristic: characteristicName) else {
+            completion(nil, JSONRPCError.invalidParams(
+                data: "could not determine characteristic UUID for \(characteristicName)"))
             return
         }
 
-        if let blockStatus = GATTHelpers.GetBlockListStatus(ofUUID: characteristicId) {
-            completion(nil, JSONRPCError.InvalidParams(data: "characteristic is block-listed with \(blockStatus): \(characteristicName)"))
+        if let blockStatus = GATTHelpers.getBlockListStatus(ofUUID: characteristicId) {
+            completion(nil, JSONRPCError.invalidParams(
+                data: "characteristic is block-listed with \(blockStatus): \(characteristicName)"))
             return
         }
 
         guard let service = connectedPeripheral?.services?.first(where: {return $0.uuid == serviceId}) else {
-            completion(nil, JSONRPCError.InvalidParams(data: "could not find service \(serviceName)"))
+            completion(nil, JSONRPCError.invalidParams(data: "could not find service \(serviceName)"))
             return
         }
 
         func onCharacteristicsDiscovered(_ error: Error?) {
             if let error = error {
-                completion(nil, JSONRPCError.ApplicationError(data: error.localizedDescription))
+                completion(nil, JSONRPCError.applicationError(data: error.localizedDescription))
                 return
             }
 
-            guard let characteristic = service.characteristics?.first(where: {return $0.uuid == characteristicId}) else {
-                completion(nil, JSONRPCError.InvalidParams(data: "could not find characteristic \(characteristicName) on service \(serviceName)"))
+            guard let characteristic = service.characteristics?.first(
+                where: {return $0.uuid == characteristicId}) else {
+                completion(nil, JSONRPCError.invalidParams(
+                    data: "could not find characteristic \(characteristicName) on service \(serviceName)"))
                 return
             }
 
@@ -458,7 +464,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         }
     }
 
-    override func didReceiveCall(_ method: String, withParams params: [String:Any],
+    override func didReceiveCall(_ method: String, withParams params: [String: Any],
                                  completion: @escaping JSONRPCCompletionHandler) throws {
         switch method {
         case "discover":
@@ -473,76 +479,73 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             stopNotifications(withParams: params, completion: completion)
         case "pingMe":
             completion("willPing", nil)
-            sendRemoteRequest("ping") { (result: Any?, error: JSONRPCError?) in
+            sendRemoteRequest("ping") { (result: Any?, _: JSONRPCError?) in
                 print("Got result from ping:", String(describing: result))
             }
         default:
-            throw JSONRPCError.MethodNotFound(data: method)
+            throw JSONRPCError.methodNotFound(data: method)
         }
     }
 }
 
 struct BLEScanFilter {
-    public let Name: String?
-    public let NamePrefix: String?
-    public let RequiredServices: Set<CBUUID>?
+    public let name: String?
+    public let namePrefix: String?
+    public let requiredServices: Set<CBUUID>?
 
     public var isEmpty: Bool {
-        get {
-            return (Name?.isEmpty ?? true) && (NamePrefix?.isEmpty ?? true) && (RequiredServices?.isEmpty ?? true)
-        }
+        return (name?.isEmpty ?? true) && (namePrefix?.isEmpty ?? true) && (requiredServices?.isEmpty ?? true)
     }
 
     // See https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing
     init(fromJSON json: [String: Any]) throws {
         if let name = json["name"] as? String {
-            Name = name
+            self.name = name
         } else {
-            Name = nil
+            self.name = nil
         }
 
         if let namePrefix = json["namePrefix"] as? String {
-            NamePrefix = namePrefix
-        }
-        else {
-            NamePrefix = nil
+            self.namePrefix = namePrefix
+        } else {
+            self.namePrefix = nil
         }
 
         if let requiredServices = json["services"] as? [Any] {
-            RequiredServices = Set<CBUUID>(try requiredServices.map({
-                guard let uuid = GATTHelpers.GetUUID(forService: $0) else {
-                    throw JSONRPCError.InvalidParams(data: "could not determine UUID for service \($0)")
+            self.requiredServices = Set<CBUUID>(try requiredServices.map({
+                guard let uuid = GATTHelpers.getUUID(forService: $0) else {
+                    throw JSONRPCError.invalidParams(data: "could not determine UUID for service \($0)")
                 }
                 return uuid
             }))
         } else {
-            RequiredServices = nil
+            self.requiredServices = nil
         }
     }
 
     // See https://webbluetoothcg.github.io/web-bluetooth/#matches-a-filter
     public func matches(_ peripheral: CBPeripheral, _ advertisementData: [String: Any]) -> Bool {
         if let peripheralName = peripheral.name {
-            if let name = Name, !name.isEmpty, peripheralName != name {
+            if let name = name, !name.isEmpty, peripheralName != name {
                 // peripheral name doesn't match filter name
                 return false
             }
 
-            if let namePrefix = NamePrefix, !namePrefix.isEmpty, !peripheralName.starts(with: namePrefix) {
+            if let namePrefix = namePrefix, !namePrefix.isEmpty, !peripheralName.starts(with: namePrefix) {
                 // peripheral name doesn't start with filter name prefix
                 return false
             }
         } else {
-            if !((Name?.isEmpty ?? true) && (NamePrefix?.isEmpty ?? true)) {
+            if !((name?.isEmpty ?? true) && (namePrefix?.isEmpty ?? true)) {
                 // filter is looking for a name or name prefix but we don't have a name
                 return false
             }
         }
 
-        if let required = RequiredServices, !required.isEmpty {
+        if let required = requiredServices, !required.isEmpty {
             var available = Set<CBUUID>()
             if let services = peripheral.services {
-                available.formUnion(services.map{$0.uuid})
+                available.formUnion(services.map {$0.uuid})
             }
             if let serviceUUIDs = advertisementData["kCBAdvDataServiceUUIDs"] as? [CBUUID] {
                 available.formUnion(serviceUUIDs)

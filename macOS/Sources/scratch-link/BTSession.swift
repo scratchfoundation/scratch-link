@@ -6,57 +6,57 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     private var inquiry: IOBluetoothDeviceInquiry
     private var connectedChannel: IOBluetoothRFCOMMChannel?
     private let rfcommQueue = DispatchQueue(label: "ScratchLink.BTSession.rfcommQueue")
-    private var state: SessionState = .Initial
-    
+    private var state: SessionState = .initial
+
     enum SessionState {
-        case Initial
-        case Discovery
-        case Connected
+        case initial
+        case discovery
+        case connected
     }
-    
+
     required init(withSocket webSocket: WebSocket) throws {
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
         try super.init(withSocket: webSocket)
         inquiry.delegate = self
     }
-    
-    override func didReceiveCall(_ method: String, withParams params: [String:Any],
+
+    override func didReceiveCall(_ method: String, withParams params: [String: Any],
                                  completion: @escaping JSONRPCCompletionHandler) throws {
         switch state {
-        case .Initial:
+        case .initial:
             if method != "discover" {
-                completion(nil, JSONRPCError.MethodNotFound(data: "Cannot call \(method) in initial state"))
-                return;
+                completion(nil, JSONRPCError.methodNotFound(data: "Cannot call \(method) in initial state"))
+                return
             }
             if let major = params["majorDeviceClass"] as? UInt, let minor = params["minorDeviceClass"] as? UInt {
-                state = .Discovery
+                state = .discovery
                 discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, completion: completion)
             } else {
-                completion(nil, JSONRPCError.InvalidParams(data: "majorDeviceClass and minorDeviceClass required"))
+                completion(nil, JSONRPCError.invalidParams(data: "majorDeviceClass and minorDeviceClass required"))
             }
-        case .Discovery:
+        case .discovery:
             if method != "connect" {
-                completion(nil, JSONRPCError.MethodNotFound(data: "Cannot call \(method) in discovery state"))
+                completion(nil, JSONRPCError.methodNotFound(data: "Cannot call \(method) in discovery state"))
                 return
             }
             if let peripheralId = params["peripheralId"] as? String {
                 connect(toDevice: peripheralId, completion: completion)
             } else {
-                completion(nil, JSONRPCError.InvalidParams(data: "peripheralId required"))
+                completion(nil, JSONRPCError.invalidParams(data: "peripheralId required"))
             }
-        case .Connected:
+        case .connected:
             if method != "send" {
-                completion(nil, JSONRPCError.MethodNotFound(data: "Cannot call \(method) in connected state"))
+                completion(nil, JSONRPCError.methodNotFound(data: "Cannot call \(method) in connected state"))
             }
             if connectedChannel == nil || connectedChannel?.isOpen() == false {
-                completion(nil, JSONRPCError.InvalidRequest(data: "No peripheral connected"))
+                completion(nil, JSONRPCError.invalidRequest(data: "No peripheral connected"))
             } else {
                 let decodedMessage = try EncodingHelpers.decodeBuffer(fromJSON: params)
                 sendMessage(decodedMessage, completion: completion)
             }
         }
     }
-    
+
     override func sessionWasClosed() {
         super.sessionWasClosed()
         inquiry.stop()
@@ -64,7 +64,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         connectedChannel?.close()
         connectedChannel = nil
     }
-    
+
     func discover(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt,
                   completion: @escaping JSONRPCCompletionHandler) {
         // see https://www.bluetooth.com/specifications/assigned-numbers/baseband for available device classes
@@ -76,11 +76,11 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         inquiry.updateNewDeviceNames = true
         let inquiryStatus = inquiry.start()
         let error = inquiryStatus != kIOReturnSuccess ?
-            JSONRPCError.ServerError(code: -32500, data: "Device inquiry failed to start") : nil
-        
+            JSONRPCError.serverError(code: -32500, data: "Device inquiry failed to start") : nil
+
         completion(nil, error)
     }
-    
+
     func connect(toDevice deviceId: String,
                  completion: @escaping JSONRPCCompletionHandler) {
         inquiry.stop()
@@ -90,15 +90,15 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 let connectionResult = device.openRFCOMMChannelSync(&self.connectedChannel,
                      withChannelID: 1,
                      delegate: self)
-                if (connectionResult != kIOReturnSuccess) {
-                    completion(nil, JSONRPCError.ServerError(code: -32500, data:
+                if connectionResult != kIOReturnSuccess {
+                    completion(nil, JSONRPCError.serverError(code: -32500, data:
                         "Connection process could not start or channel was not found"))
                 } else {
-                    self.state = .Connected
+                    self.state = .connected
                     completion(nil, nil)
                 }
 
-                // runloop specifically for this device: necessary to get delegate callbacks
+                // run loop specifically for this device: necessary to get delegate callbacks
                 var nextCheck = Date()
                 while (self.connectedChannel?.isOpen() ?? false) &&
                               RunLoop.current.run(mode: .defaultRunLoopMode, before: nextCheck) {
@@ -107,15 +107,15 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 print("RFCOMM run loop exited")
             }
         } else {
-            completion(nil, JSONRPCError.InvalidRequest(data: "Device \(deviceId) not available for connection"))
+            completion(nil, JSONRPCError.invalidRequest(data: "Device \(deviceId) not available for connection"))
             inquiry.start()
         }
     }
-    
+
     func sendMessage(_ message: Data,
                      completion: @escaping JSONRPCCompletionHandler) {
         guard let connectedChannel = connectedChannel else {
-            completion(nil, JSONRPCError.ServerError(code: -32500, data: "No peripheral connected"))
+            completion(nil, JSONRPCError.serverError(code: -32500, data: "No peripheral connected"))
             return
         }
         var data = message
@@ -127,7 +127,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                     return connectedChannel.writeSync(bytes, length: UInt16(message.count))
                 }
                 if messageResult != kIOReturnSuccess {
-                    completion(nil, JSONRPCError.ServerError(code: -32500, data: "Failed to send message"))
+                    completion(nil, JSONRPCError.serverError(code: -32500, data: "Failed to send message"))
                 } else {
                     completion(message.count, nil)
                 }
@@ -137,7 +137,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             let chunks = stride(from: 0, to: data.count, by: maxMessageSize).map {
                 Array(data[$0..<min($0 + maxMessageSize, data.count)])
             }
-            
+
             DispatchQueue.global(qos: .userInitiated).async {
                 var succeeded = 0
                 var bytesSent = 0
@@ -149,16 +149,16 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                         bytesSent += chunk.count
                     }
                 }
-                completion(bytesSent, succeeded == 0 ? nil : JSONRPCError.ServerError(code: -32500,
+                completion(bytesSent, succeeded == 0 ? nil : JSONRPCError.serverError(code: -32500,
                       data: "Failed to send message"))
             }
         }
     }
-    
+
     /*
      * IOBluetoothDeviceInquiryDelegate implementation
      */
-    
+
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!) {
         let peripheralData: [String: Any] = [
             "peripheralId": device.addressString,
@@ -167,30 +167,31 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         ]
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
-    
+
     func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
         print("Inquiry finished")
         if !aborted {
             sender.start()
         }
     }
-    
+
     func deviceInquiryStarted(_ sender: IOBluetoothDeviceInquiry!) {
         print("Inquiry started")
     }
-    
+
     func deviceInquiryUpdatingDeviceNamesStarted(_ sender: IOBluetoothDeviceInquiry!, devicesRemaining: UInt32) {
         print("name updates remaining: \(devicesRemaining)")
     }
-    
-    func deviceInquiryDeviceNameUpdated(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!, devicesRemaining: UInt32) {
+
+    func deviceInquiryDeviceNameUpdated(
+        _ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!, devicesRemaining: UInt32) {
         print("name updated: \(device.name)")
     }
-    
+
     /*
      * IOBluetoothRFCOMMChannelDelegate implementation
      */
-    
+
     func rfcommChannelData(_ rfcommChannel: IOBluetoothRFCOMMChannel!,
                            data dataPointer: UnsafeMutableRawPointer!,
                            length dataLength: Int) {
