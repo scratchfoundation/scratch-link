@@ -58,7 +58,7 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
-	cp -rv ../Certificates/out/scratch-device-manager.pem "$@/Contents/Resources/"
+	cp -rv ../Certificates/out/scratch-device-manager.pfx "$@/Contents/Resources/"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
 	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "Release/iconTemplate.iconset"
 
