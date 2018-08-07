@@ -1,0 +1,71 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\MSBuilder.Git.0.3.0\build\MSBuilder.Git.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MSBuilder.Git.0.3.0\build\MSBuilder.Git.props'))" />
+  </Target>
+  <!-- Inspired by https://stackoverflow.com/a/31094789 -->
+  <UsingTask TaskName="ConvertUnixTimestamp" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <!-- Input -->
+      <UnixTime ParameterType="System.Int64"/>
+      <!-- Output -->
+      <Year ParameterType="System.Int32" Output="true"/>
+      <YearShort ParameterType="System.Int32" Output="true"/>
+      <Month ParameterType="System.Int32" Output="true"/>
+      <Day ParameterType="System.Int32" Output="true"/>
+      <Hour ParameterType="System.Int32" Output="true"/>
+      <Minute ParameterType="System.Int32" Output="true"/>
+      <Second ParameterType="System.Int32" Output="true"/>
+      <Millisecond ParameterType="System.Int32" Output="true"/>
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">
+        var offset = System.DateTimeOffset.FromUnixTimeSeconds(UnixTime);
+        var dateTime = offset.UtcDateTime;
+        Year = dateTime.Year;
+        YearShort = dateTime.Year % 100;
+        Month = dateTime.Month;
+        Day = dateTime.Day;
+        Hour = dateTime.Hour;
+        Minute = dateTime.Minute;
+        Second = dateTime.Second;
+        Millisecond = dateTime.Millisecond;
+      </Code>
+    </Task>
+  </UsingTask>
+  <Target Name="GitMetadata" BeforeTargets="CoreCompile" AfterTargets="EnsureNuGetPackageBuildImports">
+    <!--
+      Replace "%" in Exec Command values with "%25%25": first MSBuild converts %25%25 to %%, then CMD's batch file processing converts %% to %
+    -->
+    <Exec Command="&quot;$(GIT)&quot; show --quiet --pretty=format:%25%25H" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitHash" />
+    </Exec>
+    <Exec Command="&quot;$(GIT)&quot; diff --quiet" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="GitDirty" />
+    </Exec>
+    <Exec Command="&quot;$(GIT)&quot; show --quiet --pretty=format:%25%25ad --date=unix" ConsoleToMSBuild="true" StandardOutputImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitAuthorUnixTimestamp" />
+    </Exec>
+    <ConvertUnixTimestamp UnixTime="$(GitAuthorUnixTimestamp)">
+      <Output PropertyName="GitAuthorYearShort" TaskParameter="YearShort"/>
+      <Output PropertyName="GitAuthorMonth" TaskParameter="Month"/>
+      <Output PropertyName="GitAuthorDay" TaskParameter="Day"/>
+      <Output PropertyName="GitAuthorHour" TaskParameter="Hour"/>
+      <Output PropertyName="GitAuthorMinute" TaskParameter="Minute"/>
+    </ConvertUnixTimestamp>
+    <PropertyGroup>
+      <GitAuthorDateVersion>$(
+        [System.String]::Format(
+          '1.{0}.{1}{2:00}.{3}{4:00}',
+          $(GitAuthorYearShort),
+          $(GitAuthorMonth),
+          $([System.Int32]::Parse($(GitAuthorDay))),
+          $(GitAuthorHour),
+          $([System.Int32]::Parse($(GitAuthorMinute)))
+        )
+      )</GitAuthorDateVersion>
+    </PropertyGroup>
+  </Target>
+</Project>

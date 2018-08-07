@@ -7,6 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScratchLink", "scratch-link
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56ED428E-4406-49E4-A454-B5B8EE848E66}"
 	ProjectSection(SolutionItems) = preProject
+		gitAuthorDateVersion.targets = gitAuthorDateVersion.targets
 		..\playground.html = ..\playground.html
 		..\README.md = ..\README.md
 	EndProjectSection
