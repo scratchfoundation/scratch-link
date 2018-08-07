@@ -1,5 +1,5 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+  <Target Name="ScratchCheckForDependencies" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
@@ -35,7 +35,7 @@
       </Code>
     </Task>
   </UsingTask>
-  <Target Name="GitMetadata" BeforeTargets="CoreCompile" AfterTargets="EnsureNuGetPackageBuildImports">
+  <Target Name="ScratchCollectMetadata" BeforeTargets="ScratchWriteAssemblyInfo" AfterTargets="ScratchCheckForDependencies">
     <!--
       Replace "%" in Exec Command values with "%25%25": first MSBuild converts %25%25 to %%, then CMD's batch file processing converts %% to %
     -->
@@ -49,12 +49,24 @@
       <Output TaskParameter="ConsoleOutput" PropertyName="GitAuthorUnixTimestamp" />
     </Exec>
     <ConvertUnixTimestamp UnixTime="$(GitAuthorUnixTimestamp)">
+      <Output PropertyName="GitAuthorYear" TaskParameter="Year"/>
       <Output PropertyName="GitAuthorYearShort" TaskParameter="YearShort"/>
       <Output PropertyName="GitAuthorMonth" TaskParameter="Month"/>
       <Output PropertyName="GitAuthorDay" TaskParameter="Day"/>
       <Output PropertyName="GitAuthorHour" TaskParameter="Hour"/>
       <Output PropertyName="GitAuthorMinute" TaskParameter="Minute"/>
+      <Output PropertyName="GitAuthorSecond" TaskParameter="Second"/>
+      <Output PropertyName="GitAuthorMillisecond" TaskParameter="Millisecond"/>
     </ConvertUnixTimestamp>
+  </Target>
+  <Target Name="ScratchWriteAssemblyInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <LanguageExt Condition="'$(Language)' == 'C#'">.cs</LanguageExt>
+      <LanguageExt Condition="'$(Language)' == 'VB'">.vb</LanguageExt>
+      <CodeGenLanguage Condition="'$(Language)' == 'C#'">C#</CodeGenLanguage>
+      <CodeGenLanguage Condition="'$(Language)' == 'VB'">VisualBasic</CodeGenLanguage>
+      <ScratchAssemblyInfo>$(IntermediateOutputPath)ScratchAssemblyInfo$(LanguageExt)</ScratchAssemblyInfo>
+    </PropertyGroup>
     <PropertyGroup>
       <GitAuthorDateVersion>$(
         [System.String]::Format(
@@ -67,5 +79,29 @@
         )
       )</GitAuthorDateVersion>
     </PropertyGroup>
+    <ItemGroup>
+      <AssemblyAttributes Include="AssemblyVersion">
+        <_Parameter1>$(GitAuthorDateVersion)</_Parameter1>
+      </AssemblyAttributes>
+      <AssemblyAttributes Include="AssemblyFileVersion">
+        <_Parameter1>$(GitAuthorDateVersion)</_Parameter1>
+      </AssemblyAttributes>
+      <AssemblyAttributes Include="AssemblyInformationalVersion">
+        <_Parameter1 Condition="'$(GitDirty)' == '0'">$(GitAuthorDateVersion)@$(GitHash)</_Parameter1>
+        <_Parameter1 Condition="'$(GitDirty)' != '0'">$(GitAuthorDateVersion)@dirty-$(GitHash)</_Parameter1>
+      </AssemblyAttributes>
+      <AssemblyAttributes Include="AssemblyMetadata">
+        <_Parameter1>GitHash</_Parameter1>
+        <_Parameter2>$(GitHash)</_Parameter2>
+      </AssemblyAttributes>
+      <AssemblyAttributes Include="AssemblyMetadata">
+        <_Parameter1>GitDirty</_Parameter1>
+        <_Parameter2>$(GitDirty)</_Parameter2>
+      </AssemblyAttributes>
+    </ItemGroup>
+    <WriteCodeFragment Language="$(CodeGenLanguage)" OutputFile="$(ScratchAssemblyInfo)" AssemblyAttributes="@(AssemblyAttributes)" />
+    <ItemGroup>
+      <Compile Include="$(ScratchAssemblyInfo)" />
+    </ItemGroup>
   </Target>
 </Project>
