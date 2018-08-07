@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product
-    Id="C4942605-48C4-42E4-B656-E70FB6813020"
+    Id="*"
     UpgradeCode="0a6bd3c0-5b66-45e7-ab43-b728cf40644d"
     Name="Scratch Link"
     Language="1033"
     Version="!(bind.FileVersion.ScratchLink.exe)"
     Manufacturer="Scratch Foundation"
     >
-    <Package Id="*" InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
     <UI Id="UserInterface">
       <Property Id="WIXUI_INSTALLDIR" Value="TARGETDIR" />
@@ -38,7 +38,7 @@
     <Property Id="WixShellExecTarget" Value="[#ScratchLink.exe]" />
     <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
 
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <Feature Id="ProductFeature" Title="Scratch Link" Level="1">
