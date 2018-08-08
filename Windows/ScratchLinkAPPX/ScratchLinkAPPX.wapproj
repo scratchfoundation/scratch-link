@@ -77,4 +77,5 @@
     <ProjectReference Include="..\scratch-link\ScratchLink.csproj" />
   </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+  <Import Project="..\updateAppxManifest.targets" />
 </Project>
