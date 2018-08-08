@@ -23,6 +23,10 @@
       <FileWrites Include="$(ScratchVersionedAppxManifestPath)"/>
     </ItemGroup>
   </Target>
+  <PropertyGroup>
+    <!-- This causes makes the version replacement affect "Store -> Create App Packages..." in addition to regular builds. -->
+    <ValidatePresenceOfAppxManifestItemsDependsOn>ScratchAppxManifestUpdate</ValidatePresenceOfAppxManifestItemsDependsOn>
+  </PropertyGroup>
   <UsingTask TaskName="ScratchUpdateAppxManifest" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
       <InputPath ParameterType="System.String" Required="true" />
