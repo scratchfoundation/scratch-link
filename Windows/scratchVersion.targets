@@ -21,7 +21,7 @@
       <Millisecond ParameterType="System.Int32" Output="true"/>
     </ParameterGroup>
     <Task>
-      <Code Type="Fragment" Language="cs">
+      <Code Type="Fragment" Language="cs"><![CDATA[
         var offset = System.DateTimeOffset.FromUnixTimeSeconds(UnixTime);
         var dateTime = offset.UtcDateTime;
         Year = dateTime.Year;
@@ -32,7 +32,7 @@
         Minute = dateTime.Minute;
         Second = dateTime.Second;
         Millisecond = dateTime.Millisecond;
-      </Code>
+      ]]></Code>
     </Task>
   </UsingTask>
   <Target Name="ScratchCollectMetadata" BeforeTargets="ScratchWriteAssemblyInfo" AfterTargets="ScratchCheckForDependencies">
