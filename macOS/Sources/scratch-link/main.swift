@@ -85,7 +85,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
             port: SDMPort,
             routes: routes
         ))
-        print("server started")
+        print("Server started")
     }
 
     func requestHandler(request: HTTPRequest, response: HTTPResponse) {
