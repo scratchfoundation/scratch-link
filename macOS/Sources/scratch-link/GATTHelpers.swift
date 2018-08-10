@@ -19,8 +19,8 @@ class GATTHelpers {
     /// - parameters:
     ///   - service: A short UUID in integer form, a full UUID string, or an assigned number's name
     /// - returns: a UUID on success or nil on failure
-    public static func GetUUID(forService service: Any) -> CBUUID? {
-        return ResolveUUID(fromName: service, withTable: AssignedServices)
+    public static func getUUID(forService service: Any) -> CBUUID? {
+        return resolveUUID(fromName: service, withTable: AssignedServices)
     }
 
     /// Resolve a Web Bluetooth GATT characteristic name to a canonical UUID.
@@ -29,8 +29,8 @@ class GATTHelpers {
     /// - parameters:
     ///   - service: A short UUID in integer form, a full UUID string, or an assigned number's name
     /// - returns: a UUID on success or nil on failure
-    public static func GetUUID(forCharacteristic characteristic: Any) -> CBUUID? {
-        return ResolveUUID(fromName: characteristic, withTable: AssignedCharacteristics)
+    public static func getUUID(forCharacteristic characteristic: Any) -> CBUUID? {
+        return resolveUUID(fromName: characteristic, withTable: AssignedCharacteristics)
     }
 
     typealias AssignedNumbersTable = [String: uint16]
@@ -43,15 +43,16 @@ class GATTHelpers {
     ///   - assignedNumbers: The table of assigned numbers to resolve integer names
     /// - returns: a UUID on success or nil on failure
     /// - throws: a JSONRpcError on failure
-    public static func ResolveUUID(fromName name: Any, withTable assignedNumbers: AssignedNumbersTable) -> CBUUID? {
+    public static func resolveUUID(fromName name: Any, withTable assignedNumbers: AssignedNumbersTable) -> CBUUID? {
         if let shortServiceNum = name as? uint32 {
-            return CanonicalUUID(fromAlias: shortServiceNum)
+            return canonicalUUID(fromAlias: shortServiceNum)
         }
 
         if let nameString = name as? String {
             if let validUuidRegex = try? NSRegularExpression(
                     pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$") {
-                if validUuidRegex.numberOfMatches(in: nameString, range: NSMakeRange(0, nameString.count)) > 0 {
+                if validUuidRegex.numberOfMatches(
+                    in: nameString, range: NSRange(location: 0, length: nameString.count)) > 0 {
                     return CBUUID(string: nameString)
                 }
                 // else it's not a UUID string so continue below
@@ -61,7 +62,7 @@ class GATTHelpers {
             }
 
             if let assignedNumber = assignedNumbers[nameString] {
-                return CanonicalUUID(fromAlias: uint32(assignedNumber))
+                return canonicalUUID(fromAlias: uint32(assignedNumber))
             }
         }
 
@@ -74,7 +75,7 @@ class GATTHelpers {
     /// - parameters:
     ///   - alias: A 16- or 32-bit UUID alias
     /// - returns: The associated canonical UUID
-    public static func CanonicalUUID(fromAlias alias: uint32) -> CBUUID {
+    public static func canonicalUUID(fromAlias alias: uint32) -> CBUUID {
         let uuidBytes: [uint8] = [
                 uint8((alias >> 24) & 0xff),
                 uint8((alias >> 16) & 0xff),
@@ -89,7 +90,7 @@ class GATTHelpers {
     /// - parameters:
     ///   - uuid: the UUID of a service, characteristic, or descriptor
     /// - returns: the status of the UUID on the block-list, if present.
-    public static func GetBlockListStatus(ofUUID uuid: CBUUID) -> GATTBlockListStatus? {
+    public static func getBlockListStatus(ofUUID uuid: CBUUID) -> GATTBlockListStatus? {
         return BlockList[uuid]
     }
 
@@ -134,7 +135,7 @@ class GATTHelpers {
         "transport_discovery": 0x1824,
         "tx_power": 0x1804,
         "user_data": 0x181C,
-        "weight_scale": 0x181D,
+        "weight_scale": 0x181D
     ]
 
     /// Table of well-known GATT characteristic UUIDs.
@@ -355,7 +356,7 @@ class GATTHelpers {
         "weight": 0x2A98,
         "weight_measurement": 0x2A9D,
         "weight_scale_feature": 0x2A9E,
-        "wind_chill": 0x2A79,
+        "wind_chill": 0x2A79
     ]
 
     /// Dictionary of UUIDs which are blocked from Web Bluetooth access for security or privacy reasons. See
@@ -376,46 +377,46 @@ class GATTHelpers {
 
         // Nordic's Legacy Device Firmware Update service,
         // http://infocenter.nordicsemi.com/topic/com.nordic.infocenter.sdk5.v11.0.0/examples_ble_dfu.html
-        CBUUID(string:"00001530-1212-efde-1523-785feabcd123"): .Exclude,
+        CBUUID(string: "00001530-1212-efde-1523-785feabcd123"): .Exclude,
 
         // TI's Over-the-Air Download service, http://www.ti.com/lit/ug/swru271g/swru271g.pdf
-        CBUUID(string:"f000ffc0-0451-4000-b000-000000000000"): .Exclude,
+        CBUUID(string: "f000ffc0-0451-4000-b000-000000000000"): .Exclude,
 
         // Cypress's Bootloader service.
         // Documentation at http://www.cypress.com/file/175561/download requires an account.
         // Linked as CYPRESS BOOTLOADER SERVICE_001-97547.pdf from
         // http://www.cypress.com/documentation/software-and-drivers/cypresss-custom-ble-profiles-and-services
-        CBUUID(string:"00060000-0000-1000-8000-00805f9b34fb"): .Exclude,
+        CBUUID(string: "00060000-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // The FIDO Bluetooth Specification at
         // https://fidoalliance.org/specs/fido-u2f-bt-protocol-id-20150514.pdf
         // section 6.7.1 "Bluetooth pairing: Client considerations" warns that system-wide pairing poses
         // security risks. Specifically, a website could use raw GATT commands to impersonate another website
         // to the FIDO device.
-        CBUUID(string:"0000fffd-0000-1000-8000-00805f9b34fb"): .Exclude,
+        CBUUID(string: "0000fffd-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // Characteristics
 
         // org.bluetooth.characteristic.gap.peripheral_privacy_flag
         // Don't let web pages turn off privacy mode.
-        CBUUID(string:"00002a02-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
+        CBUUID(string: "00002a02-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
 
         // org.bluetooth.characteristic.gap.reconnection_address
         // Disallow messing with connection parameters
-        CBUUID(string:"00002a03-0000-1000-8000-00805f9b34fb"): .Exclude,
+        CBUUID(string: "00002a03-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // org.bluetooth.characteristic.serial_number_string
         // Block access to standardized unique identifiers, for privacy reasons.
-        CBUUID(string:"00002a25-0000-1000-8000-00805f9b34fb"): .Exclude,
+        CBUUID(string: "00002a25-0000-1000-8000-00805f9b34fb"): .Exclude,
 
         // Descriptors
 
         // org.bluetooth.descriptor.gatt.client_characteristic_configuration
         // Writing to this would let a web page interfere with other pages' notifications and indications.
-        CBUUID(string:"00002902-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
+        CBUUID(string: "00002902-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
 
         // org.bluetooth.descriptor.gatt.server_characteristic_configuration
         // Writing to this would let a web page interfere with the broadcasted services.
-        CBUUID(string:"00002903-0000-1000-8000-00805f9b34fb"): .ExcludeWrites,
+        CBUUID(string: "00002903-0000-1000-8000-00805f9b34fb"): .ExcludeWrites
     ]
 }

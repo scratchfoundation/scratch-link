@@ -10,13 +10,13 @@ class SessionManager<SessionType: Session>: SessionManagerBase, WebSocketSession
     let socketProtocol: String? = nil
 
     func makeSessionHandler(forRequest request: HTTPRequest) throws -> WebSocketHandler {
-        return WebSocketHandler(handlerProducer: {
-            (request: HTTPRequest, protocols: [String]) -> WebSocketSessionHandler? in
+        return WebSocketHandler(handlerProducer: { (_: HTTPRequest, _: [String]) -> WebSocketSessionHandler? in
             return self
         })
     }
 
-    func logMessage(socket: WebSocket, webMessage: String, localDetails: String, completion: @escaping (() -> ()) = {}) {
+    func logMessage(
+        socket: WebSocket, webMessage: String, localDetails: String, completion: @escaping (() -> Void) = {}) {
         print("\(webMessage): \(localDetails)")
         socket.sendStringMessage(string: webMessage, final: true, completion: completion)
     }
@@ -26,7 +26,10 @@ class SessionManager<SessionType: Session>: SessionManagerBase, WebSocketSession
             let session = try SessionType.init(withSocket: socket)
             session.handleSession(request: req, socket: socket)
         } catch {
-            logMessage(socket: socket, webMessage: "Session init failed for path \(req.path)", localDetails: error.localizedDescription) {
+            logMessage(
+                socket: socket,
+                webMessage: "Session init failed for path \(req.path)",
+                localDetails: error.localizedDescription) {
                 socket.close()
             }
         }
