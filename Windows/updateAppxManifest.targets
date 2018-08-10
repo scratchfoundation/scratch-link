@@ -1,0 +1,55 @@
+<!--
+  Update AppxManifest with version number collected from the entry point's assembly info.
+  Partially based on Xamarin.Msbuild.UWP.AppxManifestVersion
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Target Name="ScratchAppxManifestUpdate" BeforeTargets="BeforeGenerateAppxManifest">
+    <MSBuild Projects="$(EntryPointProjectFullPath)" BuildInParallel="$(BuildInParallel)" Targets="GetTargetPathWithTargetPlatformMoniker">
+      <Output TaskParameter="TargetOutputs" ItemName="EntryPointAssembly"/>
+    </MSBuild>
+    <GetAssemblyIdentity AssemblyFiles="@(EntryPointAssembly)">
+      <Output TaskParameter="Assemblies" ItemName="ScratchEntryPointAssemblyIdentities"/>
+    </GetAssemblyIdentity>
+    <PropertyGroup>
+      <ScratchAppxManifestPath>Package.appxmanifest</ScratchAppxManifestPath>
+      <ScratchVersionedAppxManifestPath>$(IntermediateOutputPath)Package.versioned.appxmanifest</ScratchVersionedAppxManifestPath>
+      <ScratchEntryPointVersion>%(ScratchEntryPointAssemblyIdentities.Version)</ScratchEntryPointVersion>
+    </PropertyGroup>
+    <Message Text="Setting AppxManifest version to $(ScratchEntryPointVersion) in $(ScratchVersionedAppxManifestPath)" Importance="high"/>
+    <ScratchUpdateAppxManifest Version="$(ScratchEntryPointVersion)" InputPath="$(ScratchAppxManifestPath)" OutputPath="$(ScratchVersionedAppxManifestPath)" />
+    <ItemGroup>
+      <AppxManifest Remove="$(ScratchAppxManifestPath)"/>
+      <AppxManifest Include="$(ScratchVersionedAppxManifestPath)"/>
+      <FileWrites Include="$(ScratchVersionedAppxManifestPath)"/>
+    </ItemGroup>
+  </Target>
+  <PropertyGroup>
+    <!-- This causes makes the version replacement affect "Store -> Create App Packages..." in addition to regular builds. -->
+    <ValidatePresenceOfAppxManifestItemsDependsOn>ScratchAppxManifestUpdate</ValidatePresenceOfAppxManifestItemsDependsOn>
+  </PropertyGroup>
+  <UsingTask TaskName="ScratchUpdateAppxManifest" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <InputPath ParameterType="System.String" Required="true" />
+      <OutputPath ParameterType="System.String" Required="true" />
+      <Version ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Reference Include="System.Xml"/>
+      <Reference Include="System.Xml.Linq"/>
+      <Using Namespace="System.Xml.Linq"/>
+      <Using Namespace="System.IO"/>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        if (!File.Exists(InputPath)) {
+          Log.LogError(string.Format("Input appxmanifest not found: {0}", InputPath));
+          return false;
+        }
+        var manifest = XDocument.Load(InputPath);
+        XNamespace namespaceStem = "http://schemas.microsoft.com/appx/manifest/foundation/windows10";
+        var identityElement = manifest.Element(namespaceStem + "Package").Descendants(namespaceStem + "Identity").First();
+        identityElement.Attribute("Version").Value = Version;
+        manifest.Save(OutputPath);
+        return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+</Project>

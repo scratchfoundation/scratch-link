@@ -74,6 +74,24 @@ Prerequisites:
 
 Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio 2017.
 
+#### Signing the MSI installer
+
+*Scratch Team members only*
+
+To build and sign the `ScratchLinkSetup` installer (MSI), you must install the appropriate signing certificate.
+Contact another Scratch Team member to obtain the certificate, then install it with these steps:
+1. Open "Manage User Certificates"
+2. Expand "Personal"
+3. Right-click "Certificates" under "Personal"
+4. Select "Import..."
+5. Follow the steps to import the signing certificate.
+   * You may need to change the file browser to `Personal Information Exchange (*.pfx;*.p12)`.
+   * When prompted, enter the password for the certificate file you're importing.
+   * On the last step, make sure the certificate store is listed as "Personal"
+
+You can verify that you've installed the correct certificate by comparing the thumbprint in the Certificate Manager to
+the one listed in the post-build event in the `ScratchLinkSetup` project.
+
 #### Known Issues
 
 1. Building the `ScratchLinkSetup` project may fail with a `System.IO.DirectoryNotFoundException` if the Windows case

@@ -18,6 +18,7 @@
 *.resx text eol=crlf
 *.settings text eol=crlf
 *.sln text eol=crlf
+*.targets text eol=crlf
 *.wapproj text eol=crlf
 *.wixproj text eol=crlf
 *.wxs text eol=crlf
