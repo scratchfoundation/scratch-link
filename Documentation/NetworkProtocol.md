@@ -4,6 +4,25 @@ This document describes the proposed communication protocol used by a Scratch Ex
 communicate with the Scratch Device Manager (SDM). The SDM supports multiple types of peripheral; this document
 describes the portions of the protocol which are common across peripheral types.
 
+## Protocol Versioning
+
+This protocol's version number applies to the protocol as a whole, including:
+- The common portions of the protocol (this document) and
+- The portions of the protocol which are specific to individual peripheral types, such as Bluetooth LE.
+
+This protocol's version number does NOT apply to any particular implementation of the protocol.
+
+This version number shall follow the Semantic Versioning specification, found here: https://semver.org/
+
+### Version History
+- Version 1.1:
+  - Add protocol version number.
+  - Bluetooth LE:
+    - Add `withResponse` flag to `write` request.
+    - Add `startNotifications` request.
+- Version 1.0:
+  - Initial version.
+
 ## JSON-RPC 2.0
 
 JSON-RPC is a specification for making remote procedure calls (RPC) using JavaScript Object Notation (JSON). The
