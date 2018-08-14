@@ -1,13 +1,13 @@
 SIGN_ID=Code-to-Learn Foundation
 APP_ID=edu.mit.scratch.scratch-link
 APP_BUNDLE=Scratch\ Link.app
-APP_VERSION=1.0
+APP_VERSION=1
 CONFIG=release
 
 BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 
 APP_DEST=Release/$(APP_BUNDLE)
-VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%Y%m%d%H%M')
+VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%y.%m%d.%H%M')
 APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
 PACKAGE_FILE="scratch-link-$(APP_VERSION_EXT).pkg"
 
