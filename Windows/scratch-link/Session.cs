@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace scratch_link
@@ -21,11 +22,16 @@ namespace scratch_link
         private readonly char[] _decodeBuffer;
         private readonly int _maxMessageSize;
 
+        private readonly SemaphoreSlim _sessionLock;
+        private readonly SemaphoreSlim _socketLock;
+
         private RequestId _nextId;
         private readonly Dictionary<RequestId, CompletionHandler> _completionHandlers;
 
         protected Session(IWebSocketConnection webSocket, int bufferSize = 4096, int maxMessageSize = 1024 * 1024)
         {
+            _sessionLock = new SemaphoreSlim(1);
+            _socketLock = new SemaphoreSlim(1);
             _webSocket = webSocket;
             _readBuffer = new ArraySegment<byte>(new byte[bufferSize]);
             _decodeBuffer = new char[bufferSize];
@@ -38,7 +44,18 @@ namespace scratch_link
         {
             if (disposing)
             {
-                _webSocket?.Close();
+                if (_webSocket != null)
+                {
+                    _socketLock.Wait();
+                    try
+                    {
+                        _webSocket.Close();
+                    }
+                    finally
+                    {
+                        _socketLock.Release();
+                    }
+                }
             }
         }
 
@@ -81,7 +98,15 @@ namespace scratch_link
             try
             {
                 var requestText = JsonConvert.SerializeObject(request);
-                await _webSocket.Send(requestText);
+                _socketLock.Wait();
+                try
+                {
+                    await _webSocket.Send(requestText);
+                }
+                finally
+                {
+                    _socketLock.Release();
+                }
             }
             catch (Exception e)
             {
@@ -92,7 +117,17 @@ namespace scratch_link
 
         public async Task OnMessage(string message)
         {
-            await DidReceiveMessage(message, async response => await _webSocket.Send(response));
+            await DidReceiveMessage(message, async response => {
+                _socketLock.Wait();
+                try
+                {
+                    await _webSocket.Send(response);
+                }
+                finally
+                {
+                    _socketLock.Release();
+                }
+            });
         }
 
         public async Task OnBinary(byte[] messageBytes)
@@ -101,7 +136,15 @@ namespace scratch_link
             var message = Encoding.UTF8.GetString(messageBytes);
             await DidReceiveMessage(message, async response => {
                 var responseBytes = Encoding.UTF8.GetBytes(response);
-                await _webSocket.Send(responseBytes);
+                _socketLock.Wait();
+                try
+                {
+                    await _webSocket.Send(responseBytes);
+                }
+                finally
+                {
+                    _socketLock.Release();
+                }
             });
         }
 
@@ -193,11 +236,21 @@ namespace scratch_link
             // optional: dictionary of parameters by name
             var parameters = request["params"]?.ToObject<JObject>() ?? new JObject();
 
-            await DidReceiveCall(method, parameters, async (result, error) =>
+            async Task resultHandler(JToken result, JsonRpcException error)
             {
                 if (error != null) throw error;
                 await sendResult(result);
-            });
+            };
+
+            _sessionLock.Wait();
+            try
+            {
+                await DidReceiveCall(method, parameters, resultHandler);
+            }
+            finally
+            {
+                _sessionLock.Release();
+            }
         }
 
         private async Task DidReceiveResponse(JObject response)

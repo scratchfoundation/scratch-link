@@ -53,6 +53,20 @@ namespace scratch_link
         /// </summary>
         private HashSet<Guid> _optionalServices;
 
+        /// <summary>
+        /// Cached results of GetCharacteristicsAsync(). It might be OK to use the OS cache but the exact behavior is
+        /// unclear and keeping this on the C# side is faster anyway.
+        /// See also: https://github.com/MicrosoftDocs/winrt-api/issues/339
+        /// </summary>
+        private Dictionary<Guid, IReadOnlyList<GattCharacteristic>> _cachedServiceCharacteristics;
+
+        /// <summary>
+        /// Cached results of GetCharacteristicsForUuidAsync(). It might be OK to use the OS cache but the exact
+        /// behavior is unclear and keeping this on the C# side is faster anyway.
+        /// See also: https://github.com/MicrosoftDocs/winrt-api/issues/339
+        /// </summary>
+        private Dictionary<Guid, GattCharacteristic> _cachedCharacteristics;
+
         private BluetoothLEDevice _peripheral;
         private IReadOnlyList<GattDeviceService> _services;
         private BluetoothLEAdvertisementWatcher _watcher;
@@ -66,6 +80,8 @@ namespace scratch_link
         {
             _reportedPeripherals = new HashSet<ulong>();
             _notifyCharacteristics = new HashSet<GattCharacteristic>();
+            _cachedServiceCharacteristics = new Dictionary<Guid, IReadOnlyList<GattCharacteristic>>();
+            _cachedCharacteristics = new Dictionary<Guid, GattCharacteristic>();
         }
 
         protected override void Dispose(bool disposing)
@@ -288,7 +304,7 @@ namespace scratch_link
             var buffer = EncodingHelpers.DecodeBuffer(parameters);
             var endpoint = await GetEndpoint("write request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
 
-            var result = await endpoint.WriteValueAsync(buffer.AsBuffer());
+            var result = await endpoint.WriteValueAsync(buffer.AsBuffer(), GattWriteOption.WriteWithoutResponse);
 
             switch (result)
             {
@@ -448,14 +464,19 @@ namespace scratch_link
             }
             else
             {
-                var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
-                if (characteristicsResult.Status != GattCommunicationStatus.Success)
+                if (!_cachedServiceCharacteristics.TryGetValue(service.Uuid, out var characteristics))
                 {
-                    throw JsonRpcException.ApplicationError(
-                        $"failed to collect characteristics from service: {characteristicsResult.Status}");
+                    var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
+                    if (characteristicsResult.Status != GattCommunicationStatus.Success)
+                    {
+                        throw JsonRpcException.ApplicationError(
+                            $"failed to collect characteristics from service: {characteristicsResult.Status}");
+                    }
+                    characteristics = characteristicsResult.Characteristics;
+                    _cachedServiceCharacteristics.Add(service.Uuid, characteristics);
                 }
 
-                characteristic = characteristicsResult.Characteristics.FirstOrDefault(); // could in theory be null
+                characteristic = characteristics.FirstOrDefault(); // could in theory be null
                 characteristicId = characteristic?.Uuid;
             }
 
@@ -472,9 +493,11 @@ namespace scratch_link
             }
 
             // collect the characteristic if we didn't do so above
-            if (characteristic == null)
+            if (characteristic == null &&
+                !_cachedCharacteristics.TryGetValue(characteristicId.Value, out characteristic))
             {
-                var characteristicsResult = await service.GetCharacteristicsForUuidAsync(characteristicId.Value, BluetoothCacheMode.Uncached);
+                var characteristicsResult =
+                    await service.GetCharacteristicsForUuidAsync(characteristicId.Value, BluetoothCacheMode.Uncached);
                 if (characteristicsResult.Status != GattCommunicationStatus.Success)
                 {
                     throw JsonRpcException.ApplicationError(
@@ -483,11 +506,13 @@ namespace scratch_link
 
                 if (characteristicsResult.Characteristics.Count < 1)
                 {
-                    throw JsonRpcException.InvalidParams($"could not find characteristic {characteristicId} on service {serviceId}");
+                    throw JsonRpcException.InvalidParams(
+                        $"could not find characteristic {characteristicId} on service {serviceId}");
                 }
 
                 // TODO: why is this a list?
                 characteristic = characteristicsResult.Characteristics[0];
+                _cachedCharacteristics.Add(characteristicId.Value, characteristic);
             }
 
             return characteristic;
