@@ -9,6 +9,7 @@
 # Prefer LF for most file types
 *.html text eol=lf
 *.md text eol=lf
+*.ya?ml text eol=lf
 
 # Prefer LF for these files
 .gitattributes text eol=lf
