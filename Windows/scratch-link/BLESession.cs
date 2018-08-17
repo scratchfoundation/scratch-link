@@ -70,10 +70,17 @@ namespace scratch_link
 
         protected override void Dispose(bool disposing)
         {
+            base.Dispose(disposing);
             if (disposing)
             {
                 foreach (var characteristic in _notifyCharacteristics) {
-                    _ = StopNotifications(characteristic);
+                    try {
+                        _ = StopNotifications(characteristic);
+                    }
+                    catch
+                    {
+                        // ignore: probably the peripheral is gone
+                    }
                 }
                 _notifyCharacteristics.Clear();
 
@@ -81,7 +88,14 @@ namespace scratch_link
                 {
                     foreach (var service in _services)
                     {
-                        service.Dispose();
+                        try
+                        {
+                            service.Dispose();
+                        }
+                        catch
+                        {
+                            // ignore: probably the peripheral is gone
+                        }
                     }
                     _services = null;
                 }
@@ -256,6 +270,7 @@ namespace scratch_link
                 throw JsonRpcException.ApplicationError($"failed to enumerate GATT services: {servicesResult.Status}");
             }
 
+            _peripheral.ConnectionStatusChanged += OnPeripheralStatusChanged;
             _services = servicesResult.Services;
 
             // collect optional services plus all services from all filters
@@ -274,6 +289,14 @@ namespace scratch_link
             _watcher = null;
             _reportedPeripherals.Clear();
             _optionalServices = null;
+        }
+
+        private void OnPeripheralStatusChanged(BluetoothLEDevice sender, object args)
+        {
+            if (sender.ConnectionStatus == BluetoothConnectionStatus.Disconnected)
+            {
+                Dispose();
+            }
         }
 
         /// <summary>
