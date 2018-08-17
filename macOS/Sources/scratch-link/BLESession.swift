@@ -243,6 +243,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
     func write(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         let buffer = try EncodingHelpers.decodeBuffer(fromJSON: params)
+        let withResponse = params["withResponse"] as? Bool ?? false
 
         getEndpoint(for: "write request", withParams: params, blockedBy: .ExcludeWrites) { endpoint, error in
             if let error = error {
@@ -262,9 +263,8 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
                 return
             }
 
-            // TODO: allow client to specify write type?
-            let writeType: CBCharacteristicWriteType =
-                    (endpoint.properties.contains(.writeWithoutResponse)) ? .withoutResponse : .withResponse
+            let writeType = (withResponse || !endpoint.properties.contains(.writeWithoutResponse)) ?
+                CBCharacteristicWriteType.withResponse : CBCharacteristicWriteType.withoutResponse
             peripheral.writeValue(buffer, for: endpoint, type: writeType)
             completion(buffer.count, nil)
         }
@@ -282,7 +282,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
             guard let peripheral = self.connectedPeripheral else {
                 // this should never happen
-                completion(nil, JSONRPCError.internalError(data: "write request without connected peripheral"))
+                completion(nil, JSONRPCError.internalError(data: "read request without connected peripheral"))
                 return
             }
 
@@ -318,6 +318,33 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             }
 
             peripheral.readValue(for: endpoint)
+        }
+    }
+
+    private func startNotifications(withParams params: [String: Any],
+                                    completion: @escaping JSONRPCCompletionHandler) {
+        getEndpoint(for: "notification request", withParams: params, blockedBy: .ExcludeReads) { endpoint, error in
+            if let error = error {
+                completion(nil, error)
+                return
+            }
+
+            guard let peripheral = self.connectedPeripheral else {
+                // this should never happen
+                completion(nil, JSONRPCError.internalError(data: "notification request without connected peripheral"))
+                return
+            }
+
+            guard let endpoint = endpoint else {
+                // this should never happen
+                completion(nil, JSONRPCError.internalError(data: "failed to find characteristic"))
+                return
+            }
+
+            self.watchedCharacteristics.insert(endpoint)
+            peripheral.setNotifyValue(true, for: endpoint)
+
+            completion(nil, nil)
         }
     }
 
@@ -475,6 +502,8 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             try write(withParams: params, completion: completion)
         case "read":
             try read(withParams: params, completion: completion)
+        case "startNotifications":
+            startNotifications(withParams: params, completion: completion)
         case "stopNotifications":
             stopNotifications(withParams: params, completion: completion)
         case "pingMe":

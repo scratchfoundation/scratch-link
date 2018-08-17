@@ -132,6 +132,10 @@ namespace scratch_link
                 case "read":
                     await completion(await Read(parameters), null);
                     break;
+                case "startNotifications":
+                    await StartNotifications(parameters);
+                    await completion(null, null);
+                    break;
                 case "stopNotifications":
                     await StopNotifications(parameters);
                     await completion(null, null);
@@ -303,8 +307,11 @@ namespace scratch_link
         {
             var buffer = EncodingHelpers.DecodeBuffer(parameters);
             var endpoint = await GetEndpoint("write request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
+            var withResponse = (parameters["withResponse"]?.ToObject<bool>() ?? false) ||
+                !endpoint.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse);
 
-            var result = await endpoint.WriteValueAsync(buffer.AsBuffer(), GattWriteOption.WriteWithoutResponse);
+            var result = await endpoint.WriteValueAsync(buffer.AsBuffer(),
+                withResponse ? GattWriteOption.WriteWithResponse : GattWriteOption.WriteWithoutResponse);
 
             switch (result)
             {
@@ -329,7 +336,7 @@ namespace scratch_link
         /// </returns>
         private async Task<JToken> Read(JObject parameters)
         {
-            var endpoint = await GetEndpoint("read request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
+            var endpoint = await GetEndpoint("read request", parameters, GattHelpers.BlockListStatus.ExcludeReads);
             var encoding = parameters.TryGetValue("encoding", out var encodingToken)
                 ? encodingToken?.ToObject<string>() // possibly null and that's OK
                 : "base64";
@@ -339,18 +346,7 @@ namespace scratch_link
 
             if (startNotifications)
             {
-                _notifyCharacteristics.Add(endpoint);
-                var notificationRequestResult = await
-                    endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
-                        GattClientCharacteristicConfigurationDescriptorValue.Notify);
-                if (notificationRequestResult == GattCommunicationStatus.Success)
-                {
-                    endpoint.ValueChanged += OnValueChanged;
-                }
-                else
-                {
-                    throw JsonRpcException.ApplicationError($"could not start notifications: {notificationRequestResult}");
-                }
+                await StartNotifications(endpoint, encoding);
             }
 
             switch (readResult.Status)
@@ -363,6 +359,30 @@ namespace scratch_link
                     throw JsonRpcException.ApplicationError("destination unreachable");
                 default:
                     throw JsonRpcException.ApplicationError($"unknown result from read: {readResult.Status}");
+            }
+        }
+
+        private async Task StartNotifications(JObject parameters)
+        {
+            var endpoint = await GetEndpoint("startNotifications request", parameters, GattHelpers.BlockListStatus.ExcludeReads);
+            var encoding = parameters.TryGetValue("encoding", out var encodingToken)
+                ? encodingToken?.ToObject<string>() // possibly null and that's OK
+                : "base64";
+            await StartNotifications(endpoint, encoding);
+        }
+
+        private async Task StartNotifications(GattCharacteristic endpoint, string encoding)
+        {
+            _notifyCharacteristics.Add(endpoint);
+            var notificationRequestResult = await endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
+                    GattClientCharacteristicConfigurationDescriptorValue.Notify);
+            if (notificationRequestResult == GattCommunicationStatus.Success)
+            {
+                endpoint.ValueChanged += OnValueChanged;
+            }
+            else
+            {
+                throw JsonRpcException.ApplicationError($"could not start notifications: {notificationRequestResult}");
             }
         }
 

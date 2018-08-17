@@ -199,7 +199,8 @@ The Scratch Extension may write data to a characteristics available on an allowe
     "serviceId": "battery_service",            // Optional: GATT service to write
     "characteristicId": "battery_level_state", // GATT characteristic to write
     "message": "cGluZw==",                     // Content to be written
-    "encoding": "base64"                       // Optional: Encoding used by the "message" property
+    "encoding": "base64",                      // Optional: encoding used by the "message" property
+    "withResponse": true                       // Optional: whether or not to wait for the peripheral's response
   }
 }
 ```
@@ -221,6 +222,18 @@ The "characteristicId" property may be any valid GATT characteristic name:
 
 The "encoding" property may be omitted; in this case the "message" is assumed to be a Unicode string. The SDM shall
 encode the string using UTF-8 and write the resulting bytes to the characteristic.
+
+Bluetooth LE supports writing a value to a characteristic with or without a response. The "withResponse" property
+controls which of these modes shall be used for a particular write.
+- If true, the SDM shall write with response. That is, the SDM shall wait for the peripheral to confirm that the write
+  was received without error, and the SDM's response to the client shall report any error reported by the BLE device.
+  If the peripheral reports an error, that error shall be forwarded to the client as an error response to the "write"
+  request.
+- If false or absent, the SDM shall write without response. That is, the SDM shall make a
+  [best-effort delivery](https://en.wikipedia.org/wiki/Best-effort_delivery) attempt then report success. There is no
+  way for the peripheral to report an error in this mode.
+- If the peripheral or characteristic does not support writing with response, the SDM may choose to write without
+  response even when the "withResponse" flag is true.
 
 On success, the SDM's **response** shall contain the number of bytes written, which may differ from the number of
 characters in the string value of the initiating request's "message" property:
@@ -283,11 +296,44 @@ On success, the SDM's **response** shall contain the data read from the characte
 If the "encoding" property is absent in the **response**, the Scratch Extension should assume that the "message"
 property contains a Unicode string.
 
-If the "startNotifications" property is both present and true in the **request**, then the SDM shall continuously
-notify the Scratch Extension of changes in the characteristic's value. This shall continue until the Scratch Extension
-makes a "stopNotifications" request.
+If the "startNotifications" property is both present and true in the **request**, this is equivalent to also sending a
+"startNotifications" request with the same parameters (see next section).
 
 #### Value change notification
+
+The Scratch Extension may request that the SDM shall continuously notify the Scratch Extension of changes in the
+characteristic's value by sending a "startNotifications" **request**. This shall continue until the Scratch Extension
+makes a "stopNotifications" request:
+```json5
+{
+  "jsonrpc": "2.0",                            // JSON-RPC version indicator
+  "id": 7,                                     // Message sequence identifier
+  "method": "startNotifications",              // Command identifier
+  "params": {
+    "serviceId": "battery_service",            // Optional: GATT service to read
+    "characteristicId": "battery_level_state", // GATT characteristic to read
+    "encoding": "base64"                       // Optional: Encoding requested to be used in the response
+  }
+}
+```
+
+The "serviceId" property may be any valid GATT service name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
+
+The "serviceId" property may be omitted; in this case the peripheral's primary service shall be assumed. The primary
+service shall be determined the same way as in [the Web Bluetooth `getPrimaryService(service)` call](
+https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
+
+The "characteristicId" property may be any valid GATT characteristic name:
+- a string representing a full UUID,
+- an integer representing a short ID, or
+- a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
+
+If the "encoding" property is present then the SDM should use the indicated encoding for notifications, but the SDM is
+not required to do so. If the "encoding" property is absent in the **request** the SDM may choose an encoding for the
+response.
 
 The SDM notifies the Scratch Extension of value changes with **notification** messages in this form:
 ```json5
@@ -307,8 +353,8 @@ If the "encoding" property is absent the Scratch Extension should assume that th
 Unicode string.
 
 The SDM shall only send such a notification when the value of a characteristic changes, and only for characteristics
-which have been read by a "read" request with the "startNotifications" flag set. Such notifications shall continue
-until the Scratch Extension makes a "stopNotifications" request.
+for which a "startNotifications" request (or a "read" request with the "startNotifications" flag set) has been made.
+Such notifications shall continue until the Scratch Extension makes a "stopNotifications" request.
 
 #### Stop Notifications
 
@@ -316,7 +362,7 @@ The Scratch Extension may end value change notifications by sending a "stopNotif
 ```json5
 {
   "jsonrpc": "2.0",                           // JSON-RPC version indicator
-  "id": 7,                                    // Message sequence identifier
+  "id": 8,                                    // Message sequence identifier
   "method": "stopNotifications",              // Command identifier
   "params": {
     "serviceId": "battery_service",           // Optional: GATT service for which to stop notifications
