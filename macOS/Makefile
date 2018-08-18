@@ -83,7 +83,7 @@ Release/iconTemplate.iconset: Images/iconTemplate.png
 	sips -s dpiWidth 144 -s dpiHeight 144 -z 1024 1024 "$<" --out "$@/icon_512x512@2x.png"
 
 clean:
-	rm -rf Release "$(BIN_PATH)/scratch-link"
+	rm -rf Release .build/*-apple-*/debug .build/*-apple-*/release "$(BIN_PATH)/scratch-link"
 
 distclean: clean
 	rm -rf .build
