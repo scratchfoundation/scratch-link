@@ -47,11 +47,11 @@ class Session {
         return try task()
     }
 
-    func handleSession(request req: HTTPRequest, socket: WebSocket) {
+    func handleSession(webSocket: WebSocket) {
         var message = ""
         // Perfect will automatically convert binary messages to look like text messages
         // TODO: consider inspecting `op` for text/binary so we can send a matched response
-        socket.readStringMessage { text, _, isFinal in
+        webSocket.readStringMessage { text, _, isFinal in
             guard let text = text else {
                 // This block will be executed if, for example, the browser window is closed.
                 self.sessionWasClosed()
@@ -63,7 +63,7 @@ class Session {
                 message.removeAll()
             }
             // "recurse" to continue the session
-            self.handleSession(request: req, socket: socket)
+            self.handleSession(webSocket: webSocket)
         }
     }
 

@@ -24,7 +24,7 @@ class SessionManager<SessionType: Session>: SessionManagerBase, WebSocketSession
     func handleSession(request req: HTTPRequest, socket: WebSocket) {
         do {
             let session = try SessionType.init(withSocket: socket)
-            session.handleSession(request: req, socket: socket)
+            session.handleSession(webSocket: socket)
         } catch {
             logMessage(
                 socket: socket,
