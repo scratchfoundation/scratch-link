@@ -2,10 +2,6 @@ import Foundation
 import PerfectHTTP
 import PerfectWebSockets
 
-enum SessionError: Error {
-    case mutexInit(Int32)
-}
-
 // TODO: implement remaining JSON-RPC 2.0 features like batching
 class Session {
     typealias RequestID = Int
@@ -13,38 +9,14 @@ class Session {
 
     let socketProtocol: String? = nil // must match client sub-protocol
     private let webSocket: WebSocket
-    private var nextId: RequestID
-    private var completionHandlers: [RequestID: JSONRPCCompletionHandler]
+    private var nextId: RequestID = 0
+    private var completionHandlers = [RequestID: JSONRPCCompletionHandler]()
 
-    // Mutex for the WebSocket
-    private var socketMutex = pthread_mutex_t()
-
-    // Mutex for the derived session (didReceiveCall and completion handlers)
-    private var sessionMutex = pthread_mutex_t()
+    private let socketSemaphore = DispatchSemaphore(value: 1)
+    private let sessionSemaphore = DispatchSemaphore(value: 1)
 
     required init(withSocket webSocket: WebSocket) throws {
         self.webSocket = webSocket
-        self.nextId = 0
-        self.completionHandlers = [RequestID: JSONRPCCompletionHandler]()
-
-        let sessionMutexInit = pthread_mutex_init(&sessionMutex, nil)
-        if sessionMutexInit != 0 {
-            throw SessionError.mutexInit(sessionMutexInit)
-        }
-
-        let socketMutexInit = pthread_mutex_init(&socketMutex, nil)
-        if socketMutexInit != 0 {
-            throw SessionError.mutexInit(socketMutexInit)
-        }
-    }
-
-    func usingMutex<T>(_ mutex: UnsafeMutablePointer<pthread_mutex_t>, _ task: () throws -> T) rethrows -> T {
-        let resultCode = pthread_mutex_lock(mutex)
-        if resultCode != 0 {
-            fatalError("Could not obtain session lock: resultCode = \(resultCode)")
-        }
-        defer { pthread_mutex_unlock(mutex) }
-        return try task()
     }
 
     func handleSession(webSocket: WebSocket) {
@@ -69,7 +41,7 @@ class Session {
 
     // Override this to clean up session-specific resources, if any.
     func sessionWasClosed() {
-        usingMutex(&sessionMutex) {
+        sessionSemaphore.mutex {
             if completionHandlers.count > 0 {
                 print("Warning: session was closed with \(completionHandlers.count) pending requests")
                 for (_, completionHandler) in completionHandlers {
@@ -87,7 +59,7 @@ class Session {
         didReceiveData(messageData) { jsonResponseData in
             if let jsonResponseData = jsonResponseData {
                 if let jsonResponseText = String(data: jsonResponseData, encoding: .utf8) {
-                    self.usingMutex(&self.socketMutex) {
+                    self.socketSemaphore.mutex {
                         self.webSocket.sendStringMessage(string: jsonResponseText, final: true) {}
                     }
                 } else {
@@ -121,7 +93,7 @@ class Session {
         }
 
         if completion != nil {
-            let requestId: RequestID = usingMutex(&sessionMutex) {
+            let requestId: RequestID = sessionSemaphore.mutex {
                 let requestId = getNextId()
                 completionHandlers[requestId] = completion
                 return requestId
@@ -134,7 +106,7 @@ class Session {
             guard let requestText = String(data: requestData, encoding: .utf8) else {
                 throw SerializationError.internalError("Could not serialize request before sending to client")
             }
-            self.usingMutex(&socketMutex) {
+            self.socketSemaphore.mutex {
                 self.webSocket.sendStringMessage(string: requestText, final: true) {}
             }
         } catch {
@@ -225,7 +197,7 @@ class Session {
         let params: [String: Any] = (json["params"] as? [String: Any]) ?? [String: Any]()
 
         // On success, this will call makeResponse with a result
-        try usingMutex(&sessionMutex) {
+        try sessionSemaphore.mutex {
             try didReceiveCall(method, withParams: params, completion: completion)
         }
     }
@@ -235,7 +207,7 @@ class Session {
             throw JSONRPCError.invalidRequest(data: "response ID value missing or wrong type")
         }
 
-        guard let completionHandler = (usingMutex(&sessionMutex) {
+        guard let completionHandler = (sessionSemaphore.mutex {
             return completionHandlers.removeValue(forKey: requestId)
         }) else {
             throw JSONRPCError.invalidRequest(data: "response ID does not correspond to any open request")
@@ -243,13 +215,13 @@ class Session {
 
         if let errorJSON = json["error"] as? [String: Any] {
             let error = JSONRPCError(fromJSON: errorJSON)
-            usingMutex(&sessionMutex) {
+            sessionSemaphore.mutex {
                 completionHandler(nil, error)
             }
         } else {
             let rawResult = json["result"]
             let result = (rawResult is NSNull ? nil : rawResult)
-            usingMutex(&sessionMutex) {
+            sessionSemaphore.mutex {
                 completionHandler(result, nil)
             }
         }
