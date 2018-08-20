@@ -1,20 +1,20 @@
-# Bluetooth Device Protocol
+# Bluetooth Peripheral Protocol
 
-This document describes the proposed communication protocol used by a Scratch Extension (or the extension framework) to
-communicate with a Bluetooth RFCOMM / BR / EDR peripheral using the Scratch Device Manager (SDM). This document builds
-on the "Network Protocol" document describing the portions of the protocol common to all peripheral types.
+This document describes the communication protocol used by a Scratch Extension (or the extension framework) to
+communicate with a Bluetooth RFCOMM / BR / EDR peripheral using Scratch Link. This document builds on the "Network
+Protocol" document describing the portions of the protocol common to all peripheral types.
 
-## Proposed Interface (Scratch Extension to Scratch Device Manager)
+## Communication Interface (Scratch Extension to Scratch Link)
 
-### Initiating Communication with SDM
+### Initiating Communication with Scratch Link
 
-For Bluetooth (BT) connections, an extension connects to the SDM’s WebSocket server at the path "/scratch/bt".
+For Bluetooth (BT) connections, an extension connects to Scratch Link’s WebSocket server at the path "/scratch/bt".
 
 ### Initial State
 
 TODO: describe Bluetooth discovery / filtering parameters.
 
-JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
+JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery.
 ```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
@@ -24,8 +24,8 @@ JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful initiation of discovery. This confirms the
-transition into the discovery state.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful initiation of discovery. This confirms
+the transition into the discovery state.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -34,8 +34,8 @@ transition into the discovery state.
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon failure to initiate discovery. The connection remains in
-the initial state.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon failure to initiate discovery. The connection
+remains in the initial state.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -48,13 +48,13 @@ the initial state.
 
 #### Sending a Message
 
-Sending data to a connected peripheral shall be initiated by the Scratch Extension. This command requires two
-arguments: the message body and a supported encoding format. Attempting to "send" to a peripheral with an unsupported
-encoding or invalid message body will result in an error response. If the underlying peripheral connection has specific
-needs regarding packet size (MTU), keep-alive, etc., those concerns shall be managed by the SDM in order to simulate a
+Sending data to a connected peripheral shall be initiated by the Scratch Extension. This command requires two arguments:
+the message body and a supported encoding format. Attempting to "send" to a peripheral with an unsupported encoding or
+invalid message body will result in an error response. If the underlying peripheral connection has specific needs
+regarding packet size (MTU), keep-alive, etc., those concerns shall be managed by Scratch Link in order to simulate a
 persistent free-form serial data stream.
 
-JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message to a specified peripheral.
+JSON-RPC **request** sent from Scratch Extension to Scratch Link to send a serial message to a specified peripheral.
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -67,7 +67,7 @@ JSON-RPC **request** sent from Scratch Extension to SDM to send a serial message
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful message send.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful message send.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -76,7 +76,7 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon successful message
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon unsuccessful message send.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon unsuccessful message send.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -87,11 +87,11 @@ JSON-RPC **response** sent from SDM to Scratch Extension upon unsuccessful messa
 
 ### Receiving a Message
 
-Receiving data from a connected peripheral shall be initiated by the Scratch Device Manager. This message requires
-two arguments: the message body and the encoding format (`base64`). The Scratch Extension is not expected to return a
-"callback" response when receiving a message.
+Receiving data from a connected peripheral shall be initiated by Scratch Link. This message requires two arguments: the
+message body and the encoding format (`base64`). The Scratch Extension is not expected to return a "callback" response
+when receiving a message.
 
-JSON-RPC **notification** sent from SDM to Scratch Extension on receipt of a serial message.
+JSON-RPC **notification** sent from Scratch Link to Scratch Extension on receipt of a serial message.
 ```json5
 {
   "jsonrpc": "2.0",              // JSON-RPC version indicator

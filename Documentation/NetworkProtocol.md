@@ -1,8 +1,8 @@
 # Network Protocol
 
-This document describes the proposed communication protocol used by a Scratch Extension (or the extension framework) to
-communicate with the Scratch Device Manager (SDM). The SDM supports multiple types of peripheral; this document
-describes the portions of the protocol which are common across peripheral types.
+This document describes the communication protocol used by a Scratch Extension (or the extension framework) to
+communicate with Scratch Link. Scratch Link supports multiple types of peripheral; this document describes the portions
+of the protocol which are common across peripheral types.
 
 ## Protocol Versioning
 
@@ -32,20 +32,20 @@ specification, which describes three types of message: request, notification, an
 
 The JSON-RPC 2.0 specification may be found here: http://www.jsonrpc.org/specification
 
-## Proposed Interface (Scratch Extension to Scratch Device Manager)
+## Communication Interface (Scratch Extension to Scratch Link)
 
-### Initiating Communication with SDM
+### Initiating Communication with Scratch Link
 
-Communication with the SDM is performed over WebSockets. When initiating a WebSocket connection between the Scratch
-Extension and the SDM, the choice of path determines which Transport Protocol will be used. For example, when
-initiating a BLE connection, the extension connects to the SDM’s WebSocket server at path "/scratch/ble". For Bluetooth
-Classic (BT) connections, we propose using the following connection namespace: "/scratch/bt".
+Communication with Scratch Link is performed over WebSockets. When initiating a WebSocket connection between the Scratch
+Extension and Scratch Link, the choice of path determines which Transport Protocol will be used. For example, when
+initiating a BLE connection the extension connects to Scratch Link’s WebSocket server at path `/scratch/ble`, and for
+Bluetooth Classic (BT) connections the extension connects to the path `/scratch/bt`.
 
 ### Stateful Connections
 
-In contrast to previously proposed protocols, this proposal dedicates a particular connection to the discovery of and
-interaction with exactly one peripheral. If an Extension wishes to interact with more than one peripheral
-simultaneously then that Extension must open more than one connection to the SDM.
+In contrast to previously proposed protocols, this protocol dedicates a particular connection to the discovery of and
+interaction with exactly one peripheral. If an Extension wishes to interact with more than one peripheral simultaneously
+then that Extension must open more than one connection to Scratch Link.
 
 To this end, a particular socket connection may transition through several distinct states, each of which is described
 below. Each state supports a particular set of requests and notifications, and sending a request or notification not
@@ -55,17 +55,17 @@ read or write data from or to a peripheral while the connection is in the "disco
 ### Initial State
 
 The connection begins in an initial, dormant state. The only message supported in this state is a discovery request,
-which will transition the connection into the discovery state. The SDM may terminate a connection which does not
+which will transition the connection into the discovery state. Scratch Link may terminate a connection which does not
 successfully enter the discovery state within a reasonable amount of time.
 
 A discovery request may include filtering information specific to the Transport Protocol associated with the connection.
 For example, a BLE discovery request might include the UUIDs of one or more required GATT services or characteristics.
 
 Note: discovery requests for wireless peripherals **must** include at least one non-trivial piece of filtering
-information. Failure to provide such from the Scratch Extension shall result in the SDM refusing to perform a scan.
+information. Failure to provide such from the Scratch Extension shall result in Scratch Link refusing to perform a scan.
 This is to help ensure the privacy and safety of the user.
 
-JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
+JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery.
 ```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
@@ -75,8 +75,8 @@ JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery.
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful initiation of discovery. This confirms the
-transition into the discovery state.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful initiation of discovery. This confirms
+the transition into the discovery state.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -85,8 +85,8 @@ transition into the discovery state.
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon failure to initiate discovery. The connection remains in
-the initial state.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon failure to initiate discovery. The connection
+remains in the initial state.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -97,19 +97,20 @@ the initial state.
 
 ### Discovery State
 
-The discovery state lasts until the Scratch Extension requests to connect to a peripheral or disconnects. The SDM shall
-manage the initiation and/or renewal of scan, enumeration, or other peripheral discovery requests with the host system
-on an ongoing basis until the end of the discovery phase.
+The discovery state lasts until the Scratch Extension requests to connect to a peripheral or disconnects. Scratch Link
+shall manage the initiation and/or renewal of scan, enumeration, or other peripheral discovery requests with the host
+system on an ongoing basis until the end of the discovery phase.
 
 If an unreasonable amount of time passes without the Scratch Extension issuing a successful "connect" request or
-disconnecting from the socket, the SDM may end discovery and close the socket connection. This may help save battery
-power on mobile devices, for example.
+disconnecting from the socket, Scratch Link may end discovery and close the socket connection. This may help save
+battery power on mobile devices, for example.
 
-This state supports the "didDiscoverPeripheral" notification (sent from SDM to Scratch Extension) and the "connect"
-request (sent from Scratch Extension to SDM).
+This state supports the "didDiscoverPeripheral" notification (sent from Scratch Link to Scratch Extension) and the
+"connect" request (sent from Scratch Extension to Scratch Link).
 
-JSON-RPC **notification** sent from SDM to Scratch Extension upon discovery of peripherals. Note that this message may
-be passed from the SDM to the Scratch Extension many times for as long as the discovery state is active.
+JSON-RPC **notification** sent from Scratch Link to Scratch Extension upon discovery of peripherals. Note that this
+message may be passed from Scratch Link to the Scratch Extension many times for as long as the discovery state is
+active.
 ```json5
 {
   "jsonrpc": "2.0",                  // JSON-RPC version indicator
@@ -126,7 +127,7 @@ Connection shall be initiated by the Scratch Extension by providing a specified 
 connect. Attempting to connect to a peripheral which does not match the filtering information provided in the discovery
 request shall result in an error response.
 
-JSON-RPC **request** sent from Scratch Extension to SDM to connect to a peripheral.
+JSON-RPC **request** sent from Scratch Extension to Scratch Link to connect to a peripheral.
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -138,8 +139,8 @@ JSON-RPC **request** sent from Scratch Extension to SDM to connect to a peripher
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon successful connection. This confirms the transition into
-the connected state.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful connection. This confirms the
+transition into the connected state.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -148,8 +149,8 @@ the connected state.
 }
 ```
 
-JSON-RPC **response** sent from SDM to Scratch Extension upon connection failure. The discovery state shall remain
-active.
+JSON-RPC **response** sent from Scratch Link to Scratch Extension upon connection failure. The discovery state shall
+remain active.
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -169,9 +170,9 @@ describes a few conventions which should be used in peripheral communication pro
 
 #### Message encoding
 
-Web Sockets support both "text" and "binary" frames; either is acceptable for sending a JSON-RPC message between the
-SDM and the Scratch Extension. It is acceptable to send one message as a text frame and the next as a binary frame.
-A request and its response should match: for example, if a request is sent in a text frame the corresponding response
+Web Sockets support both "text" and "binary" frames; either is acceptable for sending a JSON-RPC message between Scratch
+Link and the Scratch Extension. It is acceptable to send one message as a text frame and the next as a binary frame. A
+request and its response should match: for example, if a request is sent in a text frame the corresponding response
 should be sent in a text frame.
 
 When a JSON-RPC message is sent in a text frame, the JSON object shall occupy the whole message. The Web Socket

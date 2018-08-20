@@ -1,18 +1,17 @@
-# Bluetooth LE Device Protocol
+# Bluetooth LE Peripheral Protocol
 
-This document describes the proposed communication protocol used by a Scratch Extension (or the extension framework) to
-communicate with a Bluetooth Low Energy (BLE) peripheral's GATT interface using the Scratch Device Manager (SDM). This
-document builds on the "Network Protocol" document describing the portions of the protocol common to all peripheral
-types.
+This document describes the communication protocol used by a Scratch Extension (or the extension framework) to
+communicate with a Bluetooth Low Energy (BLE) peripheral's GATT interface using Scratch Link. This document builds on
+the "Network Protocol" document describing the portions of the protocol common to all peripheral types.
 
-## Proposed Interface (Scratch Extension to Scratch Device Manager)
+## Communication Interface (Scratch Extension to Scratch Link)
 
-In general, BLE support in the SDM is patterned after BLE support in Web bluetooth. The Web Bluetooth specification
+In general, BLE support in Scratch Link is patterned after BLE support in Web bluetooth. The Web Bluetooth specification
 can be found here: https://webbluetoothcg.github.io/web-bluetooth/
 
-### Initiating Communication with SDM
+### Initiating Communication with Scratch Link
 
-For BLE connections, an extension connects to the SDM’s WebSocket server at the path "/scratch/ble".
+For BLE connections, an extension connects to Scratch Link’s WebSocket server at the path "/scratch/ble".
 
 ### Initial State
 
@@ -34,7 +33,7 @@ even if they are not used for filtering. See the "Service Names" section below f
 services in this list, or the "Connected State" section for more information about the relationship between the
 "services" filter property, the "optionalServices" parameter, and the services available to the Scratch Extension.
 
-Example JSON-RPC **request** sent from Scratch Extension to SDM to initiate discovery:
+Example JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery:
 ```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
@@ -74,7 +73,7 @@ calls "names" for GATT services. A GATT service name is one of the following:
 
 Each of the examples above specifies the same service.
 
-The SDM shall resolve each name to a full UUID using the [getService](
+Scratch Link shall resolve each name to a full UUID using the [getService](
 https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothuuid-getservice) algorithm as described by the Web
 Bluetooth specification, which in practice is just shorthand for calling the [resolveUuidName](
 https://webbluetoothcg.github.io/web-bluetooth/#resolveuuidname) algorithm and passing the [Service Assigned Numbers
@@ -82,19 +81,19 @@ table](https://www.bluetooth.com/specifications/gatt/services) and "org.bluetoot
 
 ### Connected State
 
-Connecting to a BLE peripheral with a "connect" request is the SDM equivalent of the [Web Bluetooth
+Connecting to a BLE peripheral with a "connect" request is the Scratch Link equivalent of the [Web Bluetooth
 `device.gatt.connect()`](https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect) call.
 After successfully connecting to a peripheral the Scratch Extension may access any **allowed** GATT service which the
 peripheral provides by reading and writing characteristics of those services, etc.
 
-The SDM shall block access to certain GATT UUIDs (services, characteristics, etc.) as demanded by the [GATT Blocklist](
-https://webbluetoothcg.github.io/web-bluetooth/#the-gatt-blocklist). Such UUIDs are allowed in discovery filters but
-not allowed for actual communication.
+Scratch Link shall block access to certain GATT UUIDs (services, characteristics, etc.) as demanded by the [GATT
+Blocklist](https://webbluetoothcg.github.io/web-bluetooth/#the-gatt-blocklist). Such UUIDs are allowed in discovery
+filters but not allowed for actual communication.
 
 #### Allowed Services
 
-The SDM shall reject any attempt by the Scratch Extension to access a GATT service unless the service is specifically
-allowed. A service is allowed if and only if:
+Scratch Link shall reject any attempt by the Scratch Extension to access a GATT service unless the service is
+specifically allowed. A service is allowed if and only if:
 - it was named in the "services" array of **any** filter in the "discover" request, **or**
 - it was named in the "optionalServices" array of the "discover" request.
 
@@ -116,7 +115,7 @@ Consider this request:
 }
 ```
 
-Suppose the SDM finds a peripheral with the name "My Peripheral" and reports that to the client in a
+Suppose Scratch Link finds a peripheral with the name "My Peripheral" and reports that to the client in a
 "didDiscoverPeripheral" notification, then the Scratch Extension chooses to connect to the "My Peripheral" peripheral.
 The Scratch Extension will be allowed to contact the following services:
 - Service 0x1805, the "Current Time" service, with UUID 00001805-0000-1000-8000-00805f9b34fb
@@ -128,7 +127,7 @@ discovery filter based on its name it might not implement any of these services.
 
 #### Enumerating Services
 
-The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to the SDM:
+The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to Scratch Link:
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -138,7 +137,7 @@ The Scratch Extension may query the list of allowed services by sending a "getSe
 }
 ```
 
-On success, the SDM's **response** shall contain an array of service UUIDs as its result:
+On success, Scratch Link's **response** shall contain an array of service UUIDs as its result:
 ```json5
 {
   "jsonrpc": "2.0",
@@ -149,13 +148,13 @@ On success, the SDM's **response** shall contain an array of service UUIDs as it
 }
 ```
 
-The Scratch Extension is not required to enumerate a peripheral's services; the SDM shall not change the list of
+The Scratch Extension is not required to enumerate a peripheral's services; Scratch Link shall not change the list of
 allowed services based on whether or not the Scratch Extension has requested enumeration. 
 
 #### Enumerating Service Characteristics
 
 The Scratch Extension may query the list of characteristics available on an allowed service by sending a
-"getCharacteristics" **request** to the SDM:
+"getCharacteristics" **request** to Scratch Link:
 ```json5
 {
   "jsonrpc": "2.0",                // JSON-RPC version indicator
@@ -172,7 +171,7 @@ The "serviceId" property may be any valid GATT service name:
 - an integer representing a short ID, or
 - a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
 
-On success, the SDM's **response** shall contain an array of characteristic UUIDs as its result:
+On success, Scratch Link's **response** shall contain an array of characteristic UUIDs as its result:
 ```json5
 {
   "jsonrpc": "2.0",
@@ -183,13 +182,13 @@ On success, the SDM's **response** shall contain an array of characteristic UUID
 }
 ```
 
-The Scratch Extension is not required to enumerate a service's characteristics; the SDM shall not change the list of
-allowed characteristics based on whether or not the Scratch Extension has requested enumeration. 
+The Scratch Extension is not required to enumerate a service's characteristics; Scratch Link shall not change the list
+of allowed characteristics based on whether or not the Scratch Extension has requested enumeration. 
 
 #### Writing to a Characteristic
 
 The Scratch Extension may write data to a characteristics available on an allowed service by sending a "write"
-**request** to the SDM:
+**request** to Scratch Link:
 ```json5
 {
   "jsonrpc": "2.0",                            // JSON-RPC version indicator
@@ -220,22 +219,22 @@ The "characteristicId" property may be any valid GATT characteristic name:
 - a string name from the [Characteristic Assigned Numbers table](
   https://www.bluetooth.com/specifications/gatt/characteristic).
 
-The "encoding" property may be omitted; in this case the "message" is assumed to be a Unicode string. The SDM shall
+The "encoding" property may be omitted; in this case the "message" is assumed to be a Unicode string. Scratch Link shall
 encode the string using UTF-8 and write the resulting bytes to the characteristic.
 
 Bluetooth LE supports writing a value to a characteristic with or without a response. The "withResponse" property
 controls which of these modes shall be used for a particular write.
-- If true, the SDM shall write with response. That is, the SDM shall wait for the peripheral to confirm that the write
-  was received without error, and the SDM's response to the client shall report any error reported by the BLE device.
-  If the peripheral reports an error, that error shall be forwarded to the client as an error response to the "write"
-  request.
-- If false or absent, the SDM shall write without response. That is, the SDM shall make a
-  [best-effort delivery](https://en.wikipedia.org/wiki/Best-effort_delivery) attempt then report success. There is no
-  way for the peripheral to report an error in this mode.
-- If the peripheral or characteristic does not support writing with response, the SDM may choose to write without
+- If true, Scratch Link shall write with response. That is, Scratch Link shall wait for the peripheral to confirm that
+  the write was received without error, and Scratch Link's response to the client shall report any error reported by the
+  BLE peripheral. If the peripheral reports an error, that error shall be forwarded to the client as an error response
+  to the "write" request.
+- If false or absent, Scratch Link shall write without response. That is, Scratch Link shall make a [best-effort
+  delivery](https://en.wikipedia.org/wiki/Best-effort_delivery) attempt then report success. There is no way for the
+  peripheral to report an error in this mode.
+- If the peripheral or characteristic does not support writing with response, Scratch Link may choose to write without
   response even when the "withResponse" flag is true.
 
-On success, the SDM's **response** shall contain the number of bytes written, which may differ from the number of
+On success, Scratch Link's **response** shall contain the number of bytes written, which may differ from the number of
 characters in the string value of the initiating request's "message" property:
 ```json5
 {
@@ -248,7 +247,7 @@ characters in the string value of the initiating request's "message" property:
 #### Reading from a Characteristic
 
 The Scratch Extension may read data from a characteristics available on an allowed service by sending a "read"
-**request** to the SDM:
+**request** to Scratch Link:
 ```json5
 {
   "jsonrpc": "2.0",                            // JSON-RPC version indicator
@@ -277,11 +276,11 @@ The "characteristicId" property may be any valid GATT characteristic name:
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
 
-If the "encoding" property is present then the SDM should use the indicated encoding for the response, but the SDM is
-not required to do so. If the "encoding" property is absent in the **request** the SDM may choose an encoding for the
-response.
+If the "encoding" property is present then Scratch Link should use the indicated encoding for the response, but Scratch
+Link is not required to do so. If the "encoding" property is absent in the **request** Scratch Link may choose an
+encoding for the response.
 
-On success, the SDM's **response** shall contain the data read from the characteristic:
+On success, Scratch Link's **response** shall contain the data read from the characteristic:
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -301,7 +300,7 @@ If the "startNotifications" property is both present and true in the **request**
 
 #### Value change notification
 
-The Scratch Extension may request that the SDM shall continuously notify the Scratch Extension of changes in the
+The Scratch Extension may request that Scratch Link shall continuously notify the Scratch Extension of changes in the
 characteristic's value by sending a "startNotifications" **request**. This shall continue until the Scratch Extension
 makes a "stopNotifications" request:
 ```json5
@@ -331,11 +330,11 @@ The "characteristicId" property may be any valid GATT characteristic name:
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
 
-If the "encoding" property is present then the SDM should use the indicated encoding for notifications, but the SDM is
-not required to do so. If the "encoding" property is absent in the **request** the SDM may choose an encoding for the
-response.
+If the "encoding" property is present then Scratch Link should use the indicated encoding for notifications, but Scratch
+Link is not required to do so. If the "encoding" property is absent in the **request** Scratch Link may choose an
+encoding for the response.
 
-The SDM notifies the Scratch Extension of value changes with **notification** messages in this form:
+Scratch Link notifies the Scratch Extension of value changes with **notification** messages in this form:
 ```json5
 {
   "jsonrpc": "2.0",                    // JSON-RPC version indicator
@@ -352,13 +351,13 @@ The SDM notifies the Scratch Extension of value changes with **notification** me
 If the "encoding" property is absent the Scratch Extension should assume that the "message" property contains a
 Unicode string.
 
-The SDM shall only send such a notification when the value of a characteristic changes, and only for characteristics
-for which a "startNotifications" request (or a "read" request with the "startNotifications" flag set) has been made.
-Such notifications shall continue until the Scratch Extension makes a "stopNotifications" request.
+Scratch Link shall only send such a notification when the value of a characteristic changes, and only for
+characteristics for which a "startNotifications" request (or a "read" request with the "startNotifications" flag set)
+has been made. Such notifications shall continue until the Scratch Extension makes a "stopNotifications" request.
 
 #### Stop Notifications
 
-The Scratch Extension may end value change notifications by sending a "stopNotifications" **request** to the SDM:
+The Scratch Extension may end value change notifications by sending a "stopNotifications" **request** to Scratch Link:
 ```json5
 {
   "jsonrpc": "2.0",                           // JSON-RPC version indicator
