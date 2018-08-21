@@ -2,10 +2,6 @@ import Foundation
 import PerfectHTTP
 import PerfectWebSockets
 
-enum SessionError: Error {
-    case mutexInit(Int32)
-}
-
 // TODO: implement remaining JSON-RPC 2.0 features like batching
 class Session {
     typealias RequestID = Int
@@ -13,63 +9,46 @@ class Session {
 
     let socketProtocol: String? = nil // must match client sub-protocol
     private let webSocket: WebSocket
-    private var nextId: RequestID
-    private var completionHandlers: [RequestID: JSONRPCCompletionHandler]
+    private var nextId: RequestID = 0
+    private var completionHandlers = [RequestID: JSONRPCCompletionHandler]()
 
-    // Mutex for the WebSocket
-    private var socketMutex = pthread_mutex_t()
-
-    // Mutex for the derived session (didReceiveCall and completion handlers)
-    private var sessionMutex = pthread_mutex_t()
+    private let socketReadSemaphore = DispatchSemaphore(value: 1)
+    private let socketWriteSemaphore = DispatchSemaphore(value: 1)
+    private let sessionSemaphore = DispatchSemaphore(value: 1)
 
     required init(withSocket webSocket: WebSocket) throws {
         self.webSocket = webSocket
-        self.nextId = 0
-        self.completionHandlers = [RequestID: JSONRPCCompletionHandler]()
-
-        let sessionMutexInit = pthread_mutex_init(&sessionMutex, nil)
-        if sessionMutexInit != 0 {
-            throw SessionError.mutexInit(sessionMutexInit)
-        }
-
-        let socketMutexInit = pthread_mutex_init(&socketMutex, nil)
-        if socketMutexInit != 0 {
-            throw SessionError.mutexInit(socketMutexInit)
-        }
     }
 
-    func usingMutex<T>(_ mutex: UnsafeMutablePointer<pthread_mutex_t>, _ task: () throws -> T) rethrows -> T {
-        let resultCode = pthread_mutex_lock(mutex)
-        if resultCode != 0 {
-            fatalError("Could not obtain session lock: resultCode = \(resultCode)")
-        }
-        defer { pthread_mutex_unlock(mutex) }
-        return try task()
-    }
-
-    func handleSession(request req: HTTPRequest, socket: WebSocket) {
+    func handleSession(webSocket: WebSocket) {
         var message = ""
-        // Perfect will automatically convert binary messages to look like text messages
-        // TODO: consider inspecting `op` for text/binary so we can send a matched response
-        socket.readStringMessage { text, _, isFinal in
-            guard let text = text else {
-                // This block will be executed if, for example, the browser window is closed.
-                self.sessionWasClosed()
-                return
+        var keepGoing = true
+
+        while keepGoing {
+            socketReadSemaphore.wait()
+            // Perfect will automatically convert binary messages to look like text messages
+            // TODO: consider inspecting `op` for text/binary so we can send a matched response
+            webSocket.readStringMessage { text, _, isFinal in
+                self.socketReadSemaphore.signal()
+                guard let text = text else {
+                    // This block will be executed if, for example, the browser window is closed.
+                    keepGoing = false
+                    self.sessionWasClosed()
+                    return
+                }
+                message.append(contentsOf: text)
+                if isFinal {
+                    let wholeMessage = message
+                    message = ""
+                    self.didReceiveText(wholeMessage)
+                }
             }
-            message.append(contentsOf: text)
-            if isFinal {
-                self.didReceiveText(message)
-                message.removeAll()
-            }
-            // "recurse" to continue the session
-            self.handleSession(request: req, socket: socket)
         }
     }
 
     // Override this to clean up session-specific resources, if any.
     func sessionWasClosed() {
-        usingMutex(&sessionMutex) {
+        self.sessionSemaphore.mutex {
             if completionHandlers.count > 0 {
                 print("Warning: session was closed with \(completionHandlers.count) pending requests")
                 for (_, completionHandler) in completionHandlers {
@@ -84,11 +63,15 @@ class Session {
             print("Failed to convert client text to UTF8")
             return
         }
+        sessionSemaphore.wait()
         didReceiveData(messageData) { jsonResponseData in
+            self.sessionSemaphore.signal()
+
             if let jsonResponseData = jsonResponseData {
                 if let jsonResponseText = String(data: jsonResponseData, encoding: .utf8) {
-                    self.usingMutex(&self.socketMutex) {
-                        self.webSocket.sendStringMessage(string: jsonResponseText, final: true) {}
+                    self.socketWriteSemaphore.wait()
+                    self.webSocket.sendStringMessage(string: jsonResponseText, final: true) {
+                        self.socketWriteSemaphore.signal()
                     }
                 } else {
                     print("Failed to decode response")
@@ -121,11 +104,8 @@ class Session {
         }
 
         if completion != nil {
-            let requestId: RequestID = usingMutex(&sessionMutex) {
-                let requestId = getNextId()
-                completionHandlers[requestId] = completion
-                return requestId
-            }
+            let requestId = getNextId()
+            completionHandlers[requestId] = completion
             request["id"] = requestId
         }
 
@@ -134,8 +114,9 @@ class Session {
             guard let requestText = String(data: requestData, encoding: .utf8) else {
                 throw SerializationError.internalError("Could not serialize request before sending to client")
             }
-            self.usingMutex(&socketMutex) {
-                self.webSocket.sendStringMessage(string: requestText, final: true) {}
+            self.socketWriteSemaphore.wait()
+            self.webSocket.sendStringMessage(string: requestText, final: true) {
+                self.socketWriteSemaphore.signal()
             }
         } catch {
             print("Error serializing request JSON: \(error)")
@@ -143,8 +124,7 @@ class Session {
         }
     }
 
-    func didReceiveData(_ data: Data, completion: @escaping (_ jsonResponseData: Data?) throws -> Void) {
-
+    func didReceiveData(_ data: Data, completion: @escaping (_ jsonResponseData: Data?) -> Void) {
         var responseId: Any = NSNull() // initialize with null until we try to read the real ID
 
         func makeResponse(_ result: Any?, _ error: JSONRPCError?) -> [String: Any] {
@@ -173,17 +153,18 @@ class Session {
             do {
                 let response = makeResponse(result, error)
                 let jsonData = try JSONSerialization.data(withJSONObject: response)
-                try completion(jsonData)
+                completion(jsonData)
             } catch let firstError {
                 do {
                     let errorResponse = makeResponse(nil, JSONRPCError(
                             code: 2, message: "Could not encode response", data: String(describing: firstError)))
                     let jsonData = try JSONSerialization.data(withJSONObject: errorResponse)
-                    try completion(jsonData)
+                    completion(jsonData)
                 } catch let secondError {
                     print("Failure to report failure to encode!")
                     print("Initial error: \(String(describing: firstError))")
                     print("Secondary error: \(String(describing: secondError))")
+                    completion(nil)
                 }
             }
         }
@@ -205,6 +186,7 @@ class Session {
                 try didReceiveRequest(json, completion: sendResponse)
             } else if json.keys.contains("result") || json.keys.contains("error") {
                 try didReceiveResponse(json)
+                completion(nil)
             } else {
                 throw JSONRPCError.invalidRequest(data: "message is neither request nor response")
             }
@@ -225,9 +207,7 @@ class Session {
         let params: [String: Any] = (json["params"] as? [String: Any]) ?? [String: Any]()
 
         // On success, this will call makeResponse with a result
-        try usingMutex(&sessionMutex) {
-            try didReceiveCall(method, withParams: params, completion: completion)
-        }
+        try didReceiveCall(method, withParams: params, completion: completion)
     }
 
     func didReceiveResponse(_ json: [String: Any]) throws {
@@ -235,23 +215,17 @@ class Session {
             throw JSONRPCError.invalidRequest(data: "response ID value missing or wrong type")
         }
 
-        guard let completionHandler = (usingMutex(&sessionMutex) {
-            return completionHandlers.removeValue(forKey: requestId)
-        }) else {
+        guard let completionHandler = completionHandlers.removeValue(forKey: requestId) else {
             throw JSONRPCError.invalidRequest(data: "response ID does not correspond to any open request")
         }
 
         if let errorJSON = json["error"] as? [String: Any] {
             let error = JSONRPCError(fromJSON: errorJSON)
-            usingMutex(&sessionMutex) {
-                completionHandler(nil, error)
-            }
+            completionHandler(nil, error)
         } else {
             let rawResult = json["result"]
             let result = (rawResult is NSNull ? nil : rawResult)
-            usingMutex(&sessionMutex) {
-                completionHandler(result, nil)
-            }
+            completionHandler(result, nil)
         }
     }
 
