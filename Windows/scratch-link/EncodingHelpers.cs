@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace scratch_link
 {
-    public static class EncodingHelpers
+    internal static class EncodingHelpers
     {
         /// <summary>
         /// Decode the "message" property of `jsonBuffer` into bytes.
