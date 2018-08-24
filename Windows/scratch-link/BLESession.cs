@@ -89,35 +89,37 @@ namespace scratch_link
             base.Dispose(disposing);
             if (disposing)
             {
-                foreach (var characteristic in _notifyCharacteristics) {
-                    try {
-                        _ = StopNotifications(characteristic);
-                    }
-                    catch
-                    {
-                        // ignore: probably the peripheral is gone
-                    }
-                }
-                _notifyCharacteristics.Clear();
-
-                if (_services != null)
-                {
-                    foreach (var service in _services)
-                    {
-                        try
-                        {
-                            service.Dispose();
+                lock (_notifyCharacteristics) {
+                    foreach (var characteristic in _notifyCharacteristics) {
+                        try {
+                            _ = StopNotifications(characteristic);
                         }
                         catch
                         {
                             // ignore: probably the peripheral is gone
                         }
                     }
-                    _services = null;
-                }
+                    _notifyCharacteristics.Clear();
 
-                _peripheral?.Dispose();
-                _peripheral = null;
+                    if (_services != null)
+                    {
+                        foreach (var service in _services)
+                        {
+                            try
+                            {
+                                service.Dispose();
+                            }
+                            catch
+                            {
+                                // ignore: probably the peripheral is gone
+                            }
+                        }
+                        _services = null;
+                    }
+
+                    _peripheral?.Dispose();
+                    _peripheral = null;
+                }
             }
         }
 
@@ -396,16 +398,18 @@ namespace scratch_link
 
         private async Task StartNotifications(GattCharacteristic endpoint, string encoding)
         {
-            _notifyCharacteristics.Add(endpoint);
-            var notificationRequestResult = await endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
-                    GattClientCharacteristicConfigurationDescriptorValue.Notify);
-            if (notificationRequestResult == GattCommunicationStatus.Success)
+            if (!_notifyCharacteristics.Contains(endpoint))
             {
                 endpoint.ValueChanged += OnValueChanged;
-            }
-            else
-            {
-                throw JsonRpcException.ApplicationError($"could not start notifications: {notificationRequestResult}");
+                var notificationRequestResult = await endpoint.WriteClientCharacteristicConfigurationDescriptorAsync(
+                        GattClientCharacteristicConfigurationDescriptorValue.Notify);
+                if (notificationRequestResult != GattCommunicationStatus.Success)
+                {
+                    endpoint.ValueChanged -= OnValueChanged;
+                    throw JsonRpcException.ApplicationError(
+                        $"could not start notifications: {notificationRequestResult}");
+                }
+                _notifyCharacteristics.Add(endpoint);
             }
         }
 
