@@ -40,13 +40,32 @@ class ScratchLink: NSObject, NSApplicationDelegate {
     }
 
     @objc
+    private func onVersionItemSelected() {
+        let versionDetails =
+            """
+            \(BundleInfo.getTitle()) \(BundleInfo.getVersion()) \(BundleInfo.getVersionDetail())
+            macOS \(ProcessInfo().operatingSystemVersionString)
+            """
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(versionDetails, forType: .string)
+
+        let notification = NSUserNotification()
+        notification.title = "Version information copied to clipboard"
+        notification.informativeText = versionDetails
+        NSUserNotificationCenter.default.deliver(notification)
+    }
+
+    @objc
     private func onQuitSelected() {
         NSApplication.shared.terminate(nil)
     }
 
     func initUI() {
-        let menu = NSMenu(title: "Scratch Link")
-        menu.addItem(withTitle: "Scratch Link", action: nil, keyEquivalent: "")
+        let title = BundleInfo.getTitle()
+        let versionItemText = "\(title) \(BundleInfo.getVersion())"
+
+        let menu = NSMenu(title: title)
+        menu.addItem(withTitle: versionItemText, action: #selector(onVersionItemSelected), keyEquivalent: "")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit", action: #selector(onQuitSelected), keyEquivalent: "q")
 
