@@ -5,3 +5,4 @@
 *.pfx
 .idea/
 .vscode/
+[._]DS_Store
