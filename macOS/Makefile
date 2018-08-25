@@ -62,10 +62,10 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
 	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "Release/iconTemplate.iconset"
 
-Release/Scratch\ Link.iconset: ../Images/icon_1024x1024.png
+Release/Scratch\ Link.iconset: ../Assets/Mac/PNG/Master\ 1024x1024.png
 
 # Status bar icon template
-Release/iconTemplate.iconset: Images/iconTemplate.png
+Release/iconTemplate.iconset: ../Assets/Mac/PNG/Mac\ Glyph\ Icon\ 1024x1024.png
 
 # Generate a full icon set from an input image.
 # The @2x are marked as 144 DPI while the others are marked as 72 DPI.
@@ -81,6 +81,7 @@ Release/iconTemplate.iconset: Images/iconTemplate.png
 	sips -s dpiWidth 144 -s dpiHeight 144 -z 256 256 "$<" --out "$@/icon_128x128@2x.png"
 	sips -s dpiWidth 144 -s dpiHeight 144 -z 512 512 "$<" --out "$@/icon_256x256@2x.png"
 	sips -s dpiWidth 144 -s dpiHeight 144 -z 1024 1024 "$<" --out "$@/icon_512x512@2x.png"
+	for PNG in "$@"/icon_*.png; do pngcrush -new -brute -ow "$${PNG}"; done
 
 clean:
 	rm -rf Release .build/*-apple-*/debug .build/*-apple-*/release "$(BIN_PATH)/scratch-link"
