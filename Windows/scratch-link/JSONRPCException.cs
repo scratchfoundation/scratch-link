@@ -54,7 +54,7 @@ namespace scratch_link
         }
     }
 
-    public class JsonRpcExceptionConverter : JsonConverter
+    internal class JsonRpcExceptionConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {

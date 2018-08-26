@@ -71,6 +71,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AssemblyExtensions.cs" />
     <Compile Include="BLESession.cs" />
     <Compile Include="EncodingHelpers.cs" />
     <Compile Include="GattHelpers.cs" />
@@ -116,5 +117,5 @@
     <Resource Include="Resources\ScratchLink.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\scratchVersion.targets"/>
+  <Import Project="..\scratchVersion.targets" />
 </Project>

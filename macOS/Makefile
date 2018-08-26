@@ -7,7 +7,8 @@ CONFIG=release
 BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 
 APP_DEST=Release/$(APP_BUNDLE)
-VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%y.%m%d.%H%M')
+VERSION_DETAIL=$(shell git describe --always --dirty --exclude '*')
+VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%y.%m%d.%H%M' | sed 's/\.0*/./g' )
 APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
 PACKAGE_FILE="scratch-link-$(APP_VERSION_EXT).pkg"
 
@@ -44,6 +45,7 @@ Release/devid/$(APP_BUNDLE): Release/$(APP_BUNDLE)
 	codesign --display -vv "$@"
 
 $(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift)
+	@echo "Build Version: $(APP_VERSION_EXT) $(VERSION_DETAIL)"
 	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
 
 xcodeproj:
@@ -57,6 +59,7 @@ $(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Inf
 	cp Packaging/Info.plist "$@/Contents/"
 	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
+	plutil -replace "ScratchVersionDetail" -string "$(VERSION_DETAIL)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
 	cp -rv ../Certificates/out/scratch-device-manager.pem "$@/Contents/Resources/"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
