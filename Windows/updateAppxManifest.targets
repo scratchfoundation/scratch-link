@@ -36,8 +36,9 @@
     <Task>
       <Reference Include="System.Xml"/>
       <Reference Include="System.Xml.Linq"/>
-      <Using Namespace="System.Xml.Linq"/>
       <Using Namespace="System.IO"/>
+      <Using Namespace="System.Text.RegularExpressions"/>
+      <Using Namespace="System.Xml.Linq"/>
       <Code Type="Fragment" Language="cs"><![CDATA[
         if (!File.Exists(InputPath)) {
           Log.LogError(string.Format("Input appxmanifest not found: {0}", InputPath));
@@ -46,7 +47,8 @@
         var manifest = XDocument.Load(InputPath);
         XNamespace namespaceStem = "http://schemas.microsoft.com/appx/manifest/foundation/windows10";
         var identityElement = manifest.Element(namespaceStem + "Package").Descendants(namespaceStem + "Identity").First();
-        identityElement.Attribute("Version").Value = Version;
+        var safeVersion = Regex.Replace(Version, @"[.][\d]+$", ".0"); // APPX must have revision=0
+        identityElement.Attribute("Version").Value = safeVersion;
         manifest.Save(OutputPath);
         return true;
       ]]></Code>
