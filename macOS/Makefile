@@ -11,10 +11,14 @@ VERSION_DETAIL=$(shell git describe --always --dirty --exclude '*')
 VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%y.%m%d.%H%M' | sed 's/\.0*/./g' )
 APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
 PACKAGE_FILE="scratch-link-$(APP_VERSION_EXT).pkg"
+SWIFT_SOURCES=$(wildcard Sources/scratch-link/*.swift)
 
-.PHONY: all clean dist dist-mas dist-devid distclean uninstall xcodeproj
+.PHONY: all clean dist dist-mas dist-devid distclean lint uninstall xcodeproj
 
 all: $(APP_DEST)
+
+lint: $(SWIFT_SOURCES)
+	swiftlint lint --path Sources
 
 dist: dist-mas dist-devid
 
@@ -44,7 +48,7 @@ Release/devid/$(APP_BUNDLE): Release/$(APP_BUNDLE)
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	codesign --display -vv "$@"
 
-$(BIN_PATH)/scratch-link: $(wildcard Sources/scratch-link/*.swift)
+$(BIN_PATH)/scratch-link: $(SWIFT_SOURCES)
 	@echo "Build Version: $(APP_VERSION_EXT) $(VERSION_DETAIL)"
 	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
 
