@@ -29,7 +29,7 @@ namespace scratch_link
         {
             _icon = new NotifyIcon
             {
-                Icon = scratch_link.Properties.Resources.AppIcon,
+                Icon = scratch_link.Properties.Resources.NotifyIcon,
                 Text = scratch_link.Properties.Resources.AppTitle,
                 Visible = true,
                 ContextMenuStrip = new ContextMenuStrip()
