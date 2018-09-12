@@ -123,6 +123,16 @@ active.
 }
 ```
 
+The RSSI property indicates a relative signal strength for wireless peripherals, or a special value as described in this
+table:
+
+Value | Meaning
+-|-
+127 | The signal strength for this wireless peripheral is not (yet) known but may become valid later.
+0 | The signal strength for this wireless peripheral is unknown and is not expected to become known later.
+&lt; 0 | Numeric indicator of relative signal strength (-1 is stronger than -99) as an integer in unspecified units.
+`null` | Signal strength does not make sense for this peripheral. For example, the peripheral may not be wireless.
+
 Connection shall be initiated by the Scratch Extension by providing a specified peripheral identifier with which to
 connect. Attempting to connect to a peripheral which does not match the filtering information provided in the discovery
 request shall result in an error response.

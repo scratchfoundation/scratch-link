@@ -3,7 +3,7 @@ import Foundation
 import PerfectWebSockets
 
 class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDelegate {
-    private static let MinimumSignalStrength: NSNumber = -70
+    private static let MinimumSignalStrength = -70
 
     private let central: CBCentralManager
     private let centralDelegateHelper: CBCentralManagerDelegateHelper
@@ -163,8 +163,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
-                        advertisementData: [String: Any], rssi RSSI: NSNumber) {
-        if RSSI.compare(BLESession.MinimumSignalStrength) == .orderedAscending {
+                        advertisementData: [String: Any], rssi rssiRaw: NSNumber) {
+        let rssi = RSSI(rawValue: rssiRaw)
+        if case .Valid(let value) = rssi, value < BLESession.MinimumSignalStrength {
             // signal too weak
             return
         }
@@ -183,7 +184,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         let peripheralData: [String: Any] = [
             "name": peripheral.name ?? "",
             "peripheralId": uuid.uuidString,
-            "rssi": RSSI
+            "rssi": rssi.rawValue
         ]
 
         reportedPeripherals![uuid] = peripheral
