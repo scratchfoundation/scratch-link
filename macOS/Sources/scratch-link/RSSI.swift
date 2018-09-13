@@ -18,12 +18,14 @@ enum RSSI {
         }
     }
 
-    func rawValue() -> Int? {
-        switch self {
-        case .Unknown: return 127
-        case .Unsupported: return 0
-        case .Wired: return nil
-        case .Valid(let value): return value
+    var rawValue: Int? {
+        get {
+            switch self {
+            case .Unknown: return 127
+            case .Unsupported: return 0
+            case .Wired: return nil
+            case .Valid(let value): return value
+            }
         }
     }
 }
