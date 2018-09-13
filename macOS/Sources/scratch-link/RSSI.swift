@@ -1,31 +1,29 @@
 import Foundation
 
 enum RSSI {
-    case Unknown // +127
-    case Unsupported // 0
-    case Wired // nil
-    case Valid(Int)
+    case unknown // +127
+    case unsupported // 0
+    case wired // nil
+    case valid(Int)
 
     init(rawValue: NSNumber) {
         if let intValue = rawValue as? Int {
-            if (intValue >= 0) {
-                self = .Unknown
+            if intValue >= 0 {
+                self = .unknown
             } else {
-                self = .Valid(intValue)
+                self = .valid(intValue)
             }
         } else {
-            self = .Unknown
+            self = .unknown
         }
     }
 
     var rawValue: Int? {
-        get {
-            switch self {
-            case .Unknown: return 127
-            case .Unsupported: return 0
-            case .Wired: return nil
-            case .Valid(let value): return value
-            }
+        switch self {
+        case .unknown: return 127
+        case .unsupported: return 0
+        case .wired: return nil
+        case .valid(let value): return value
         }
     }
 }

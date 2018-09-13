@@ -165,7 +165,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             "name": device.name,
 
             // BT on Mac can't get a real RSSI without connecting (device.rawRSSI() is +127 unless connected)
-            "rssi": RSSI.Unsupported.rawValue as Any
+            "rssi": RSSI.unsupported.rawValue as Any
         ]
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
