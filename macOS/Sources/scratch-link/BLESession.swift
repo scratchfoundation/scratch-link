@@ -184,7 +184,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         let peripheralData: [String: Any] = [
             "name": peripheral.name ?? "",
             "peripheralId": uuid.uuidString,
-            "rssi": rssi.rawValue
+            "rssi": rssi.rawValue as Any
         ]
 
         reportedPeripherals![uuid] = peripheral
