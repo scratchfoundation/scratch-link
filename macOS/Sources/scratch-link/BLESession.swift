@@ -143,7 +143,6 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             }
         }
 
-        print("state is: \(central.state.rawValue)")
         switch currentState {
         case .available: doDiscover(error: nil)
         case .unavailable:
@@ -398,6 +397,13 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             for context: String, withParams params: [String: Any], blockedBy checkFlag: GATTBlockListStatus,
             completion: @escaping GetEndpointCompletionHandler) {
         guard let peripheral = connectedPeripheral else {
+            completion(nil, JSONRPCError.invalidRequest(data: "no peripheral for \(context)"))
+            return
+        }
+
+        if peripheral.state != .connected {
+            central.cancelPeripheralConnection(peripheral)
+            connectedPeripheral = nil
             completion(nil, JSONRPCError.invalidRequest(data: "not connected for \(context)"))
             return
         }
