@@ -5,6 +5,7 @@ APP_VERSION=1
 CONFIG=release
 
 BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
+BIN_FILE=$(BIN_PATH)/scratch-link
 
 APP_DEST=Release/$(APP_BUNDLE)
 VERSION_DETAIL=$(shell git describe --always --dirty --exclude '*')
@@ -13,12 +14,14 @@ APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
 PACKAGE_FILE="scratch-link-$(APP_VERSION_EXT).pkg"
 SWIFT_SOURCES=$(wildcard Sources/scratch-link/*.swift)
 
-.PHONY: all clean dist dist-mas dist-devid distclean lint uninstall xcodeproj
+.PHONY: all bin clean dist dist-mas dist-devid distclean lint uninstall xcodeproj
 
 all: $(APP_DEST)
 
 lint: $(SWIFT_SOURCES)
 	swiftlint lint --path Sources
+
+bin: $(BIN_FILE)
 
 dist: dist-mas dist-devid
 
@@ -48,17 +51,17 @@ Release/devid/$(APP_BUNDLE): Release/$(APP_BUNDLE)
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	codesign --display -vv "$@"
 
-$(BIN_PATH)/scratch-link: $(SWIFT_SOURCES)
+$(BIN_FILE): $(SWIFT_SOURCES)
 	@echo "Build Version: $(APP_VERSION_EXT) $(VERSION_DETAIL)"
 	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
 
 xcodeproj:
 	swift package generate-xcodeproj
 
-$(APP_DEST): $(BIN_PATH)/scratch-link Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
+$(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
 	rm -rf "$@"
 	mkdir -p "$@/Contents/MacOS"
-	cp $(BIN_PATH)/scratch-link "$@/Contents/MacOS/"
+	cp $(BIN_FILE) "$@/Contents/MacOS/"
 	xcrun swift-stdlib-tool --verbose --copy --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	cp Packaging/Info.plist "$@/Contents/"
 	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
@@ -91,7 +94,7 @@ Release/iconTemplate.iconset: ../Assets/Mac/PNG/Mac\ Glyph\ Icon\ 1024x1024.png
 	for PNG in "$@"/icon_*.png; do pngcrush -new -brute -ow "$${PNG}"; done
 
 clean:
-	rm -rf Release .build/*-apple-*/debug .build/*-apple-*/release "$(BIN_PATH)/scratch-link"
+	rm -rf Release .build/*-apple-*/debug .build/*-apple-*/release "$(BIN_FILE)"
 
 distclean: clean
 	rm -rf .build
