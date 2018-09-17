@@ -470,6 +470,11 @@ namespace scratch_link
             GattDeviceService service;
             Guid? serviceId;
 
+            if (_peripheral.ConnectionStatus != BluetoothConnectionStatus.Connected)
+            {
+                throw JsonRpcException.ApplicationError($"Peripheral is not connected for {errorContext}");
+            }
+
             if (endpointInfo.TryGetValue("serviceId", out var serviceToken))
             {
                 serviceId = GattHelpers.GetServiceUuid(serviceToken);
@@ -560,6 +565,21 @@ namespace scratch_link
                 // TODO: why is this a list?
                 characteristic = characteristicsResult.Characteristics[0];
                 _cachedCharacteristics.Add(characteristicId.Value, characteristic);
+            }
+
+            try
+            {
+                // Unfortunately there's no direct way to test if the peripheral object has been disposed. The
+                // `connectionState` property still indicates that the peripheral is connected in some cases, for
+                // example when Bluetooth is turned off in Bluetooth settings / Control Panel. However, trying to
+                // access the `Service` property of the `Characteristic` will throw an `ObjectDisposedException` in
+                // this case, so that's the hack being used here to check for a disposed peripheral.
+                var tempDisposalProbe = characteristic.Service;
+            }
+            catch(ObjectDisposedException)
+            {
+                // This could mean that Bluetooth was turned off or the computer resumed from sleep
+                throw JsonRpcException.ApplicationError($"Peripheral is disposed for {errorContext}");
             }
 
             return characteristic;
