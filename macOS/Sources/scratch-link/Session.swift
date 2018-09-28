@@ -124,39 +124,51 @@ class Session {
         }
     }
 
+    func sendErrorNotification(_ error: JSONRPCError) throws {
+        let message = makeResponse(forId: NSNull(), nil, error)
+        let messageData = try JSONSerialization.data(withJSONObject: message)
+        guard let messageText = String(data: messageData, encoding: .utf8) else {
+            throw SerializationError.internalError("Could not serialize error before sending to client")
+        }
+        self.socketWriteSemaphore.wait()
+        self.webSocket.sendStringMessage(string: messageText, final: true) {
+            self.socketWriteSemaphore.signal()
+        }
+    }
+
+    func makeResponse(forId responseId: Any, _ result: Any?, _ error: JSONRPCError?) -> [String: Any] {
+        var response: [String: Any] = [
+            "jsonrpc": "2.0"
+        ]
+        response["id"] = responseId
+        if let error = error {
+            var jsonError: [String: Any] = [
+                "code": error.code,
+                "message": error.message
+            ]
+            if let data = error.data {
+                jsonError["data"] = data
+            }
+            response["error"] = jsonError
+        } else {
+            // If there's no error then we must include this as a success flag, even if the value is null
+            response["result"] = result ?? NSNull()
+        }
+
+        return response
+    }
+
     func didReceiveData(_ data: Data, completion: @escaping (_ jsonResponseData: Data?) -> Void) {
         var responseId: Any = NSNull() // initialize with null until we try to read the real ID
 
-        func makeResponse(_ result: Any?, _ error: JSONRPCError?) -> [String: Any] {
-            var response: [String: Any] = [
-                "jsonrpc": "2.0"
-            ]
-            response["id"] = responseId
-            if let error = error {
-                var jsonError: [String: Any] = [
-                    "code": error.code,
-                    "message": error.message
-                ]
-                if let data = error.data {
-                    jsonError["data"] = data
-                }
-                response["error"] = jsonError
-            } else {
-                // If there's no error then we must include this as a success flag, even if the value is null
-                response["result"] = result ?? NSNull()
-            }
-
-            return response
-        }
-
         func sendResponse(_ result: Any?, _ error: JSONRPCError?) {
             do {
-                let response = makeResponse(result, error)
+                let response = makeResponse(forId: responseId, result, error)
                 let jsonData = try JSONSerialization.data(withJSONObject: response)
                 completion(jsonData)
             } catch let firstError {
                 do {
-                    let errorResponse = makeResponse(nil, JSONRPCError(
+                    let errorResponse = makeResponse(forId: responseId, nil, JSONRPCError(
                             code: 2, message: "Could not encode response", data: String(describing: firstError)))
                     let jsonData = try JSONSerialization.data(withJSONObject: errorResponse)
                     completion(jsonData)
