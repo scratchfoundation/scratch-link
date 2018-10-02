@@ -1,0 +1,7 @@
+{
+    "default": true,
+    "line_length": {
+        "line_length": 118,
+        "tables": false
+    }
+}

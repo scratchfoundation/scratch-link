@@ -14,5 +14,6 @@
 # Prefer LF for these files
 .gitattributes text eol=lf
 .gitignore text eol=lf
+.markdownlintrc text eol=lf
 
 # Use CRLF for Windows-specific file types

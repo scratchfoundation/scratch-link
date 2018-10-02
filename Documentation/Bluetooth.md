@@ -15,6 +15,7 @@ For Bluetooth (BT) connections, an extension connects to Scratch Link’s WebSoc
 TODO: describe Bluetooth discovery / filtering parameters.
 
 JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery.
+
 ```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
@@ -26,6 +27,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate dis
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful initiation of discovery. This confirms
 the transition into the discovery state.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -36,6 +38,7 @@ the transition into the discovery state.
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon failure to initiate discovery. The connection
 remains in the initial state.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -55,6 +58,7 @@ regarding packet size (MTU), keep-alive, etc., those concerns shall be managed b
 persistent free-form serial data stream.
 
 JSON-RPC **request** sent from Scratch Extension to Scratch Link to send a serial message to a specified peripheral.
+
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -68,6 +72,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to send a seria
 ```
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful message send.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -77,6 +82,7 @@ JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successfu
 ```
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon unsuccessful message send.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -92,6 +98,7 @@ message body and the encoding format (`base64`). The Scratch Extension is not ex
 when receiving a message.
 
 JSON-RPC **notification** sent from Scratch Link to Scratch Extension on receipt of a serial message.
+
 ```json5
 {
   "jsonrpc": "2.0",              // JSON-RPC version indicator

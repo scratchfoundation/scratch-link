@@ -7,14 +7,16 @@ of the protocol which are common across peripheral types.
 ## Protocol Versioning
 
 This protocol's version number applies to the protocol as a whole, including:
+
 - The common portions of the protocol (this document) and
 - The portions of the protocol which are specific to individual peripheral types, such as Bluetooth LE.
 
 This protocol's version number does NOT apply to any particular implementation of the protocol.
 
-This version number shall follow the Semantic Versioning specification, found here: https://semver.org/
+This version number shall follow the Semantic Versioning specification, found here: <https://semver.org/>
 
 ### Version History
+
 - Version 1.1:
   - Add protocol version number.
   - Bluetooth LE:
@@ -30,7 +32,7 @@ specification is relatively lightweight and flexible, and in particular JSON-RPC
 transfer with most programming languages and transport channels. This project uses version 2.0 of the JSON-RPC
 specification, which describes three types of message: request, notification, and response.
 
-The JSON-RPC 2.0 specification may be found here: http://www.jsonrpc.org/specification
+The JSON-RPC 2.0 specification may be found here: <http://www.jsonrpc.org/specification>
 
 ## Communication Interface (Scratch Extension to Scratch Link)
 
@@ -66,6 +68,7 @@ information. Failure to provide such from the Scratch Extension shall result in 
 This is to help ensure the privacy and safety of the user.
 
 JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery.
+
 ```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
@@ -77,6 +80,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate dis
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful initiation of discovery. This confirms
 the transition into the discovery state.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -87,6 +91,7 @@ the transition into the discovery state.
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon failure to initiate discovery. The connection
 remains in the initial state.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -111,6 +116,7 @@ This state supports the "didDiscoverPeripheral" notification (sent from Scratch 
 JSON-RPC **notification** sent from Scratch Link to Scratch Extension upon discovery of peripherals. Note that this
 message may be passed from Scratch Link to the Scratch Extension many times for as long as the discovery state is
 active.
+
 ```json5
 {
   "jsonrpc": "2.0",                  // JSON-RPC version indicator
@@ -138,6 +144,7 @@ connect. Attempting to connect to a peripheral which does not match the filterin
 request shall result in an error response.
 
 JSON-RPC **request** sent from Scratch Extension to Scratch Link to connect to a peripheral.
+
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -151,6 +158,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to connect to a
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful connection. This confirms the
 transition into the connected state.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -161,6 +169,7 @@ transition into the connected state.
 
 JSON-RPC **response** sent from Scratch Link to Scratch Extension upon connection failure. The discovery state shall
 remain active.
+
 ```json5
 {
   "jsonrpc": "2.0", // JSON-RPC version indicator
@@ -200,6 +209,7 @@ method, parameter, and property names should be legal identifiers in JavaScript,
 Using JSON-RPC implies that all message payloads must be text, but communication with peripherals may require sending
 or receiving binary data. Binary data must therefore be encoded into a JSON-friendly string. In general, a message
 which contains a buffer of data should take the following format:
+
 ```json5
 {
   "message": "cGluZw==", // Message content
@@ -211,6 +221,7 @@ JSON data in the above format should be interpreted as if it were a buffer of by
 to bytes using the encoding method specified by the "encoding" property.
 
 For example, a peripheral interface may implement a "send" **request** like this:
+
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
