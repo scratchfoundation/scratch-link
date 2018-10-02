@@ -212,6 +212,7 @@ namespace scratch_link
             }
             catch (Exception e)
             {
+                await SendErrorNotification(JsonRpcException.ApplicationError("Peripheral connection closed"));
                 Debug.Print($"Closing connection to peripheral: {e.Message}");
                 CloseConnection();
             }
