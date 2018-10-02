@@ -10,9 +10,16 @@ System Requirements:
 macOS | 10.10 "Yosemite" |
 Windows&nbsp;10 | "Anniversary&nbsp;Update" Version&nbsp;1607 (build&nbsp;14393) | "Creators&nbsp;Update" Version&nbsp;1703 (build&nbsp;15063) or newer
 
-## Using Scratch Link with Scratch
+## Using Scratch Link with Scratch 3.0
 
-Scratch Link is a work in progress and is not yet ready for most users.
+To use Scratch Link with Scratch 3.0:
+
+1. Install and run Scratch Link
+2. Open Scratch 3.0, for example from this site: <https://beta.scratch.mit.edu/>
+3. Select the "Add Extension" button (looks like Scratch blocks with a `+` at the bottom of the block categories list)
+4. Select a compatible extension such as the micro:bit or LEGO EV3 extension.
+5. Follow the prompts to connect your peripheral.
+6. Build a project with the new extension blocks. Scratch Link will help Scratch communicate with your peripheral.
 
 ## Development: Getting started
 
@@ -30,7 +37,8 @@ are **not** provided in this repository.
 
 To prepare certificates for Scratch Link development:
 
-* Obtain the raw certificates: see `Certificates/convert-certificates.sh` for details.
+* Obtain the raw certificates: see `Certificates/convert-certificates.sh` for details. *Those outside the Scratch Team
+  will need to provide their own certificates for unofficial builds.*
 * `cd Certificates` and run `./convert-certificates.sh` to prepare the necessary certificate files.
   * On Windows, this script can be run using [Cygwin](https://www.cygwin.com/) or
     [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
@@ -96,7 +104,7 @@ Contact another Scratch Team member to obtain the certificate, then install it w
 You can verify that you've installed the correct certificate by comparing the thumbprint in the Certificate Manager to
 the one listed in the post-build event in the `ScratchLinkSetup` project.
 
-#### Known Issues
+#### Known Issues for Developers
 
 1. Building the `ScratchLinkSetup` project may fail with a `System.IO.DirectoryNotFoundException` if the Windows case
    sensitivity flag is enabled on any directory in the path to the Scratch Link project files. This flag can become
@@ -104,3 +112,6 @@ the one listed in the post-build event in the `ScratchLinkSetup` project.
    * Solution: Use `fsutil file queryCaseSensitiveInfo myDirName` to check if `myDirName` has its case sensitivity
      flag set. If so, use `fsutil file setCaseSensitiveInfo myDirName disable` to clear the flag.
    * More detail: <https://github.com/wixtoolset/issues/issues/5809>
+2. The `make` step may fail if the path to the Scratch Link directory contains whitespace.
+   * Solution: Move Scratch Link to a directory without whitespace in the path.
+   * More detail: <http://savannah.gnu.org/bugs/?712>
