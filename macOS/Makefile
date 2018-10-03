@@ -7,7 +7,7 @@ CONFIG=release
 BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 BIN_FILE=$(BIN_PATH)/scratch-link
 
-APP_DEST=Release/$(APP_BUNDLE)
+APP_DEST=dist/$(APP_BUNDLE)
 VERSION_DETAIL=$(shell git describe --always --dirty --exclude '*')
 VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%y.%m%d.%H%M' | sed 's/\.0*/./g' )
 APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
@@ -26,27 +26,27 @@ bin: $(BIN_FILE)
 dist: dist-mas dist-devid
 
 # For distribution to the Mac App Store
-dist-mas: Release/mas-$(PACKAGE_FILE)
+dist-mas: dist/mas-$(PACKAGE_FILE)
 
-Release/mas-$(PACKAGE_FILE): Release/mas/$(APP_BUNDLE)
+dist/mas-$(PACKAGE_FILE): dist/mas/$(APP_BUNDLE)
 	productbuild --sign "3rd Party Mac Developer Installer: $(SIGN_ID)" --component-compression auto --component "$<" /Applications "$@"
 
-Release/mas/$(APP_BUNDLE): Release/$(APP_BUNDLE)
-	rm -rf Release/mas/
-	mkdir -p Release/mas/
+dist/mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
+	rm -rf dist/mas/
+	mkdir -p dist/mas/
 	cp -aR "$<" "$@"
 	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	codesign --display -vv "$@"
 
 # For "Developer ID" distrution outside the Mac App Store
-dist-devid: Release/$(PACKAGE_FILE)
+dist-devid: dist/$(PACKAGE_FILE)
 
-Release/$(PACKAGE_FILE): Release/devid/$(APP_BUNDLE)
+dist/$(PACKAGE_FILE): dist/devid/$(APP_BUNDLE)
 	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component-compression auto --component "$<" /Applications "$@"
 
-Release/devid/$(APP_BUNDLE): Release/$(APP_BUNDLE)
-	rm -rf Release/devid
-	mkdir -p Release/devid
+dist/devid/$(APP_BUNDLE): dist/$(APP_BUNDLE)
+	rm -rf dist/devid
+	mkdir -p dist/devid
 	cp -aR "$<" "$@"
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	codesign --display -vv "$@"
@@ -58,7 +58,7 @@ $(BIN_FILE): $(SWIFT_SOURCES)
 xcodeproj:
 	swift package generate-xcodeproj
 
-$(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist Release/Scratch\ Link.iconset Release/iconTemplate.iconset
+$(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist dist/Scratch\ Link.iconset dist/iconTemplate.iconset
 	rm -rf "$@"
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_FILE) "$@/Contents/MacOS/"
@@ -69,13 +69,13 @@ $(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist Relea
 	plutil -replace "ScratchVersionDetail" -string "$(VERSION_DETAIL)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
 	cp -rv ../Certificates/out/scratch-device-manager.pem "$@/Contents/Resources/"
-	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "Release/Scratch Link.iconset"
-	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "Release/iconTemplate.iconset"
+	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "dist/Scratch Link.iconset"
+	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "dist/iconTemplate.iconset"
 
-Release/Scratch\ Link.iconset: ../Assets/Mac/PNG/Master\ 1024x1024.png
+dist/Scratch\ Link.iconset: ../Assets/Mac/PNG/Master\ 1024x1024.png
 
 # Status bar icon template
-Release/iconTemplate.iconset: ../Assets/Mac/PNG/Mac\ Glyph\ Icon\ 1024x1024.png
+dist/iconTemplate.iconset: ../Assets/Mac/PNG/Mac\ Glyph\ Icon\ 1024x1024.png
 
 # Generate a full icon set from an input image.
 # The @2x are marked as 144 DPI while the others are marked as 72 DPI.
@@ -94,7 +94,7 @@ Release/iconTemplate.iconset: ../Assets/Mac/PNG/Mac\ Glyph\ Icon\ 1024x1024.png
 	for PNG in "$@"/icon_*.png; do pngcrush -new -brute -ow "$${PNG}"; done
 
 clean:
-	rm -rf Release .build/*-apple-*/debug .build/*-apple-*/release "$(BIN_FILE)"
+	rm -rf dist/ .build/*-apple-*/debug .build/*-apple-*/release "$(BIN_FILE)"
 
 distclean: clean
 	rm -rf .build

@@ -26,7 +26,12 @@ To use Scratch Link with Scratch 3.0:
 ### Documentation
 
 The general network protocol and all supported hardware protocols are documented in Markdown files in the
-`Documentation` subdirectory.
+`Documentation` subdirectory. Please note that network protocol stability and compatibility are high priorities for
+this project. Changes to the protocol are unlikely to be accepted without very strong justification combined with
+thorough documentation.
+
+Please use [markdownlint](https://www.npmjs.com/package/markdownlint) to check documentation changes before submitting
+a pull request.
 
 ### Certificates
 
@@ -51,18 +56,17 @@ The build is primarily controlled through `make`:
 
 * Build the app bundle with `make`, which will automatically:
   1. Compile Scratch Link code using `swift build`
-  2. Create an app bundle at `Release/Scratch Link.app`
+  2. Create an app bundle at `dist/Scratch Link.app`
   3. Copy all necessary frameworks and dylibs into the app bundle
   4. Generate and/or copy other resources into the app bundle (certificates, icons, etc.)
-  5. Sign the app bundle with a certificate from your keychain
 * Build PKG installers with `make dist`, which runs both of these:
   * Build a PKG for the Mac App Store with `make dist-mas`
   * Build a PKG for non-Store distribution ("Developer ID") with `make dist-devid`
 * Run the app in any of these ways:
-  * Use Finder to activate the `Scratch Link` bundle in the `Release` directory
-  * Run `"Release/Scratch Link.app/Contents/MacOS/scratch-link"`
+  * Use Finder to activate the `Scratch Link` bundle in the `dist` directory
+  * Run `"dist/Scratch Link.app/Contents/MacOS/scratch-link"`
     * Debug output **will** appear in the terminal
-  * Type `open "Release/Scratch Link.app"` in a terminal
+  * Type `open "dist/Scratch Link.app"` in a terminal
     * Debug output will **not** appear in the terminal
 * Create an Xcode project file with `make xcodeproj`
   * If your workflow uses the Xcode project file (Xcode, AppCode, etc.) you should re-run this command each time you
@@ -114,4 +118,4 @@ the one listed in the post-build event in the `ScratchLinkSetup` project.
    * More detail: <https://github.com/wixtoolset/issues/issues/5809>
 2. The `make` step may fail if the path to the Scratch Link directory contains whitespace.
    * Solution: Move Scratch Link to a directory without whitespace in the path.
-   * More detail: <http://savannah.gnu.org/bugs/?712>
+   * More detail: <http://savannah.gnu.org/bugs/?712> and <https://github.com/LLK/scratch-link/issues/66>
