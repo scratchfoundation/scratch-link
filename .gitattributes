@@ -5,15 +5,20 @@
 # People who (for example) rsync between Windows and Linux need this.
 
 # File types which we know are binary
+*.png binary
 
 # Prefer LF for most file types
 *.html text eol=lf
 *.md text eol=lf
-*.ya?ml text eol=lf
+*.sh text eol=lf
+*.svg text eol=lf
 
 # Prefer LF for these files
+.editorconfig text eol=lf
 .gitattributes text eol=lf
 .gitignore text eol=lf
 .markdownlintrc text eol=lf
+LICENSE text eol=lf
+TRADEMARK text eol=lf
 
 # Use CRLF for Windows-specific file types
