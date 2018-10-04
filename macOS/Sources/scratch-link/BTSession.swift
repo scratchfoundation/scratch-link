@@ -110,6 +110,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 } catch {
                     print("Failed to inform client that RFCOMM loop exited: \(String(describing: error))")
                 }
+                self.sessionWasClosed()
             }
         } else {
             completion(nil, JSONRPCError.invalidRequest(data: "Device \(deviceId) not available for connection"))

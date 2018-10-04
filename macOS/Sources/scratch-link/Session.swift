@@ -56,6 +56,9 @@ class Session {
                 }
             }
         }
+        if self.webSocket.isConnected {
+            self.webSocket.close()
+        }
     }
 
     func didReceiveText(_ text: String) {
