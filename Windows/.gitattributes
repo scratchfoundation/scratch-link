@@ -5,12 +5,14 @@
 # People who (for example) rsync between Windows and Linux need this.
 
 # File types which we know are binary
+*.ico binary
 
 # Prefer LF for most file types
 
 # Prefer LF for these files
 
 # Use CRLF for Windows-specific file types
+*.StoreAssociation.xml eol=crlf
 *.appxmanifest text eol=crlf
 *.config text eol=crlf
 *.cs text eol=crlf

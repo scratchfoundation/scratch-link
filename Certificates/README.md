@@ -1,3 +1,5 @@
+# Scratch Link digital certificates
+
 The certificates to be used for WSS communication should be placed here. These certificates are not to be committed
 into the repository.
 

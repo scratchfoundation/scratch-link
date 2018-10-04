@@ -7,7 +7,7 @@ the "Network Protocol" document describing the portions of the protocol common t
 ## Communication Interface (Scratch Extension to Scratch Link)
 
 In general, BLE support in Scratch Link is patterned after BLE support in Web bluetooth. The Web Bluetooth specification
-can be found here: https://webbluetoothcg.github.io/web-bluetooth/
+can be found here: <https://webbluetoothcg.github.io/web-bluetooth/>
 
 ### Initiating Communication with Scratch Link
 
@@ -23,6 +23,7 @@ is accepted by a filter if the peripheral matches **every** condition in the fil
 request if the peripheral matches **any** filter in the "filters" array.
 
 A filter object shall contain one or more of the following properties:
+
 - "name": to pass this condition, the peripheral's advertised name must match this string exactly.
 - "namePrefix": to pass this condition, the peripheral's advertised name must begin with this string.
 - "services": to pass this condition, every service named in this array-valued property must be advertised by the
@@ -34,6 +35,7 @@ services in this list, or the "Connected State" section for more information abo
 "services" filter property, the "optionalServices" parameter, and the services available to the Scratch Extension.
 
 Example JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery:
+
 ```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
@@ -55,6 +57,7 @@ Example JSON-RPC **request** sent from Scratch Extension to Scratch Link to init
 
 Discovery of a BLE peripheral mimics the
 [Web Bluetooth specification](https://webbluetoothcg.github.io/web-bluetooth/#device-discovery) with a few exceptions:
+
 - The "acceptAllDevices" property is not allowed.
 - The "filters" list must contain at least one filter.
 - Each filter in the "filters" list must be non-trivial. For example, a filter which contains only an empty
@@ -65,6 +68,7 @@ Discovery of a BLE peripheral mimics the
 
 The "services" array and, if present, the "optionalServices" array shall contain what the Web Bluetooth specification
 calls "names" for GATT services. A GATT service name is one of the following:
+
 - A full GATT service UUID in string format, such as "0000180f-0000-1000-8000-00805f9b34fb"
   - Hexadecimal characters shall be lower-case
 - A "short ID" in integer format, such as 0x180f
@@ -94,10 +98,12 @@ filters but not allowed for actual communication.
 
 Scratch Link shall reject any attempt by the Scratch Extension to access a GATT service unless the service is
 specifically allowed. A service is allowed if and only if:
+
 - it was named in the "services" array of **any** filter in the "discover" request, **or**
 - it was named in the "optionalServices" array of the "discover" request.
 
 Consider this request:
+
 ```json5
 {
   "jsonrpc": "2.0",     // JSON-RPC version indicator
@@ -118,6 +124,7 @@ Consider this request:
 Suppose Scratch Link finds a peripheral with the name "My Peripheral" and reports that to the client in a
 "didDiscoverPeripheral" notification, then the Scratch Extension chooses to connect to the "My Peripheral" peripheral.
 The Scratch Extension will be allowed to contact the following services:
+
 - Service 0x1805, the "Current Time" service, with UUID 00001805-0000-1000-8000-00805f9b34fb
 - Service 0x1815, the "Automation IO" service, with UUID 00001815-0000-1000-8000-00805f9b34fb
 - Service 0x1826, the "Fitness Machine" service, with UUID 00001826-0000-1000-8000-00805f9b34fb
@@ -128,6 +135,7 @@ discovery filter based on its name it might not implement any of these services.
 #### Enumerating Services
 
 The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to Scratch Link:
+
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -138,6 +146,7 @@ The Scratch Extension may query the list of allowed services by sending a "getSe
 ```
 
 On success, Scratch Link's **response** shall contain an array of service UUIDs as its result:
+
 ```json5
 {
   "jsonrpc": "2.0",
@@ -149,12 +158,13 @@ On success, Scratch Link's **response** shall contain an array of service UUIDs 
 ```
 
 The Scratch Extension is not required to enumerate a peripheral's services; Scratch Link shall not change the list of
-allowed services based on whether or not the Scratch Extension has requested enumeration. 
+allowed services based on whether or not the Scratch Extension has requested enumeration.
 
 #### Enumerating Service Characteristics
 
 The Scratch Extension may query the list of characteristics available on an allowed service by sending a
 "getCharacteristics" **request** to Scratch Link:
+
 ```json5
 {
   "jsonrpc": "2.0",                // JSON-RPC version indicator
@@ -167,11 +177,13 @@ The Scratch Extension may query the list of characteristics available on an allo
 ```
 
 The "serviceId" property may be any valid GATT service name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
 
 On success, Scratch Link's **response** shall contain an array of characteristic UUIDs as its result:
+
 ```json5
 {
   "jsonrpc": "2.0",
@@ -183,12 +195,13 @@ On success, Scratch Link's **response** shall contain an array of characteristic
 ```
 
 The Scratch Extension is not required to enumerate a service's characteristics; Scratch Link shall not change the list
-of allowed characteristics based on whether or not the Scratch Extension has requested enumeration. 
+of allowed characteristics based on whether or not the Scratch Extension has requested enumeration.
 
 #### Writing to a Characteristic
 
 The Scratch Extension may write data to a characteristics available on an allowed service by sending a "write"
 **request** to Scratch Link:
+
 ```json5
 {
   "jsonrpc": "2.0",                            // JSON-RPC version indicator
@@ -205,6 +218,7 @@ The Scratch Extension may write data to a characteristics available on an allowe
 ```
 
 The "serviceId" property may be any valid GATT service name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
@@ -214,6 +228,7 @@ service shall be determined the same way as in [the Web Bluetooth `getPrimarySer
 https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
 
 The "characteristicId" property may be any valid GATT characteristic name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](
@@ -224,6 +239,7 @@ encode the string using UTF-8 and write the resulting bytes to the characteristi
 
 Bluetooth LE supports writing a value to a characteristic with or without a response. The "withResponse" property
 controls which of these modes shall be used for a particular write.
+
 - If true, Scratch Link shall write with response. That is, Scratch Link shall wait for the peripheral to confirm that
   the write was received without error, and Scratch Link's response to the client shall report any error reported by the
   BLE peripheral. If the peripheral reports an error, that error shall be forwarded to the client as an error response
@@ -236,6 +252,7 @@ controls which of these modes shall be used for a particular write.
 
 On success, Scratch Link's **response** shall contain the number of bytes written, which may differ from the number of
 characters in the string value of the initiating request's "message" property:
+
 ```json5
 {
   "jsonrpc": "2.0",
@@ -248,6 +265,7 @@ characters in the string value of the initiating request's "message" property:
 
 The Scratch Extension may read data from a characteristics available on an allowed service by sending a "read"
 **request** to Scratch Link:
+
 ```json5
 {
   "jsonrpc": "2.0",                            // JSON-RPC version indicator
@@ -263,6 +281,7 @@ The Scratch Extension may read data from a characteristics available on an allow
 ```
 
 The "serviceId" property may be any valid GATT service name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
@@ -272,6 +291,7 @@ service shall be determined the same way as in [the Web Bluetooth `getPrimarySer
 https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
 
 The "characteristicId" property may be any valid GATT characteristic name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
@@ -281,6 +301,7 @@ Link is not required to do so. If the "encoding" property is absent in the **req
 encoding for the response.
 
 On success, Scratch Link's **response** shall contain the data read from the characteristic:
+
 ```json5
 {
   "jsonrpc": "2.0",        // JSON-RPC version indicator
@@ -303,6 +324,7 @@ If the "startNotifications" property is both present and true in the **request**
 The Scratch Extension may request that Scratch Link shall continuously notify the Scratch Extension of changes in the
 characteristic's value by sending a "startNotifications" **request**. This shall continue until the Scratch Extension
 makes a "stopNotifications" request:
+
 ```json5
 {
   "jsonrpc": "2.0",                            // JSON-RPC version indicator
@@ -317,6 +339,7 @@ makes a "stopNotifications" request:
 ```
 
 The "serviceId" property may be any valid GATT service name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
@@ -326,6 +349,7 @@ service shall be determined the same way as in [the Web Bluetooth `getPrimarySer
 https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
 
 The "characteristicId" property may be any valid GATT characteristic name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
@@ -335,6 +359,7 @@ Link is not required to do so. If the "encoding" property is absent in the **req
 encoding for the response.
 
 Scratch Link notifies the Scratch Extension of value changes with **notification** messages in this form:
+
 ```json5
 {
   "jsonrpc": "2.0",                    // JSON-RPC version indicator
@@ -358,6 +383,7 @@ has been made. Such notifications shall continue until the Scratch Extension mak
 #### Stop Notifications
 
 The Scratch Extension may end value change notifications by sending a "stopNotifications" **request** to Scratch Link:
+
 ```json5
 {
   "jsonrpc": "2.0",                           // JSON-RPC version indicator
@@ -371,6 +397,7 @@ The Scratch Extension may end value change notifications by sending a "stopNotif
 ```
 
 The "serviceId" property may be any valid GATT service name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
@@ -380,6 +407,7 @@ service shall be determined the same way as in [the Web Bluetooth `getPrimarySer
 https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-getprimaryservice).
 
 The "characteristicId" property may be any valid GATT characteristic name:
+
 - a string representing a full UUID,
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](
