@@ -115,6 +115,22 @@ namespace scratch_link
             }
         }
 
+        protected async Task SendErrorNotification(JsonRpcException error)
+        {
+            var message = MakeResponse(null, null, error);
+            var messageText = JsonConvert.SerializeObject(message);
+
+            _socketLock.Wait();
+            try
+            {
+                await _webSocket.Send(messageText);
+            }
+            finally
+            {
+                _socketLock.Release();
+            }
+        }
+
         public async Task OnMessage(string message)
         {
             await DidReceiveMessage(message, async response => {
@@ -148,6 +164,17 @@ namespace scratch_link
             });
         }
 
+        private JObject MakeResponse(JToken responseId, JToken result, JsonRpcException error)
+        {
+            return new JObject(
+                new JProperty("jsonrpc", "2.0"),
+                new JProperty("id", responseId),
+                error == null ?
+                    new JProperty("result", result) :
+                    new JProperty("error", JObject.FromObject(error))
+            );
+        }
+
         private async Task DidReceiveMessage(string message, Func<string, Task> sendResponseText)
         {
             var encoding = Encoding.UTF8;
@@ -155,11 +182,7 @@ namespace scratch_link
 
             async Task SendResponseInternal(JToken result, JsonRpcException error)
             {
-                var response = new JObject(
-                    new JProperty("jsonrpc", "2.0"),
-                    new JProperty("id", responseId),
-                    error == null ? new JProperty("result", result) : new JProperty("error", JObject.FromObject(error))
-                );
+                var response = MakeResponse(responseId, result, error);
 
                 var responseText = JsonConvert.SerializeObject(response);
 

@@ -92,6 +92,32 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         while let task = onBluetoothReadyTasks.popLast() {
             task(error)
         }
+
+        if let peripheral = self.connectedPeripheral {
+            if btState != .available {
+                // TODO: This call will probably fail with the message that CBCentralManager is not powered on,
+                // which means the peripheral will stay "connected" until this session closes. The client should
+                // close the session in response to the error we're about to send, but it would still be nice to
+                // find a more reliable way to disconnect the peripheral here.
+                central.cancelPeripheralConnection(peripheral)
+                self.connectedPeripheral = nil
+                do {
+                    try self.sendErrorNotification(JSONRPCError.applicationError(data: "Bluetooth became unavailable"))
+                } catch {
+                    print("Failed to tell client that Bluetooth became unavailable: \(String(describing: error))")
+                }
+                self.sessionWasClosed()
+            } else if peripheral.state != .connecting && peripheral.state != .connected {
+                central.cancelPeripheralConnection(peripheral)
+                self.connectedPeripheral = nil
+                do {
+                    try self.sendErrorNotification(JSONRPCError.applicationError(data: "Peripheral disconnected"))
+                } catch {
+                    print("Failed to tell client that the peripheral disconnected: \(String(describing: error))")
+                }
+                self.sessionWasClosed()
+            }
+        }
     }
 
     func discover(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {

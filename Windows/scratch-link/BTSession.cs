@@ -57,7 +57,9 @@ namespace scratch_link
             }
             if (_connectedSocket != null)
             {
-                CloseConnection();
+                _socketReader.Dispose();
+                _socketWriter.Dispose();
+                _connectedSocket.Dispose();
             }
         }
 
@@ -212,16 +214,10 @@ namespace scratch_link
             }
             catch (Exception e)
             {
+                await SendErrorNotification(JsonRpcException.ApplicationError("Peripheral connection closed"));
                 Debug.Print($"Closing connection to peripheral: {e.Message}");
-                CloseConnection();
+                Dispose();
             }
-        }
-
-        private void CloseConnection()
-        {
-            _socketReader.Dispose();
-            _socketWriter.Dispose();
-            _connectedSocket.Dispose();
         }
 
         #region Custom Pairing Event Handlers

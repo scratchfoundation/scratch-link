@@ -105,6 +105,12 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                     nextCheck.addTimeInterval(0.5)
                 }
                 print("RFCOMM run loop exited")
+                do {
+                    try self.sendErrorNotification(JSONRPCError.applicationError(data: "RFCOMM run loop exited"))
+                } catch {
+                    print("Failed to inform client that RFCOMM loop exited: \(String(describing: error))")
+                }
+                self.sessionWasClosed()
             }
         } else {
             completion(nil, JSONRPCError.invalidRequest(data: "Device \(deviceId) not available for connection"))
@@ -187,7 +193,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
 
     func deviceInquiryDeviceNameUpdated(
         _ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!, devicesRemaining: UInt32) {
-        print("name updated: \(device.name)")
+        print("name updated: \(String(describing: device.name))")
     }
 
     /*
