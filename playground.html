@@ -11,15 +11,29 @@
         <label for="follow">Follow</label>
     </div>
     <fieldset>
-        <legend>BLE / micro:bit</legend>
+        <legend>BLE</legend>
         <div>
             <button id="initBLE">Connect to app</button>
             <button id="pingBLE">Request ping</button>
-            <button id="discoverBLE">Find a micro:bit</button>
-            <button id="connectBLE">Connect to discovered micro:bit</button>
-            <button id="readBLE">Read and monitor data</button>
-            <button id="writeBLE">Change the LEDs</button>
         </div>
+        <div>
+            Discover peripherals with service UUID:
+            <input id="serviceBLE" style="width:32em;" type="text" placeholder="Service UUID">
+        </div>
+        <div>
+            <button id="discoverBLE">Discover peripherals</button>
+            <button id="connectBLE">Connect to discovered peripheral</button>
+        </div>
+        <fieldset>
+            <legend>micro:bit</legend>
+            <button id="setServiceMicroBit">Set service ID</button>
+            <button id="readMicroBit">Read and monitor data</button>
+            <button id="writeMicroBit">Change the LEDs</button>
+        </fieldset>
+        <fieldset>
+            <legend>WeDo 2.0</legend>
+            <button id="setServiceWeDo2">Set service ID</button>
+        </fieldset>
     </fieldset>
     <fieldset>
         <legend>BT / EV3</legend>
@@ -301,10 +315,11 @@
         }
 
         function discoverBLE() {
+            const rawServiceId = document.getElementById('serviceBLE').value;
+            const serviceId = isNaN(rawServiceId) ? rawServiceId : parseInt(rawServiceId);
             Scratch.BLE.requestDevice({
                 filters: [
-                    { services: [0xf005] } // micro:bit
-                ]
+                    { services: [serviceId] }]
             }).then(
                 x => {
                     addLine(`requestDevice resolved to: ${stringify(x)}`);
@@ -330,7 +345,11 @@
             );
         }
 
-        function readBLE() {
+        function setServiceMicroBit() {
+            document.getElementById('serviceBLE').value = '0xf005';
+        }
+
+        function readMicroBit() {
             Scratch.BLE.read(0xf005, '5261da01-fa7e-42ab-850b-7c80220097cc', true).then(
                 x => {
                     addLine(`read resolved to: ${stringify(x)}`);
@@ -341,7 +360,7 @@
             );
         }
 
-        function writeBLE() {
+        function writeMicroBit() {
             const message = _encodeMessage('LINK');
             Scratch.BLE.write(0xf005, '5261da02-fa7e-42ab-850b-7c80220097cc', message, 'base64').then(
                 x => {
@@ -351,6 +370,10 @@
                     addLine(`write rejected with: ${stringify(e)}`);
                 }
             );
+        }
+
+        function setServiceWeDo2() {
+            document.getElementById('serviceBLE').value = '00001523-1212-efde-1523-785feabcd123';
         }
 
         // micro:bit base64 encoding
@@ -372,9 +395,12 @@
         attachFunctionToButton('pingBLE', pingBLE);
         attachFunctionToButton('discoverBLE', discoverBLE);
         attachFunctionToButton('connectBLE', connectBLE);
-        attachFunctionToButton('readBLE', readBLE);
-        attachFunctionToButton('writeBLE', writeBLE);
 
+        attachFunctionToButton('setServiceMicroBit', setServiceMicroBit);
+        attachFunctionToButton('readMicroBit', readMicroBit);
+        attachFunctionToButton('writeMicroBit', writeMicroBit);
+
+        attachFunctionToButton('setServiceWeDo2', setServiceWeDo2);
 
         function initBT() {
             addLine('Connecting...');
