@@ -38,8 +38,8 @@ dist/mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/mas/
 	mkdir -p dist/mas/
 	cp -aR "$<" "$@"
-	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
-	codesign --display -vv "$@"
+	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --force --deep --entitlements Packaging/entitlements.plist "$@"
+	codesign --verify -R '=identifier "$(APP_ID)"' "$@" "$@/Contents/Frameworks"/*.dylib
 
 # For "Developer ID" distrution outside the Mac App Store
 dist-devid: dist/$(PACKAGE_FILE)
@@ -51,8 +51,8 @@ dist/devid/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/devid
 	mkdir -p dist/devid
 	cp -aR "$<" "$@"
-	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
-	codesign --display -vv "$@"
+	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --force --deep --entitlements Packaging/entitlements.plist "$@"
+	codesign --verify -R '=identifier "$(APP_ID)"' "$@" "$@/Contents/Frameworks"/*.dylib
 
 $(BIN_FILE): $(SWIFT_SOURCES)
 	@echo "Build Version: $(APP_VERSION) $(VERSION_DETAIL)"
