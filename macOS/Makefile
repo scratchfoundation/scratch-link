@@ -1,22 +1,25 @@
 SIGN_ID=Code-to-Learn Foundation
 APP_ID=edu.mit.scratch.scratch-link
 APP_BUNDLE=Scratch\ Link.app
-APP_VERSION=1
 CONFIG=release
 
-BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
-BIN_FILE=$(BIN_PATH)/scratch-link
-
-APP_DEST=dist/$(APP_BUNDLE)
+# Assume there's a recent tag called something like "1.1" and turn "1.1-2-g123abc" into "1.1.2"
+APP_VERSION=$(shell git describe --always | sed 's/-\([0-9]*\)-g.*/.\1/')
 VERSION_DETAIL=$(shell git describe --always --dirty --exclude '*')
-VERSION_DATE=$(shell date -u -r `git log -1 --date=short --pretty=format:%ct` '+%y.%m%d.%H%M' | sed 's/\.0*/./g' )
-APP_VERSION_EXT=$(APP_VERSION).$(VERSION_DATE)
-PACKAGE_FILE="scratch-link-$(APP_VERSION_EXT).pkg"
+BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
+
+BIN_FILE=$(BIN_PATH)/scratch-link
+APP_DEST=dist/$(APP_BUNDLE)
+PACKAGE_FILE="scratch-link-$(APP_VERSION).pkg"
 SWIFT_SOURCES=$(wildcard Sources/scratch-link/*.swift)
 
 .PHONY: all bin clean dist dist-mas dist-devid distclean lint uninstall xcodeproj
 
 all: $(APP_DEST)
+
+show-version:
+	@echo APP_VERSION:    $(APP_VERSION)
+	@echo VERSION_DETAIL: $(VERSION_DETAIL)
 
 lint: $(SWIFT_SOURCES)
 	swiftlint lint --path Sources
@@ -52,7 +55,7 @@ dist/devid/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	codesign --display -vv "$@"
 
 $(BIN_FILE): $(SWIFT_SOURCES)
-	@echo "Build Version: $(APP_VERSION_EXT) $(VERSION_DETAIL)"
+	@echo "Build Version: $(APP_VERSION) $(VERSION_DETAIL)"
 	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
 
 xcodeproj:
@@ -64,8 +67,8 @@ $(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist dist/
 	cp $(BIN_FILE) "$@/Contents/MacOS/"
 	xcrun swift-stdlib-tool --verbose --copy --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	cp Packaging/Info.plist "$@/Contents/"
-	plutil -replace "CFBundleVersion" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
-	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION_EXT)" "$@/Contents/Info.plist"
+	plutil -replace "CFBundleVersion" -string "$(APP_VERSION)" "$@/Contents/Info.plist"
+	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION)" "$@/Contents/Info.plist"
 	plutil -replace "ScratchVersionDetail" -string "$(VERSION_DETAIL)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
 	cp -rv ../Certificates/out/scratch-device-manager.pem "$@/Contents/Resources/"
