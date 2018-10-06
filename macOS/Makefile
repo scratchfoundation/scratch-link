@@ -38,8 +38,9 @@ dist/mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/mas/
 	mkdir -p dist/mas/
 	cp -aR "$<" "$@"
-	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --force --deep --entitlements Packaging/entitlements.plist "$@"
-	codesign --verify -R '=identifier "$(APP_ID)"' "$@" "$@/Contents/Frameworks"/*.dylib
+	xcrun swift-stdlib-tool --copy --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
+	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
+	find "$@" -type f -executable -print0 | xargs -0 codesign --verify -r
 
 # For "Developer ID" distrution outside the Mac App Store
 dist-devid: dist/$(PACKAGE_FILE)
@@ -51,8 +52,9 @@ dist/devid/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/devid
 	mkdir -p dist/devid
 	cp -aR "$<" "$@"
-	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --force --deep --entitlements Packaging/entitlements.plist "$@"
-	codesign --verify -R '=identifier "$(APP_ID)"' "$@" "$@/Contents/Frameworks"/*.dylib
+	xcrun swift-stdlib-tool --copy --sign "Developer ID Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
+	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
+	find "$@" -type f -executable -print0 | xargs -0 codesign --verify -r
 
 $(BIN_FILE): $(SWIFT_SOURCES)
 	@echo "Build Version: $(APP_VERSION) $(VERSION_DETAIL)"
@@ -65,7 +67,6 @@ $(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist dist/
 	rm -rf "$@"
 	mkdir -p "$@/Contents/MacOS"
 	cp $(BIN_FILE) "$@/Contents/MacOS/"
-	xcrun swift-stdlib-tool --verbose --copy --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	cp Packaging/Info.plist "$@/Contents/"
 	plutil -replace "CFBundleVersion" -string "$(APP_VERSION)" "$@/Contents/Info.plist"
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION)" "$@/Contents/Info.plist"
