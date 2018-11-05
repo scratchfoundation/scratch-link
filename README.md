@@ -5,10 +5,10 @@ replaces the Scratch Device Manager and Scratch Device Plug-in.
 
 System Requirements:
 
-&nbsp; | Minimum | Recommended
---- | --- | ---
-macOS | 10.10 "Yosemite" |
-Windows&nbsp;10 | "Anniversary&nbsp;Update" Version&nbsp;1607 (build&nbsp;14393) | "Creators&nbsp;Update" Version&nbsp;1703 (build&nbsp;15063) or newer
+| | Minimum
+| --- | ---
+| macOS | 10.10 "Yosemite"
+| Windows&nbsp;10 | "Creators&nbsp;Update" Version&nbsp;1703 (build&nbsp;15063) or newer
 
 ## Using Scratch Link with Scratch 3.0
 
