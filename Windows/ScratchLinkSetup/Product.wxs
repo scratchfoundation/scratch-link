@@ -9,7 +9,14 @@
     Manufacturer="Scratch Foundation"
     >
     <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
-
+    <Property Id="CURRENTBUILDNUMBER">
+      <RegistrySearch
+        Id="SearchBuildNumber" Type="raw"
+        Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber"/>
+    </Property>
+    <Condition Message="This application requires Windows 10 Creators Update or later.">
+      <![CDATA[CURRENTBUILDNUMBER >= 15063]]>
+    </Condition>
     <UI Id="UserInterface">
       <Property Id="WIXUI_INSTALLDIR" Value="TARGETDIR" />
       <Property Id="WixUI_Mode" Value="Custom" />
@@ -38,7 +45,9 @@
     <Property Id="WixShellExecTarget" Value="[#ScratchLink.exe]" />
     <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
 
-    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />
 
     <Feature Id="ProductFeature" Title="Scratch Link" Level="1">
@@ -55,7 +64,8 @@
         <Directory Id="ProgramMenuDir" Name="Scratch Link">
           <Component Id="ProgramMenuDir" Guid="4D38C3D7-F5B8-495D-BFD6-CDF4A810341B">
             <RemoveFolder Id="ProgramMenuDir" On="uninstall"/>
-            <RegistryValue Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" KeyPath="yes" />
+            <RegistryValue
+              Root="HKMU" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="" KeyPath="yes" />
           </Component>
         </Directory>
       </Directory>

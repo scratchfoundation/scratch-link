@@ -31,26 +31,31 @@ dist: dist-mas dist-devid
 # For distribution to the Mac App Store
 dist-mas: dist/mas-$(PACKAGE_FILE)
 
-dist/mas-$(PACKAGE_FILE): dist/mas/$(APP_BUNDLE)
+dist/mas-$(PACKAGE_FILE): dist/tmp.mas/$(APP_BUNDLE)
 	productbuild --sign "3rd Party Mac Developer Installer: $(SIGN_ID)" --component-compression auto --component "$<" /Applications "$@"
 
-dist/mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
-	rm -rf dist/mas/
-	mkdir -p dist/mas/
+dist/tmp.mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
+	rm -rf dist/tmp.mas/
+	mkdir -p dist/tmp.mas/
 	cp -aR "$<" "$@"
 	xcrun swift-stdlib-tool --copy --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	find "$@" -type f -executable -print0 | xargs -0 codesign --verify -r
 
-# For "Developer ID" distrution outside the Mac App Store
+# For "Developer ID" distribution outside the Mac App Store
 dist-devid: dist/$(PACKAGE_FILE)
 
-dist/$(PACKAGE_FILE): dist/devid/$(APP_BUNDLE)
-	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component-compression auto --component "$<" /Applications "$@"
+dist/$(PACKAGE_FILE): dist/tmp.devid/app/$(APP_BUNDLE)
+	pkgbuild --analyze --root dist/tmp.devid/app/ dist/tmp.devid/components.plist
+	plutil -replace "BundleIsRelocatable" -bool "NO" dist/tmp.devid/components.plist
+	pkgbuild --root dist/tmp.devid/app/ --install-location /Applications/ --component-plist dist/tmp.devid/components.plist dist/tmp.devid/ScratchLink.pkg
+	productbuild --synthesize --package dist/tmp.devid/ScratchLink.pkg dist/tmp.devid/distribution.plist
+	# TODO: add a README and/or LICENSE to dist/tmp.devid/distribution.plist
+	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component-compression auto --distribution dist/tmp.devid/distribution.plist --package-path dist/tmp.devid/ "$@"
 
-dist/devid/$(APP_BUNDLE): dist/$(APP_BUNDLE)
-	rm -rf dist/devid
-	mkdir -p dist/devid
+dist/tmp.devid/app/$(APP_BUNDLE): dist/$(APP_BUNDLE)
+	rm -rf dist/tmp.devid/app
+	mkdir -p dist/tmp.devid/app
 	cp -aR "$<" "$@"
 	xcrun swift-stdlib-tool --copy --sign "Developer ID Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
