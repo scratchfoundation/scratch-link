@@ -117,17 +117,29 @@ namespace scratch_link
 
         protected async Task SendErrorNotification(JsonRpcException error)
         {
-            var message = MakeResponse(null, null, error);
-            var messageText = JsonConvert.SerializeObject(message);
-
-            _socketLock.Wait();
             try
             {
-                await _webSocket.Send(messageText);
+                var message = MakeResponse(null, null, error);
+                var messageText = JsonConvert.SerializeObject(message);
+
+                _socketLock.Wait();
+                try
+                {
+                    await _webSocket.Send(messageText);
+                }
+                finally
+                {
+                    _socketLock.Release();
+                }
             }
-            finally
+            catch (Exception e)
             {
-                _socketLock.Release();
+                // This probably means the WebSocket is closed, causing Send to throw. Since SendErrorNotification
+                // is often called in response to an exception -- possibly one that caused the WebSocket to close --
+                // reporting this secondary exception won't help anyone and may itself cause a crash. Instead, print
+                // this secondary exception and move on...
+                Debug.Print($"Error serializing or sending error notification: {e}");
+                Debug.Print($"Original error notification was: {error}");
             }
         }
 
