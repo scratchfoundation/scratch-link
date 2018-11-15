@@ -33,7 +33,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
             if let major = params["majorDeviceClass"] as? UInt, let minor = params["minorDeviceClass"] as? UInt {
                 if let prefix = params["ouiPrefix"] as? String { self.ouiPrefix = prefix }
                 state = .discovery
-                discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, withPrefix: self.ouiPrefix, completion: completion)
+                discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, completion: completion)
             } else {
                 completion(nil, JSONRPCError.invalidParams(data: "majorDeviceClass and minorDeviceClass required"))
             }
