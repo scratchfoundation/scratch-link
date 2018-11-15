@@ -68,7 +68,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         connectedChannel = nil
     }
 
-    func discover(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt, withPrefix prefix: String = "",
+    func discover(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt,
                   completion: @escaping JSONRPCCompletionHandler) {
         // see https://www.bluetooth.com/specifications/assigned-numbers/baseband for available device classes
         // LEGO EV3 is major class toy (8), minor class robot (1)
