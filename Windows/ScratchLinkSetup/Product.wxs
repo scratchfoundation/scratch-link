@@ -15,7 +15,7 @@
         Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber"/>
     </Property>
     <Condition Message="This application requires Windows 10 Creators Update or later.">
-      <![CDATA[CURRENTBUILDNUMBER >= 15063]]>
+      <![CDATA[CURRENTBUILDNUMBER >= 16299]]>
     </Condition>
     <UI Id="UserInterface">
       <Property Id="WIXUI_INSTALLDIR" Value="TARGETDIR" />
