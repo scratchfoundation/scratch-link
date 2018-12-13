@@ -163,7 +163,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
                 optionalServices = newOptionalServices
                 allowedServices = newAllowedServices
                 reportedPeripherals = [:]
-                central.scanForPeripherals(withServices: [CBUUID](allowedServices!))
+                central.scanForPeripherals(withServices: nil)
 
                 completion(nil, nil)
             }
@@ -189,6 +189,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
                         advertisementData: [String: Any], rssi rssiRaw: NSNumber) {
+
         let rssi = RSSI(rawValue: rssiRaw)
         if case .valid(let value) = rssi, value < BLESession.MinimumSignalStrength {
             // signal too weak
