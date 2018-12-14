@@ -163,7 +163,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
                 optionalServices = newOptionalServices
                 allowedServices = newAllowedServices
                 reportedPeripherals = [:]
-                central.scanForPeripherals(withServices: [CBUUID](allowedServices!))
+                central.scanForPeripherals(withServices: nil)
 
                 completion(nil, nil)
             }
