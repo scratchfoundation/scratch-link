@@ -7,6 +7,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     private var connectedChannel: IOBluetoothRFCOMMChannel?
     private let rfcommQueue = DispatchQueue(label: "ScratchLink.BTSession.rfcommQueue")
     private var state: SessionState = .initial
+    private var ouiPrefix: String
 
     enum SessionState {
         case initial
@@ -15,6 +16,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     }
 
     required init(withSocket webSocket: WebSocket) throws {
+        ouiPrefix = ""
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
         try super.init(withSocket: webSocket)
         inquiry.delegate = self
@@ -29,6 +31,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 return
             }
             if let major = params["majorDeviceClass"] as? UInt, let minor = params["minorDeviceClass"] as? UInt {
+                if let prefix = params["ouiPrefix"] as? String { self.ouiPrefix = prefix }
                 state = .discovery
                 discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, completion: completion)
             } else {
@@ -166,14 +169,16 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
      */
 
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!) {
-        let peripheralData: [String: Any] = [
-            "peripheralId": device.addressString,
-            "name": device.name,
+        if(device.addressString.hasPrefix(self.ouiPrefix)) {
+            let peripheralData: [String: Any] = [
+                "peripheralId": device.addressString,
+                "name": device.name,
 
-            // BT on Mac can't get a real RSSI without connecting (device.rawRSSI() is +127 unless connected)
-            "rssi": RSSI.unsupported.rawValue as Any
-        ]
-        sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
+                // BT on Mac can't get a real RSSI without connecting (device.rawRSSI() is +127 unless connected)
+                "rssi": RSSI.unsupported.rawValue as Any
+            ]
+            sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
+        }
     }
 
     func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
