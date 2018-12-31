@@ -162,8 +162,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         let body = (
             "\(BundleInfo.getTitle()) was unable to start because port \(SDMPort) is already in use.\n" +
             "\n" +
-            "This probably means another instance of \(BundleInfo.getTitle()) is already running or another " +
-            "application is using port \(SDMPort).\n" +
+            "This means \(BundleInfo.getTitle()) is already running or another application is using that port.\n" +
             "\n" +
             "This application will now exit."
         )

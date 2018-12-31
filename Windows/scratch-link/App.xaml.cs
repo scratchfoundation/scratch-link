@@ -90,7 +90,7 @@ namespace scratch_link
             var body = String.Format(
                 "{0} was unable to start because port {1} is already in use.\n" +
                 "\n" +
-                "This probably means another instance of {0} is already running or another application is using port {1}.\n" +
+                "This means {0} is already running or another application is using that port.\n" +
                 "\n" +
                 "This application will now exit.",
                 scratch_link.Properties.Resources.AppTitle,
