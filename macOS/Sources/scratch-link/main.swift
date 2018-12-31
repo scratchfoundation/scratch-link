@@ -25,13 +25,11 @@ extension HTTPServer.LaunchFailure {
     // dirty hack to access "message" member even though it's marked "internal"
     func getMessage() throws -> String {
         let mirror = Mirror(reflecting: self)
-        for case let (label?, value) in mirror.children {
-            if label == "message" {
-                if let messageString = value as? String {
-                    return messageString
-                }
-                throw InitializationError.internalError("Unexpected type for launch failure message")
+        for case let (label?, value) in mirror.children where label == "message" {
+            if let messageString = value as? String {
+                return messageString
             }
+            throw InitializationError.internalError("Unexpected type for launch failure message")
         }
         throw InitializationError.internalError("Couldn't find launch failure message")
     }
@@ -79,7 +77,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
 
     @objc
     private func onQuitSelected() {
-        quit();
+        quit()
     }
 
     func initUI() {
@@ -154,7 +152,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         }
 
         // None of the above handled the error. Re-throw it.
-        throw error;
+        throw error
     }
 
     func onAddressInUse() {
