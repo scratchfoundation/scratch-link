@@ -1,8 +1,9 @@
-﻿using Fleck;
+using Fleck;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
@@ -61,9 +62,43 @@ namespace scratch_link
                 RestartAfterListenError = true,
                 Certificate = certificate
             };
-            _server.Start(OnNewSocket);
+
+            try
+            {
+                _server.Start(OnNewSocket);
+            }
+            catch (SocketException e)
+            {
+                switch (e.SocketErrorCode)
+                {
+                    case SocketError.AddressAlreadyInUse:
+                        OnAddressInUse();
+                        break;
+                    default:
+                        throw;
+                }
+            }
 
             UpdateIconText();
+        }
+
+        private void OnAddressInUse()
+        {
+            PrepareToClose();
+
+            var title = "Address already in use!";
+            var body = String.Format(
+                "{0} was unable to start because port {1} is already in use.\n" +
+                "\n" +
+                "This means {0} is already running or another application is using that port.\n" +
+                "\n" +
+                "This application will now exit.",
+                scratch_link.Properties.Resources.AppTitle,
+                SDMPort
+            );
+            MessageBox.Show(body, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            Environment.Exit(1);
         }
 
         private void OnAppVersionClicked(object sender, EventArgs e)

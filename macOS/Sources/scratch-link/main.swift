@@ -13,11 +13,26 @@ enum SDMRoute: String {
 
 enum InitializationError: Error {
     case server(String)
+    case internalError(String)
 }
 
 enum SerializationError: Error {
     case invalid(String)
     case internalError(String)
+}
+
+extension HTTPServer.LaunchFailure {
+    // dirty hack to access "message" member even though it's marked "internal"
+    func getMessage() throws -> String {
+        let mirror = Mirror(reflecting: self)
+        for case let (label?, value) in mirror.children where label == "message" {
+            if let messageString = value as? String {
+                return messageString
+            }
+            throw InitializationError.internalError("Unexpected type for launch failure message")
+        }
+        throw InitializationError.internalError("Couldn't find launch failure message")
+    }
 }
 
 // Provide Scratch access to hardware devices using a JSON-RPC 2.0 API over WebSockets.
@@ -31,12 +46,17 @@ class ScratchLink: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         do {
-            initUI()
+            // Init server first: once we're a "UI Element Application" the NSAlert class no longer works correctly
             try initServer()
+            initUI()
         } catch {
             print("Quitting due to initialization failure: \(error)")
-            onQuitSelected()
+            quit()
         }
+    }
+
+    private func quit() {
+        NSApplication.shared.terminate(nil)
     }
 
     @objc
@@ -57,7 +77,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
 
     @objc
     private func onQuitSelected() {
-        NSApplication.shared.terminate(nil)
+        quit()
     }
 
     func initUI() {
@@ -98,13 +118,59 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         var routes = Routes()
         routes.add(method: .get, uri: "/scratch/*", handler: requestHandler)
         print("Starting server...")
-        try HTTPServer.launch(wait: false, HTTPServer.Server(
-            tlsConfig: TLSConfiguration(certPath: certPath),
-            name: "device-manager.scratch.mit.edu",
-            port: SDMPort,
-            routes: routes
-        ))
+        do {
+            try HTTPServer.launch(wait: false, HTTPServer.Server(
+                tlsConfig: TLSConfiguration(certPath: certPath),
+                name: "device-manager.scratch.mit.edu",
+                port: SDMPort,
+                routes: routes
+            ))
+        } catch {
+            try handleLaunchError(error)
+        }
         print("Server started")
+    }
+
+    func does(string text: String, match regex: NSRegularExpression) -> Bool {
+        let sourceRange = NSRange(text.startIndex..., in: text)
+        let matchRange = regex.rangeOfFirstMatch(in: text, options: [], range: sourceRange)
+        return matchRange.location != NSNotFound
+    }
+
+    func handleLaunchError(_ error: Error) throws {
+        if let launchFailure = error as? HTTPServer.LaunchFailure {
+            // TODO: it looks like Perfect throws away the real error code in HTTPServer's bindServer method.
+            // Is there any way to get it back, maybe through the Server (not HTTPServer) object?
+            // Is there a better way to catch the address-in-use case?
+            let regexAddressInUse = try NSRegularExpression(
+                pattern: "Another server was already listening on the requested port \\d+$"
+            )
+            if does(string: try launchFailure.getMessage(), match: regexAddressInUse) {
+                onAddressInUse() // does not return
+                return
+            }
+        }
+
+        // None of the above handled the error. Re-throw it.
+        throw error
+    }
+
+    func onAddressInUse() {
+        let title = "Address already in use!"
+        let body = (
+            "\(BundleInfo.getTitle()) was unable to start because port \(SDMPort) is already in use.\n" +
+            "\n" +
+            "This means \(BundleInfo.getTitle()) is already running or another application is using that port.\n" +
+            "\n" +
+            "This application will now exit."
+        )
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = body
+        alert.alertStyle = .critical
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+        quit()
     }
 
     func requestHandler(request: HTTPRequest, response: HTTPResponse) {
