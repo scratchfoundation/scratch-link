@@ -1,3 +1,4 @@
+*.cer
 *.crt
 *.der
 *.key
