@@ -132,7 +132,6 @@ namespace scratch_link
         protected override async Task DidReceiveCall(string method, JObject parameters,
             Func<JToken, JsonRpcException, Task> completion)
         {
-
             switch (method)
             {
                 case "discover":
