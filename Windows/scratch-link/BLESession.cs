@@ -1,4 +1,4 @@
-﻿using Fleck;
+using Fleck;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -132,6 +132,7 @@ namespace scratch_link
         protected override async Task DidReceiveCall(string method, JObject parameters,
             Func<JToken, JsonRpcException, Task> completion)
         {
+
             switch (method)
             {
                 case "discover":
@@ -334,10 +335,9 @@ namespace scratch_link
             var endpoint = await GetEndpoint("write request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
             var withResponse = (parameters["withResponse"]?.ToObject<bool>() ?? false) ||
                 !endpoint.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse);
-
             var result = await endpoint.WriteValueAsync(buffer.AsBuffer(),
-                withResponse ? GattWriteOption.WriteWithResponse : GattWriteOption.WriteWithoutResponse);
-
+                false ? GattWriteOption.WriteWithResponse : GattWriteOption.WriteWithoutResponse);
+         
             switch (result)
             {
                 case GattCommunicationStatus.Success:
@@ -648,7 +648,7 @@ namespace scratch_link
                 return false;
             }
 
-            return RequiredServices.All(service => advertisement.ServiceUuids.Contains(service));
+            return (RequiredServices == null || RequiredServices.All(service => advertisement.ServiceUuids.Contains(service)));
         }
     }
 }
