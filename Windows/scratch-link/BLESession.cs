@@ -336,7 +336,7 @@ namespace scratch_link
                 !endpoint.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse);
 
             var result = await endpoint.WriteValueAsync(buffer.AsBuffer(),
-                false ? GattWriteOption.WriteWithResponse : GattWriteOption.WriteWithoutResponse);
+                withResponse ? GattWriteOption.WriteWithResponse : GattWriteOption.WriteWithoutResponse);
 
             switch (result)
             {
