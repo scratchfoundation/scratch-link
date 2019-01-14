@@ -1,4 +1,4 @@
-﻿using Fleck;
+using Fleck;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -648,7 +648,7 @@ namespace scratch_link
                 return false;
             }
 
-            return RequiredServices.All(service => advertisement.ServiceUuids.Contains(service));
+            return (RequiredServices == null || RequiredServices.All(service => advertisement.ServiceUuids.Contains(service)));
         }
     }
 }
