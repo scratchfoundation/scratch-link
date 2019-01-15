@@ -2,6 +2,11 @@
 <html>
 <head>
     <title>Scratch Link Test Client Fun Stuff Yay</title>
+    <style>
+        button, input {
+            margin: 0.125rem auto;
+        }
+    </style>
 </head>
 <body>
     <div><label for="log">Log</label></div>
@@ -17,12 +22,16 @@
             <button id="pingBLE">Request ping</button>
         </div>
         <div>
-            Discover peripherals with service UUID:
-            <input id="serviceBLE" style="width:32em;" type="text" placeholder="Service UUID">
-        </div>
-        <div>
             <button id="discoverBLE">Discover peripherals</button>
             <button id="connectBLE">Connect to discovered peripheral</button>
+        </div>
+        <fieldset>
+            <legend>Optional Services</legend>
+            <textarea id="optionalServicesBLE" placeholder="Optional services, if any, separated by whitespace" style="width:20rem;height:3rem;"></textarea>
+        </fieldset>
+        <div id="filtersBLE">
+            <button id="addFilterBLE">Add a filter</button>
+            Discovery filters:
         </div>
         <fieldset>
             <legend>micro:bit</legend>
@@ -33,6 +42,10 @@
         <fieldset>
             <legend>WeDo 2.0</legend>
             <button id="setServiceWeDo2">Set service ID</button>
+        </fieldset>
+        <fieldset>
+            <legend>GDX-FOR</legend>
+            <button id="setGDXFOR">Set discovery parameters</button>
         </fieldset>
     </fieldset>
     <fieldset>
@@ -244,10 +257,13 @@
                 return this.sendRemoteRequest('read', params);
             }
 
-            write(serviceId, characteristicId, message, encoding = null) {
+            write(serviceId, characteristicId, message, encoding = null, withResponse = null) {
                 const params = { serviceId, characteristicId, message };
                 if (encoding) {
                     params.encoding = encoding;
+                }
+                if (withResponse !== null) {
+                    params.withResponse = withResponse;
                 }
                 return this.sendRemoteRequest('write', params);
             }
@@ -314,13 +330,70 @@
             );
         }
 
+        const filterInputsBLE = [];
+        function addFilterBLE() {
+            const filter = {};
+            filterInputsBLE.push(filter);
+
+            const fieldset = document.createElement('fieldset');
+
+            const legend = document.createElement('legend');
+            legend.appendChild(document.createTextNode('Filter ' + filterInputsBLE.length));
+            fieldset.appendChild(legend);
+
+            const exactNameDiv = document.createElement('div');
+            exactNameDiv.appendChild(document.createTextNode('Discover peripherals with exact name: '));
+            const exactNameInput = document.createElement('input');
+            exactNameInput.type = 'text';
+            exactNameInput.placeholder = 'Name';
+            exactNameDiv.appendChild(exactNameInput);
+            fieldset.appendChild(exactNameDiv);
+
+            const namePrefixDiv = document.createElement('div');
+            namePrefixDiv.appendChild(document.createTextNode('Discover peripherals with name prefix: '));
+            const namePrefixInput = document.createElement('input');
+            namePrefixInput.type = 'text';
+            namePrefixInput.placeholder = 'Name Prefix';
+            namePrefixDiv.appendChild(namePrefixInput);
+            fieldset.appendChild(namePrefixDiv);
+
+            const servicesDiv = document.createElement('div');
+            servicesDiv.appendChild(document.createTextNode('Discover peripherals with these services:'));
+            servicesDiv.appendChild(document.createElement('br'));
+            const servicesInput = document.createElement('textarea');
+            servicesInput.placeholder = 'Required services, if any, separated by whitespace';
+            servicesInput.style = 'width:20rem;height:3rem;';
+            servicesDiv.appendChild(servicesInput);
+            fieldset.appendChild(servicesDiv);
+
+            filter.exactNameInput = exactNameInput;
+            filter.namePrefixInput = namePrefixInput;
+            filter.servicesInput = servicesInput;
+
+            const filtersParent = document.getElementById('filtersBLE');
+            filtersParent.appendChild(fieldset);
+        }
+
         function discoverBLE() {
-            const rawServiceId = document.getElementById('serviceBLE').value;
-            const serviceId = isNaN(rawServiceId) ? rawServiceId : parseInt(rawServiceId);
-            Scratch.BLE.requestDevice({
-                filters: [
-                    { services: [serviceId] }]
-            }).then(
+            const filters = [];
+            for (const filterInputs of filterInputsBLE) {
+                const filter = {};
+                if (filterInputs.exactNameInput.value) filter.name = filterInputs.exactNameInput.value;
+                if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
+                if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.valuetrim().split(/\s+/);
+                filters.push(filter);
+            }
+
+            const deviceDetails = {
+                filters: filters
+            };
+
+            const optionalServicesBLE = document.getElementById('optionalServicesBLE');
+            if (optionalServicesBLE.value.trim()) deviceDetails.optionalServices = optionalServicesBLE.value.trim().split(/\s+/);
+
+            Scratch.BLE.requestDevice(
+                deviceDetails
+            ).then(
                 x => {
                     addLine(`requestDevice resolved to: ${stringify(x)}`);
                 },
@@ -376,6 +449,15 @@
             document.getElementById('serviceBLE').value = '00001523-1212-efde-1523-785feabcd123';
         }
 
+        function setGDXFOR() {
+            if (filtersBLE.length < 1) addFilterBLE();
+            const optionalServicesBLE = document.getElementById('optionalServicesBLE');
+            optionalServicesBLE.value = 'd91714ef-28b9-4f91-ba16-f0d9a604f112';
+            filterInputsBLE[0].namePrefixInput.value = 'GDX';
+            filterInputsBLE[0].exactNameInput.value = null;
+            filterInputsBLE[0].servicesInput.value = null;
+        }
+
         // micro:bit base64 encoding
         // https://github.com/LLK/scratch-microbit-firmware/blob/master/protocol.md
         function _encodeMessage(message) {
@@ -401,6 +483,12 @@
         attachFunctionToButton('writeMicroBit', writeMicroBit);
 
         attachFunctionToButton('setServiceWeDo2', setServiceWeDo2);
+
+        attachFunctionToButton('setGDXFOR', setGDXFOR);
+
+        attachFunctionToButton('addFilterBLE', addFilterBLE);
+
+        addFilterBLE();
 
         function initBT() {
             addLine('Connecting...');
