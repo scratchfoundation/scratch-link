@@ -190,6 +190,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
                         advertisementData: [String: Any], rssi rssiRaw: NSNumber) {
         let rssi = RSSI(rawValue: rssiRaw)
+
         if case .valid(let value) = rssi, value < BLESession.MinimumSignalStrength {
             // signal too weak
             return
@@ -211,7 +212,15 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             "peripheralId": uuid.uuidString,
             "rssi": rssi.rawValue as Any
         ]
+        print(peripheral.name)
+        //print(advertisementData.values)
+        if let d:Data = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
+            print(d[0])
+            print(d.hexEncodedString())
+        }
+        
 
+        print("")
         reportedPeripherals![uuid] = peripheral
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
@@ -616,5 +625,17 @@ struct BLEScanFilter {
         }
 
         return true
+    }
+}
+
+extension Data {
+    struct HexEncodingOptions: OptionSet {
+        let rawValue: Int
+        static let upperCase = HexEncodingOptions(rawValue: 1 << 0)
+    }
+
+    func hexEncodedString(options: HexEncodingOptions = []) -> String {
+        let format = options.contains(.upperCase) ? "%02hhX " : "%02hhx "
+        return map { String(format: format, $0) }.joined()
     }
 }
