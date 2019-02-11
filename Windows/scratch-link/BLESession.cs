@@ -1,4 +1,4 @@
-﻿using Fleck;
+using Fleck;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -335,17 +335,17 @@ namespace scratch_link
             var withResponse = (parameters["withResponse"]?.ToObject<bool>() ?? false) ||
                 !endpoint.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse);
 
-            var result = await endpoint.WriteValueAsync(buffer.AsBuffer(),
+            var result = await endpoint.WriteValueWithResultAsync(buffer.AsBuffer(),
                 withResponse ? GattWriteOption.WriteWithResponse : GattWriteOption.WriteWithoutResponse);
 
-            switch (result)
+            switch (result.Status)
             {
                 case GattCommunicationStatus.Success:
                     return buffer.Length;
-                case GattCommunicationStatus.Unreachable:
-                    throw JsonRpcException.ApplicationError("destination unreachable");
+                case GattCommunicationStatus.ProtocolError:
+                    throw JsonRpcException.ApplicationError($"Error while attempting to write: {result.Status} {result.ProtocolError}"); // "ProtocolError 3"
                 default:
-                    throw JsonRpcException.ApplicationError($"unknown result from write: {result}");
+                    throw JsonRpcException.ApplicationError($"Error while attempting to write: {result.Status}"); // "Unreachable"
             }
         }
 
@@ -648,7 +648,7 @@ namespace scratch_link
                 return false;
             }
 
-            return RequiredServices.All(service => advertisement.ServiceUuids.Contains(service));
+            return (RequiredServices == null || RequiredServices.All(service => advertisement.ServiceUuids.Contains(service)));
         }
     }
 }
