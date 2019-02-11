@@ -212,15 +212,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             "peripheralId": uuid.uuidString,
             "rssi": rssi.rawValue as Any
         ]
-        print(peripheral.name)
-        //print(advertisementData.values)
-        if let d:Data = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
-            print(d[0])
-            print(d.hexEncodedString())
-        }
-        
 
-        print("")
         reportedPeripherals![uuid] = peripheral
         sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
@@ -563,9 +555,10 @@ struct BLEScanFilter {
     public let name: String?
     public let namePrefix: String?
     public let requiredServices: Set<CBUUID>?
-
+    public let manufacturerData: [UInt16:[String:[UInt8]]]?
+    
     public var isEmpty: Bool {
-        return (name?.isEmpty ?? true) && (namePrefix?.isEmpty ?? true) && (requiredServices?.isEmpty ?? true)
+        return (name?.isEmpty ?? true) && (namePrefix?.isEmpty ?? true) && (requiredServices?.isEmpty ?? true) && (manufacturerData?.isEmpty ?? true)
     }
 
     // See https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing
@@ -591,6 +584,23 @@ struct BLEScanFilter {
             }))
         } else {
             self.requiredServices = nil
+        }
+
+        if let manufacturerData = json["manufacturerData"] as? [String:Any] {
+            var dict = [UInt16:[String:[UInt8]]]()
+            for (k, v) in manufacturerData {
+                guard let id = UInt16(k) else {
+                    throw JSONRPCError.invalidParams(data: "could not determine Manufacturer Id for data")
+                }
+                guard let values = v as? [String:[UInt8]] else {
+                    throw JSONRPCError.invalidParams(data: "could not determine Manufacturer Data values for data")
+                }
+                dict[id] = values
+
+            }
+            self.manufacturerData = dict
+        } else {
+            self.manufacturerData = nil
         }
     }
 
@@ -621,21 +631,35 @@ struct BLEScanFilter {
             if let serviceUUIDs = advertisementData["kCBAdvDataServiceUUIDs"] as? [CBUUID] {
                 available.formUnion(serviceUUIDs)
             }
-            return required.isSubset(of: available)
+            if !required.isSubset(of: available) {
+                return false
+            }
+            
+            if let manufacturer = manufacturerData, !manufacturer.isEmpty {
+                let filteredManufacturer = manufacturer.filter{
+                    // check if a prefix and mask have been supplied by the extension and that their lengths match
+                    if let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"], prefix.count == mask.count {
+                        // create an array that is the result of the prefix and mask AND'ed
+                        var maskedPrefix = [UInt8]() 
+                        for (i, p) in prefix.enumerated() {
+                            maskedPrefix.append(p & mask[i])
+                        }
+                        // if discovered device has ManufacturerData, take the first slice and AND it with the mask
+                        // return true if the masked prefix supplied by the extension matches the masked data supplied by the device
+                        if let deviceData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data  {
+                            var devicePrefix = [UInt8](deviceData).prefix(upTo:prefix.count)
+                                var maskedDevice = [UInt8]()
+                                for (i, p) in devicePrefix.prefix(upTo:prefix.count).enumerated() {
+                                    maskedDevice.append(p & mask[i])
+                                }
+                                return maskedPrefix == maskedDevice
+                        }
+                    }
+                    return false
+                }
+                return !filteredManufacturer.isEmpty
+            }
         }
-
         return true
-    }
-}
-
-extension Data {
-    struct HexEncodingOptions: OptionSet {
-        let rawValue: Int
-        static let upperCase = HexEncodingOptions(rawValue: 1 << 0)
-    }
-
-    func hexEncodedString(options: HexEncodingOptions = []) -> String {
-        let format = options.contains(.upperCase) ? "%02hhX " : "%02hhx "
-        return map { String(format: format, $0) }.joined()
     }
 }
