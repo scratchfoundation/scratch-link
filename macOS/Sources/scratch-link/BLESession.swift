@@ -640,19 +640,17 @@ struct BLEScanFilter {
                     // check if a prefix and mask have been supplied by the extension and that their lengths match
                     if let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"], prefix.count == mask.count {
                         // create an array that is the result of the prefix and mask AND'ed
-                        var maskedPrefix = [UInt8]() 
-                        for (i, p) in prefix.enumerated() {
-                            maskedPrefix.append(p & mask[i])
+                        var maskedPrefix = prefix.enumerated().map { (key, value) in
+                            return value & mask[key]
                         }
                         // if discovered device has ManufacturerData, take the first slice and AND it with the mask
                         // return true if the masked prefix supplied by the extension matches the masked data supplied by the device
                         if let deviceData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data  {
                             var devicePrefix = [UInt8](deviceData).prefix(upTo:prefix.count)
-                                var maskedDevice = [UInt8]()
-                                for (i, p) in devicePrefix.prefix(upTo:prefix.count).enumerated() {
-                                    maskedDevice.append(p & mask[i])
-                                }
-                                return maskedPrefix == maskedDevice
+                            var maskedDevice = devicePrefix.enumerated().map { (key, value) in
+                                return value & mask[key]
+                            }
+                            return maskedPrefix == maskedDevice
                         }
                     }
                     return false
