@@ -14,7 +14,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     private var optionalServices: Set<CBUUID>?
     private var reportedPeripherals: [CBUUID: CBPeripheral]?
     private var allowedServices: Set<CBUUID>?
-    private var allServices: Set<String>?
+    private var allServices: [String]?
 
     private var connectedPeripheral: CBPeripheral?
     private var connectionCompletion: JSONRPCCompletionHandler?
@@ -249,9 +249,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        var all = Set<String>()
+        var all = [String]()
         peripheral.services?.forEach{
-            all.formUnion([$0.uuid.uuidString])
+            all.append($0.uuid.uuidString)
         }
         allServices = all
 
@@ -549,7 +549,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         case "getServices":
             print("Get services requested")
             print(allServices)
-            sendRemoteRequest("getServices", withParams: ["result" : Array(allServices ?? [])])
+            sendRemoteRequest("getServices", withParams: ["result" : allServices ?? []])
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, _: JSONRPCError?) in
