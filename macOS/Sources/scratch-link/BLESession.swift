@@ -249,11 +249,11 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        var all = [String]()
+        var services = [String]()
         peripheral.services?.forEach{
-            all.append($0.uuid.uuidString)
+            services.append($0.uuid.uuidString)
         }
-        allServices = all
+        allServices = services
 
         if peripheral != connectedPeripheral {
             print("didDiscoverServices on wrong peripheral")
@@ -547,8 +547,6 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         case "stopNotifications":
             stopNotifications(withParams: params, completion: completion)
         case "getServices":
-            print("Get services requested")
-            print(allServices)
             sendRemoteRequest("getServices", withParams: ["result" : allServices ?? []])
         case "pingMe":
             completion("willPing", nil)
