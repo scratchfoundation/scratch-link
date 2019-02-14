@@ -55,8 +55,6 @@ class Session {
                     completionHandler(nil, JSONRPCError.internalError(data: "Session closed"))
                 }
             }
-        }
-        if self.webSocket.isConnected {
             self.webSocket.close()
         }
     }
