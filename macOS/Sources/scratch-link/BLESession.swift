@@ -586,17 +586,21 @@ struct BLEScanFilter {
             self.requiredServices = nil
         }
 
-        if let manufacturerData = json["manufacturerData"] as? [String:Any] {
+        if let manufacturerData = json["manufacturerData"] as? [String:[String:[UInt8]]] { // Would like [UInt16:[String:[UInt8]]], but doesn't work
+            /* new almost-working map-solution
+            let dict = manufacturerData.map{ (key, value) in
+                let k:UInt16 = key
+                return (key,value)
+                //return (UInt16(key), value) //works but as optional
+            }
+            print(dict)*/
+            //old array-based solution
             var dict = [UInt16:[String:[UInt8]]]()
             for (k, v) in manufacturerData {
-                guard let id = UInt16(k) else {
-                    throw JSONRPCError.invalidParams(data: "could not determine Manufacturer Id for data")
+                guard let key = UInt16(k), let values = v as? [String:[UInt8]] else {
+                    throw JSONRPCError.invalidParams(data: "could not parse manufacturer data")
                 }
-                guard let values = v as? [String:[UInt8]] else {
-                    throw JSONRPCError.invalidParams(data: "could not determine Manufacturer Data values for data")
-                }
-                dict[id] = values
-
+                dict[key] = values
             }
             self.manufacturerData = dict
         } else {
