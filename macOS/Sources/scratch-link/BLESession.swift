@@ -248,7 +248,6 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-
         if peripheral != connectedPeripheral {
             print("didDiscoverServices on wrong peripheral")
             return
