@@ -24,6 +24,7 @@
         <div>
             <button id="discoverBLE">Discover peripherals</button>
             <button id="connectBLE">Connect to discovered peripheral</button>
+            <button id="getServicesBLE">Get services of connected peripheral</button>
         </div>
         <fieldset>
             <legend>Optional Services</legend>
@@ -414,7 +415,6 @@
             ).then(
                 x => {
                     addLine(`connect resolved to: ${stringify(x)}`);
-                    getServices();
                 },
                 e => {
                     addLine(`connect rejected with: ${stringify(e)}`);
@@ -422,7 +422,7 @@
             );
         }
 
-        function getServices() {
+        function getServicesBLE() {
             Scratch.BLE.sendRemoteRequest (
                 'getServices'
             ).then(
@@ -494,6 +494,7 @@
         attachFunctionToButton('pingBLE', pingBLE);
         attachFunctionToButton('discoverBLE', discoverBLE);
         attachFunctionToButton('connectBLE', connectBLE);
+        attachFunctionToButton('getServicesBLE', getServicesBLE);
 
         attachFunctionToButton('setServiceMicroBit', setServiceMicroBit);
         attachFunctionToButton('readMicroBit', readMicroBit);
