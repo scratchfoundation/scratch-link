@@ -14,7 +14,6 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     private var optionalServices: Set<CBUUID>?
     private var reportedPeripherals: [CBUUID: CBPeripheral]?
     private var allowedServices: Set<CBUUID>?
-    private var allServices: [String]?
 
     private var connectedPeripheral: CBPeripheral?
     private var connectionCompletion: JSONRPCCompletionHandler?
@@ -249,11 +248,6 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-        var services = [String]()
-        peripheral.services?.forEach{
-            services.append($0.uuid.uuidString)
-        }
-        allServices = services
 
         if peripheral != connectedPeripheral {
             print("didDiscoverServices on wrong peripheral")
@@ -547,7 +541,11 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         case "stopNotifications":
             stopNotifications(withParams: params, completion: completion)
         case "getServices":
-            sendRemoteRequest("getServices", withParams: ["result" : allServices ?? []])
+            var services = [String]()
+            connectedPeripheral?.services?.forEach{
+                services.append($0.uuid.uuidString)
+            }
+            sendRemoteRequest("getServices", withParams: ["result" : services])
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, _: JSONRPCError?) in
