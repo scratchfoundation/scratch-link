@@ -157,16 +157,17 @@ namespace scratch_link
                     await completion(null, null);
                     break;
                 case "getServices":
-                    Debug.Print("getServices requested");
                     List<string> allServices = new List<string>();
                     foreach (var s in _services)
                     {
                         allServices.Add(s.Uuid.ToString());
                     }
+
                     var json = new JObject
                     {
                         new JProperty("result", allServices)
                     };
+
                     SendRemoteRequest("getServices", json);
                     break;
                 case "pingMe":
