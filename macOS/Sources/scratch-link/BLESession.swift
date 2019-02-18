@@ -544,7 +544,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             connectedPeripheral?.services?.forEach{
                 services.append($0.uuid.uuidString)
             }
-            sendRemoteRequest("getServices", withParams: ["result" : services])
+            sendRemoteRequest("getServices", withParams: ["result" : services], completion: completion)
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, _: JSONRPCError?) in
