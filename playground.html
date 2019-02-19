@@ -24,6 +24,7 @@
         <div>
             <button id="discoverBLE">Discover peripherals</button>
             <button id="connectBLE">Connect to discovered peripheral</button>
+            <button id="getServicesBLE">Get services of connected peripheral</button>
         </div>
         <fieldset>
             <legend>Optional Services</legend>
@@ -294,6 +295,8 @@
                     case 'didReceiveMessage':
                         addLine(`Message received from peripheral: ${stringify(params)}`);
                         break;
+                    case 'getServices':
+                        addLine(`Services received: ${stringify(params)}`);
                     default:
                         return 'nah';
                 }
@@ -380,7 +383,8 @@
                 const filter = {};
                 if (filterInputs.exactNameInput.value) filter.name = filterInputs.exactNameInput.value;
                 if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
-                if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.valuetrim().split(/\s+/);
+                if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.value.trim().split(/\s+/);
+                filter.services = [0xf005];
                 filters.push(filter);
             }
 
@@ -414,6 +418,19 @@
                 },
                 e => {
                     addLine(`connect rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
+        function getServicesBLE() {
+            Scratch.BLE.sendRemoteRequest (
+                'getServices'
+            ).then(
+                x => {
+                    addLine(`getServices resolved to: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`getServices rejected with: ${stringify(e)}`);
                 }
             );
         }
@@ -477,6 +494,7 @@
         attachFunctionToButton('pingBLE', pingBLE);
         attachFunctionToButton('discoverBLE', discoverBLE);
         attachFunctionToButton('connectBLE', connectBLE);
+        attachFunctionToButton('getServicesBLE', getServicesBLE);
 
         attachFunctionToButton('setServiceMicroBit', setServiceMicroBit);
         attachFunctionToButton('readMicroBit', readMicroBit);
