@@ -169,6 +169,7 @@ namespace scratch_link
                     };
 
                     SendRemoteRequest("getServices", json);
+                    await completion(null, null);
                     break;
                 case "pingMe":
                     await completion("willPing", null);
