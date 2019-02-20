@@ -597,10 +597,16 @@ struct BLEScanFilter {
             //old array-based solution
             var dict = [UInt16:[String:[UInt8]]]()
             for (k, v) in manufacturerData {
+                // Make sure that manufacturerData is [UInt16:[String:[UInt8]]]
                 guard let key = UInt16(k), let values = v as? [String:[UInt8]] else {
                     throw JSONRPCError.invalidParams(data: "could not parse manufacturer data")
                 }
-                dict[key] = values
+                // Make sure values contain a dataPrefix- and mask-array that are max 32 bytes, and the two arrays must be the same size.
+                if values.index(forKey: "dataPrefix") != nil && values.index(forKey:"mask") != nil && values["dataPrefix"]!.count <= 32 && values["dataPrefix"]!.count == values["mask"]!.count {
+                        dict[key] = values
+                } else {
+                    throw JSONRPCError.invalidParams(data: "incorrect manufacturer data") 
+                }
             }
             self.manufacturerData = dict
         } else {
@@ -642,7 +648,7 @@ struct BLEScanFilter {
             if let manufacturer = manufacturerData, !manufacturer.isEmpty {
                 let filteredManufacturer = manufacturer.filter{
                     // check if a prefix and mask have been supplied by the extension and that their lengths match
-                    if let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"], prefix.count == mask.count {
+                    if let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"] {
                         // create an array that is the result of the prefix and mask AND'ed
                         let maskedPrefix = prefix.enumerated().map { (key, value) in
                             return value & mask[key]
