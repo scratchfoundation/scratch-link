@@ -162,11 +162,14 @@ namespace scratch_link
                     {
                         allServices.Add(s.Uuid.ToString());
                     }
+
                     var json = new JObject
                     {
                         new JProperty("result", allServices)
                     };
+
                     SendRemoteRequest("getServices", json);
+                    await completion(null, null);
                     break;
                 case "pingMe":
                     await completion("willPing", null);
