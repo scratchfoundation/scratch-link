@@ -586,15 +586,8 @@ struct BLEScanFilter {
             self.requiredServices = nil
         }
 
-        if let manufacturerData = json["manufacturerData"] as? [String:[String:[UInt8]]] { // Would like [UInt16:[String:[UInt8]]], but doesn't work
-            /* new almost-working map-solution
-            let dict = manufacturerData.map{ (key, value) in
-                let k:UInt16 = key
-                return (key,value)
-                //return (UInt16(key), value) //works but as optional
-            }
-            print(dict)*/
-            //old array-based solution
+        if let manufacturerData = json["manufacturerData"] as? [String:[String:[UInt8]]] {
+            // Javascript sends over object-indexes as strings, so it's necessary to cast to the proper datatypes
             var dict = [UInt16:[String:[UInt8]]]()
             for (k, v) in manufacturerData {
                 // Make sure that manufacturerData is [UInt16:[String:[UInt8]]]
