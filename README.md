@@ -15,7 +15,7 @@ System Requirements:
 To use Scratch Link with Scratch 3.0:
 
 1. Install and run Scratch Link
-2. Open Scratch 3.0, for example from this site: <https://beta.scratch.mit.edu/>
+2. Open [Scratch 3.0](https://scratch.mit.edu)
 3. Select the "Add Extension" button (looks like Scratch blocks with a `+` at the bottom of the block categories list)
 4. Select a compatible extension such as the micro:bit or LEGO EV3 extension.
 5. Follow the prompts to connect your peripheral.
