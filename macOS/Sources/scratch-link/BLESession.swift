@@ -542,8 +542,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         case "getServices":
             var services = [String]()
             connectedPeripheral?.services?.forEach{
+                // canonicalize UUID
                 var s = "0000" + $0.uuid.uuidString
-                s = s + "-0000-1000-8000-00805f9b34fb" // canonicalize UUID
+                s = s + "-0000-1000-8000-00805f9b34fb"
                 services.append(s)
             }
             completion(services, nil)
