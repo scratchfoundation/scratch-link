@@ -295,8 +295,6 @@
                     case 'didReceiveMessage':
                         addLine(`Message received from peripheral: ${stringify(params)}`);
                         break;
-                    case 'getServices':
-                        addLine(`Services received: ${stringify(params)}`);
                     default:
                         return 'nah';
                 }
@@ -384,8 +382,6 @@
                 if (filterInputs.exactNameInput.value) filter.name = filterInputs.exactNameInput.value;
                 if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
                 if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.value.trim().split(/\s+/);
-                // filter.services = [0xf005]; // micro:bit
-                filter.services = ['00001523-1212-efde-1523-785feabcd123']; // WeDo2
                 filters.push(filter);
             }
 
