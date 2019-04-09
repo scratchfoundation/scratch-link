@@ -382,6 +382,7 @@
                 if (filterInputs.exactNameInput.value) filter.name = filterInputs.exactNameInput.value;
                 if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
                 if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.value.trim().split(/\s+/);
+                if (filter.services) filter.services = filter.services.map(s => parseInt(s));
                 filters.push(filter);
             }
 
