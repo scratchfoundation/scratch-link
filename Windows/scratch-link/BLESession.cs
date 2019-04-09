@@ -167,9 +167,8 @@ namespace scratch_link
                     {
                         new JProperty("result", allServices)
                     };
-
-                    SendRemoteRequest("getServices", json);
-                    await completion(null, null);
+                    
+                    await completion(json, null);
                     break;
                 case "pingMe":
                     await completion("willPing", null);
