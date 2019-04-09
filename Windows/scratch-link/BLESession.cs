@@ -161,14 +161,8 @@ namespace scratch_link
                     foreach (var s in _services)
                     {
                         allServices.Add(s.Uuid.ToString());
-                    }
-
-                    var json = new JObject
-                    {
-                        new JProperty("result", allServices)
-                    };
-                    
-                    await completion(json, null);
+                    }                    
+                    await completion(JToken.FromObject(allServices), null);
                     break;
                 case "pingMe":
                     await completion("willPing", null);
