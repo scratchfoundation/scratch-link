@@ -1,4 +1,4 @@
-﻿using Fleck;
+using Fleck;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -234,11 +234,11 @@ namespace scratch_link
 
         private void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
-            if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
+            /*if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
                 || isPresent == null || (bool)isPresent == false)
             {
                 return;
-            }
+            }*/
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
             var peripheralId = ((string) address)?.Replace(":", "");
