@@ -23,6 +23,11 @@ namespace scratch_link
         private const string SignalStrengthPropertyName = "System.Devices.Aep.SignalStrength";
 
         /// <summary>
+        /// Indicates that the device returned is currently paired
+        /// </summary>
+        private const string IsPairedPropertyName = "System.Devices.Aep.IsPaired";
+
+        /// <summary>
         /// Indicates that the device returned is actually available and not discovered from a cache
         /// </summary>
         private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
@@ -106,6 +111,7 @@ namespace scratch_link
                 _watcher = DeviceInformation.CreateWatcher(selector, new List<String>
                 {
                     SignalStrengthPropertyName,
+                    IsPairedPropertyName,
                     IsPresentPropertyName,
                     BluetoothAddressPropertyName
                 });
@@ -234,11 +240,15 @@ namespace scratch_link
 
         private void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
-            /*if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
+            if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
                 || isPresent == null || (bool)isPresent == false)
             {
-                return;
-            }*/
+                if (!deviceInformation.Properties.TryGetValue(IsPairedPropertyName, out var isPaired)
+                    || isPaired == null || (bool)isPaired == false)
+                {
+                    return;
+                }
+            }
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
             var peripheralId = ((string) address)?.Replace(":", "");
