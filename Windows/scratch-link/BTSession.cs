@@ -23,11 +23,6 @@ namespace scratch_link
         private const string SignalStrengthPropertyName = "System.Devices.Aep.SignalStrength";
 
         /// <summary>
-        /// Indicates that the device returned is currently paired
-        /// </summary>
-        private const string IsPairedPropertyName = "System.Devices.Aep.IsPaired";
-
-        /// <summary>
         /// Indicates that the device returned is actually available and not discovered from a cache
         /// </summary>
         private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
@@ -111,8 +106,6 @@ namespace scratch_link
                 _watcher = DeviceInformation.CreateWatcher(selector, new List<String>
                 {
                     SignalStrengthPropertyName,
-                    IsPairedPropertyName,
-                    IsPresentPropertyName,
                     BluetoothAddressPropertyName
                 });
                 _watcher.Added += PeripheralDiscovered;
@@ -240,25 +233,8 @@ namespace scratch_link
 
         private void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
-            if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
-                || isPresent == null || (bool)isPresent == false)
-            {
-                Debug.Print("isPresent");
-                Debug.Print("isPresent.ToString() returns {0}", isPresent);
-                // return;
-                if (!deviceInformation.Properties.TryGetValue(IsPairedPropertyName, out var isPaired)
-                    || isPaired == null || (bool)isPaired == false)
-                {
-                    return;
-                }
-            }
-            deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent);
-            Debug.Print("isPresent = {0}", isPresent);
-            deviceInformation.Properties.TryGetValue(IsPairedPropertyName, out var isPaired);
-            Debug.Print("isPaired = {0}", isPaired);
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
-            Debug.Print("rssi = {0}", rssi);
             var peripheralId = ((string) address)?.Replace(":", "");
 
             var peripheralInfo = new JObject
