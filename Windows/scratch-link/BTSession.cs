@@ -243,14 +243,22 @@ namespace scratch_link
             if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
                 || isPresent == null || (bool)isPresent == false)
             {
+                Debug.Print("isPresent");
+                Debug.Print("isPresent.ToString() returns {0}", isPresent);
+                // return;
                 if (!deviceInformation.Properties.TryGetValue(IsPairedPropertyName, out var isPaired)
                     || isPaired == null || (bool)isPaired == false)
                 {
                     return;
                 }
             }
+            deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent);
+            Debug.Print("isPresent = {0}", isPresent);
+            deviceInformation.Properties.TryGetValue(IsPairedPropertyName, out var isPaired);
+            Debug.Print("isPaired = {0}", isPaired);
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
+            Debug.Print("rssi = {0}", rssi);
             var peripheralId = ((string) address)?.Replace(":", "");
 
             var peripheralInfo = new JObject
