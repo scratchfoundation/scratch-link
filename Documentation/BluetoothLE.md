@@ -132,7 +132,7 @@ The Scratch Extension will be allowed to contact the following services:
 Note that the peripheral may or may not implement each of these services: in fact, since the peripheral satisfied the
 discovery filter based on its name it might not implement any of these services.
 
-#### Enumerating Services
+#### Enumerating Services (not currently implemented)
 
 The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to Scratch Link:
 
@@ -160,7 +160,7 @@ On success, Scratch Link's **response** shall contain an array of service UUIDs 
 The Scratch Extension is not required to enumerate a peripheral's services; Scratch Link shall not change the list of
 allowed services based on whether or not the Scratch Extension has requested enumeration.
 
-#### Enumerating Service Characteristics
+#### Enumerating Service Characteristics (not currently implemented)
 
 The Scratch Extension may query the list of characteristics available on an allowed service by sending a
 "getCharacteristics" **request** to Scratch Link:
