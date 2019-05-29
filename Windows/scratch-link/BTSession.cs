@@ -24,6 +24,8 @@ namespace scratch_link
 
         /// <summary>
         /// Indicates that the device returned is actually available and not discovered from a cache
+        /// NOTE: This property is not currently used since it reports 'False' for paired for devices
+        /// which are currently advertising and within discoverable range.
         /// </summary>
         private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
 
@@ -106,6 +108,7 @@ namespace scratch_link
                 _watcher = DeviceInformation.CreateWatcher(selector, new List<String>
                 {
                     SignalStrengthPropertyName,
+                    IsPresentPropertyName,
                     BluetoothAddressPropertyName
                 });
                 _watcher.Added += PeripheralDiscovered;
@@ -233,6 +236,11 @@ namespace scratch_link
 
         private void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
+            // Note that we don't filter out by 'IsPresentPropertyName' here because we need to return devices
+            // which are paired and within discoverable range. However, 'IsPresentPropertyName' is set to False
+            // for paired devices that are discovered automatically from a cache, so we ignore that property
+            // and simply return all discovered devices.
+
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
             var peripheralId = ((string) address)?.Replace(":", "");
