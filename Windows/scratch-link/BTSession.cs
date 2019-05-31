@@ -24,7 +24,7 @@ namespace scratch_link
 
         /// <summary>
         /// Indicates that the device returned is actually available and not discovered from a cache
-        /// NOTE: This property is not currently used since it reports 'False' for paired for devices
+        /// NOTE: This property is not currently used since it reports 'False' for paired devices
         /// which are currently advertising and within discoverable range.
         /// </summary>
         private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
