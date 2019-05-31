@@ -134,7 +134,6 @@ namespace scratch_link
             var bluetoothDevice = await BluetoothDevice.FromBluetoothAddressAsync(address);
             if (!bluetoothDevice.DeviceInformation.Pairing.IsPaired)
             {
-                Debug.Print("device not yet paired");
                 if (parameters.TryGetValue("pin", out var pin))
                 {
                     _pairingCode = (string) pin;
