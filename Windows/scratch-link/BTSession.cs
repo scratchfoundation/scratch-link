@@ -37,7 +37,7 @@ namespace scratch_link
         /// <summary>
         /// PIN code for auto-pairing
         /// </summary>
-        private string _pairingCode = "1234";
+        private string _pairingCode = "0000";
 
         private DeviceWatcher _watcher;
         private StreamSocket _connectedSocket;
@@ -134,6 +134,7 @@ namespace scratch_link
             var bluetoothDevice = await BluetoothDevice.FromBluetoothAddressAsync(address);
             if (!bluetoothDevice.DeviceInformation.Pairing.IsPaired)
             {
+                Debug.Print("device not yet paired");
                 if (parameters.TryGetValue("pin", out var pin))
                 {
                     _pairingCode = (string) pin;
@@ -166,8 +167,14 @@ namespace scratch_link
         private async Task<DevicePairingResultStatus> Pair(BluetoothDevice bluetoothDevice)
         {
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
-            var pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
-                DevicePairingKinds.ProvidePin);
+            var pairingResult = (DevicePairingResult) null;
+            if (_pairingCode == "0000") {
+                pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
+                    DevicePairingKinds.ConfirmOnly);
+            } else {
+                pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
+                    DevicePairingKinds.ProvidePin);
+            }
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested -= CustomOnPairingRequested;
             return pairingResult.Status;
         }
