@@ -35,9 +35,14 @@ namespace scratch_link
         private const string BluetoothAddressPropertyName = "System.Devices.Aep.DeviceAddress";
 
         /// <summary>
+        /// PIN code for pairing
+        /// </summary>
+        private string _pairingCode = null;
+
+        /// <summary>
         /// PIN code for auto-pairing
         /// </summary>
-        private string _pairingCode = "0000";
+        private string _autoPairingCode = "0000";
 
         private DeviceWatcher _watcher;
         private StreamSocket _connectedSocket;
@@ -167,7 +172,8 @@ namespace scratch_link
         {
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
             var pairingResult = (DevicePairingResult) null;
-            if (_pairingCode == "0000") {
+            if (_pairingCode == null) {
+                _pairingCode = _autoPairingCode;
                 pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
                     DevicePairingKinds.ConfirmOnly);
             } else {
