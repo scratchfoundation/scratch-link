@@ -132,7 +132,7 @@ The Scratch Extension will be allowed to contact the following services:
 Note that the peripheral may or may not implement each of these services: in fact, since the peripheral satisfied the
 discovery filter based on its name it might not implement any of these services.
 
-#### Enumerating Services (not currently implemented)
+#### Enumerating Services
 
 The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to Scratch Link:
 
