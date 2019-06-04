@@ -156,6 +156,14 @@ namespace scratch_link
                     await StopNotifications(parameters);
                     await completion(null, null);
                     break;
+                case "getServices":
+                    List<string> allServices = new List<string>();
+                    foreach (var s in _services)
+                    {
+                        allServices.Add(s.Uuid.ToString());
+                    }                    
+                    await completion(JToken.FromObject(allServices), null);
+                    break;
                 case "pingMe":
                     await completion("willPing", null);
                     SendRemoteRequest("ping", null, (result, error) =>
