@@ -89,9 +89,12 @@ namespace scratch_link
             base.Dispose(disposing);
             if (disposing)
             {
-                lock (_notifyCharacteristics) {
-                    foreach (var characteristic in _notifyCharacteristics) {
-                        try {
+                lock (_notifyCharacteristics)
+                {
+                    foreach (var characteristic in _notifyCharacteristics)
+                    {
+                        try
+                        {
                             _ = StopNotifications(characteristic);
                         }
                         catch
@@ -161,7 +164,7 @@ namespace scratch_link
                     foreach (var s in _services)
                     {
                         allServices.Add(s.Uuid.ToString());
-                    }                    
+                    }
                     await completion(JToken.FromObject(allServices), null);
                     break;
                 case "pingMe":
@@ -208,7 +211,7 @@ namespace scratch_link
             HashSet<Guid> newOptionalServices = null;
             if (parameters.TryGetValue("optionalServices", out var optionalServicesToken))
             {
-                var optionalServicesArray = (JArray) optionalServicesToken;
+                var optionalServicesArray = (JArray)optionalServicesToken;
                 newOptionalServices = new HashSet<Guid>(optionalServicesArray.Select(GattHelpers.GetServiceUuid));
             }
 
@@ -584,7 +587,7 @@ namespace scratch_link
                 // this case, so that's the hack being used here to check for a disposed peripheral.
                 var tempDisposalProbe = characteristic.Service;
             }
-            catch(ObjectDisposedException)
+            catch (ObjectDisposedException)
             {
                 // This could mean that Bluetooth was turned off or the computer resumed from sleep
                 throw JsonRpcException.ApplicationError($"Peripheral is disposed for {errorContext}");
@@ -608,7 +611,7 @@ namespace scratch_link
         // See https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing
         internal BLEScanFilter(JToken filter)
         {
-            var filterObject = (JObject) filter;
+            var filterObject = (JObject)filter;
 
             JToken token;
 
@@ -624,7 +627,7 @@ namespace scratch_link
 
             if (filterObject.TryGetValue("services", out token))
             {
-                var serviceArray = (JArray) token;
+                var serviceArray = (JArray)token;
                 RequiredServices = new HashSet<Guid>(serviceArray.Select(GattHelpers.GetServiceUuid));
                 if (RequiredServices.Count < 1)
                 {

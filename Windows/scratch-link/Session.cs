@@ -13,7 +13,7 @@ namespace scratch_link
     using CompletionHandler = Func<JToken /*result*/, JsonRpcException /*error*/, Task>;
     using RequestId = UInt32;
 
-    internal abstract class Session: IDisposable
+    internal abstract class Session : IDisposable
     {
         private static readonly Encoding Encoding = Encoding.UTF8;
 
@@ -145,7 +145,8 @@ namespace scratch_link
 
         public async Task OnMessage(string message)
         {
-            await DidReceiveMessage(message, async response => {
+            await DidReceiveMessage(message, async response =>
+            {
                 _socketLock.Wait();
                 try
                 {
@@ -162,7 +163,8 @@ namespace scratch_link
         {
             // the message MUST be a string encoded in UTF-8 format
             var message = Encoding.UTF8.GetString(messageBytes);
-            await DidReceiveMessage(message, async response => {
+            await DidReceiveMessage(message, async response =>
+            {
                 var responseBytes = Encoding.UTF8.GetBytes(response);
                 _socketLock.Wait();
                 try

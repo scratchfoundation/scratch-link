@@ -141,7 +141,7 @@ namespace scratch_link
             {
                 if (parameters.TryGetValue("pin", out var pin))
                 {
-                    _pairingCode = (string) pin;
+                    _pairingCode = (string)pin;
                 }
                 var pairingResult = await Pair(bluetoothDevice);
                 if (pairingResult != DevicePairingResultStatus.Paired &&
@@ -159,7 +159,7 @@ namespace scratch_link
                 await _connectedSocket.ConnectAsync(services.Services[0].ConnectionHostName,
                     services.Services[0].ConnectionServiceName);
                 _socketWriter = new DataWriter(_connectedSocket.OutputStream);
-                _socketReader = new DataReader(_connectedSocket.InputStream) {ByteOrder = ByteOrder.LittleEndian};
+                _socketReader = new DataReader(_connectedSocket.InputStream) { ByteOrder = ByteOrder.LittleEndian };
                 ListenForMessages();
             }
             else
@@ -171,12 +171,15 @@ namespace scratch_link
         private async Task<DevicePairingResultStatus> Pair(BluetoothDevice bluetoothDevice)
         {
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
-            var pairingResult = (DevicePairingResult) null;
-            if (_pairingCode == null) {
+            var pairingResult = (DevicePairingResult)null;
+            if (_pairingCode == null)
+            {
                 _pairingCode = _autoPairingCode;
                 pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
                     DevicePairingKinds.ConfirmOnly);
-            } else {
+            }
+            else
+            {
                 pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
                     DevicePairingKinds.ProvidePin);
             }
@@ -255,7 +258,7 @@ namespace scratch_link
 
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
-            var peripheralId = ((string) address)?.Replace(":", "");
+            var peripheralId = ((string)address)?.Replace(":", "");
 
             var peripheralInfo = new JObject
             {
