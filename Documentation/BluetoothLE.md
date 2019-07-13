@@ -28,6 +28,14 @@ A filter object shall contain one or more of the following properties:
 - "namePrefix": to pass this condition, the peripheral's advertised name must begin with this string.
 - "services": to pass this condition, every service named in this array-valued property must be advertised by the
   peripheral. See the "Service Names" section below for more information on specifying services in this list.
+- "manufacturerData": to pass this condition, the peripheral must advertise manufacturer data for each manufacturer ID
+  key in this key-value object. If the value associated with a particular manufacturer ID is an object with a
+  "dataPrefix" property, a "mask" property, or both, then the data advertised by the peripheral must match as
+  as described by the Web Bluetooth specification for [matching "BluetoothDataFilterInit"](
+  https://webbluetoothcg.github.io/web-bluetooth/#bluetoothdatafilterinit-matches).
+  - If "dataPrefix" is present it must be an array of integers. If absent it is treated as an empty arry.
+  - If "mask" is present it must be an array of integers. If absent it is treated as an array of 255 (0xFF) with
+    length equal to the length of the "dataPrefix" array.
 
 The "optionalServices" array, if present, shall contain service names which the Scratch Extension would like to access
 even if they are not used for filtering. See the "Service Names" section below for more information on specifying
@@ -43,8 +51,19 @@ Example JSON-RPC **request** sent from Scratch Extension to Scratch Link to init
   "method": "discover", // Command identifier
   "params": {
     "filters": [
-      { "name": "My Peripheral" },              // Accept peripheral named exactly "My Peripheral"
-      { "services": [ 0x1815, "current_time" ]} // Accept peripheral with both "Automation IO" and "Current Time" services
+      { "name": "My Peripheral" },               // Accept peripheral named exactly "My Peripheral"
+      { "services": [ 0x1815, "current_time" ]}, // Accept peripheral with both "Automation IO" and "Current Time" services
+      {
+        // Accept peripheral advertising data under manufacturer ID 17
+        // where the low nybble of the first byte of that data is 0x1 (0x01, 0x11, 0x81, etc.)
+        // and the second byte of that data is exactly 0x2A.
+        "manufacturerData": {
+          "17": {
+            "dataPrefix": [0x01, 0x2A]
+            "mask": [0x0F, 0xFF]
+          }
+        }
+      }
     ],
     "optionalServices": [
       "00001826-0000-1000-8000-00805f9b34fb"  // Allow the "Fitness Machine" service if present
@@ -62,7 +81,7 @@ Discovery of a BLE peripheral mimics the
 - The "filters" list must contain at least one filter.
 - Each filter in the "filters" list must be non-trivial. For example, a filter which contains only an empty
   "namePrefix" is not allowed.
-- The "manufacturerData" and "serviceData" filter properties are not supported.
+- The "serviceData" filter property is not supported.
 
 #### Service Names
 
