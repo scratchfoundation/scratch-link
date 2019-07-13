@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
+using Windows.Storage.Streams;
 
 namespace scratch_link
 {
@@ -597,16 +598,73 @@ namespace scratch_link
         }
     }
 
+    internal class BLEDataFilter
+    {
+        public readonly List<byte> dataPrefix;
+        public readonly List<byte> mask;
+
+        internal BLEDataFilter(JToken dataFilter)
+        {
+            var filterObject = (JObject)dataFilter;
+
+            JToken token;
+
+            if (filterObject.TryGetValue("dataPrefix", out token))
+            {
+                dataPrefix = token.ToObject<List<byte>>();
+            }
+            else
+            {
+                dataPrefix = new List<byte>();
+            }
+
+            if (filterObject.TryGetValue("mask", out token))
+            {
+                mask = token.ToObject<List<byte>>();
+            }
+            else
+            {
+                mask = Enumerable.Repeat<byte>(0xFF, dataPrefix.Count).ToList();
+            }
+
+            if (dataPrefix.Count != mask.Count)
+            {
+                throw JsonRpcException.InvalidParams(
+                    $"length of data prefix ({dataPrefix.Count}) does not match length of mask ({mask.Count})");
+            }
+        }
+
+        public bool Matches(IBuffer data)
+        {
+            if (data.Length < dataPrefix.Count)
+            {
+                return false;
+            }
+            var reader = DataReader.FromBuffer(data);
+            var dataBytes = new byte[dataPrefix.Count];
+            reader.ReadBytes(dataBytes);
+            // if the result doesn't contain `false` then the result is empty or all true
+            return !(
+                mask
+                .Zip(dataBytes, (maskByte, dataByte) => maskByte & dataByte) // actualByte = (maskByte & dataByte)
+                .Zip(dataPrefix, (actualByte, expectedByte) => actualByte == expectedByte) // result = (actualByte == expectedByte)
+                .Contains(false) // did any of the comparisons fail?
+            );
+        }
+    }
+
     internal class BLEScanFilter
     {
         public string Name { get; }
         public string NamePrefix { get; }
         public HashSet<Guid> RequiredServices { get; }
+        public Dictionary<int, BLEDataFilter> ManufacturerData { get; }
 
         public bool IsEmpty =>
             string.IsNullOrWhiteSpace(Name) &&
             string.IsNullOrWhiteSpace(NamePrefix) &&
-            (RequiredServices == null || RequiredServices.Count < 1);
+            (RequiredServices == null || RequiredServices.Count < 1) &&
+            (ManufacturerData == null || ManufacturerData.Count < 1);
 
         // See https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing
         internal BLEScanFilter(JToken filter)
@@ -637,7 +695,14 @@ namespace scratch_link
 
             if (filterObject.TryGetValue("manufacturerData", out token))
             {
-                throw JsonRpcException.ApplicationError("filtering on manufacturerData is not currently supported");
+                ManufacturerData = new Dictionary<int, BLEDataFilter>();
+                var manufacturerData = (JObject)token;
+                foreach (var kv in manufacturerData)
+                {
+                    var manufacturerId = int.Parse(kv.Key);
+                    var dataFilter = new BLEDataFilter(kv.Value);
+                    ManufacturerData.Add(manufacturerId, dataFilter);
+                }
             }
 
             if (filterObject.TryGetValue("serviceData", out token))
@@ -659,7 +724,34 @@ namespace scratch_link
                 return false;
             }
 
-            return (RequiredServices == null || RequiredServices.All(service => advertisement.ServiceUuids.Contains(service)));
+            if (RequiredServices != null)
+            {
+                if (!RequiredServices.All(service => advertisement.ServiceUuids.Contains(service)))
+                {
+                    return false;
+                }
+            }
+
+            if (ManufacturerData != null)
+            {
+                foreach (var manufacturerDataFilter in ManufacturerData)
+                {
+                    var advertisedData = advertisement.ManufacturerData
+                        .FirstOrDefault(d => d.CompanyId == manufacturerDataFilter.Key);
+                    if (advertisedData == null)
+                    {
+                        // the peripheral doesn't advertise any data under that manufacturer ID
+                        return false;
+                    }
+                    if (!manufacturerDataFilter.Value.Matches(advertisedData.Data))
+                    {
+                        // the advertised data doesn't match the filter
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }
