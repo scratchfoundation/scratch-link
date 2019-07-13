@@ -367,9 +367,57 @@
             servicesDiv.appendChild(servicesInput);
             fieldset.appendChild(servicesDiv);
 
+            const manufacturerDataDiv = document.createElement('div');
+            manufacturerDataDiv.appendChild(document.createTextNode('Discover peripherals with this manufacturer data:'));
+            manufacturerDataDiv.appendChild(document.createElement('br'));
+            const addManufacturerDataFilterButton = document.createElement('button');
+            addManufacturerDataFilterButton.appendChild(document.createTextNode('Add data filter'));
+            const manufacturerDataFilterInputs = [];
+            addManufacturerDataFilterButton.onclick = () => {
+                const manufacturerDataFilter = {};
+                manufacturerDataFilterInputs.push(manufacturerDataFilter);
+                const manufacturerDataFilterFields = document.createElement('fieldset');
+                const manufacturerDataFilterLegend = document.createElement('legend');
+                manufacturerDataFilterLegend.appendChild(document.createTextNode('Manufacturer Data Filter ' + manufacturerDataFilterInputs.length));
+                manufacturerDataFilterFields.appendChild(manufacturerDataFilterLegend);
+
+                const manufacturerIdDiv = document.createElement('div');
+                manufacturerIdDiv.appendChild(document.createTextNode('Manufacturer ID: '));
+                const manufacturerIdInput = document.createElement('input');
+                manufacturerIdInput.type = 'number';
+                manufacturerIdInput.placeholder = '65535';
+                manufacturerIdDiv.appendChild(manufacturerIdInput);
+                manufacturerDataFilterFields.appendChild(manufacturerIdDiv);
+
+                const manufacturerDataPrefixDiv = document.createElement('div');
+                manufacturerDataPrefixDiv.appendChild(document.createTextNode('Data Prefix: '));
+                manufacturerDataPrefixInput = document.createElement('input');
+                manufacturerDataPrefixInput.type = 'text';
+                manufacturerDataPrefixInput.placeholder = '1 2 3';
+                manufacturerDataPrefixDiv.appendChild(manufacturerDataPrefixInput);
+                manufacturerDataFilterFields.appendChild(manufacturerDataPrefixDiv);
+
+                const manufacturerDataMaskDiv = document.createElement('div');
+                manufacturerDataMaskDiv.appendChild(document.createTextNode('Mask: '));
+                manufacturerDataMaskInput = document.createElement('input');
+                manufacturerDataMaskInput.type = 'text';
+                manufacturerDataMaskInput.placeholder = '255 15 255';
+                manufacturerDataMaskDiv.appendChild(manufacturerDataMaskInput);
+                manufacturerDataFilterFields.appendChild(manufacturerDataMaskDiv);
+
+                manufacturerDataFilter.idInput = manufacturerIdInput;
+                manufacturerDataFilter.prefixInput = manufacturerDataPrefixInput;
+                manufacturerDataFilter.maskInput = manufacturerDataMaskInput;
+
+                manufacturerDataDiv.appendChild(manufacturerDataFilterFields);
+            };
+            manufacturerDataDiv.appendChild(addManufacturerDataFilterButton);
+            fieldset.appendChild(manufacturerDataDiv);
+
             filter.exactNameInput = exactNameInput;
             filter.namePrefixInput = namePrefixInput;
             filter.servicesInput = servicesInput;
+            filter.manufacturerDataFilterInputs = manufacturerDataFilterInputs;
 
             const filtersParent = document.getElementById('filtersBLE');
             filtersParent.appendChild(fieldset);
@@ -383,6 +431,21 @@
                 if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
                 if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.value.trim().split(/\s+/);
                 if (filter.services) filter.services = filter.services.map(s => parseInt(s));
+
+                let hasManufacturerDataFilters = false;
+                const manufacturerDataFilters = {};
+                for (manufacturerDataFilterInputs of filterInputs.manufacturerDataFilterInputs) {
+                    if (!manufacturerDataFilterInputs.idInput.value) continue;
+                    const id = manufacturerDataFilterInputs.idInput.value.trim();
+                    const manufacturerDataFilter = {};
+                    manufacturerDataFilters[id] = manufacturerDataFilter;
+                    hasManufacturerDataFilters = true;
+                    if (manufacturerDataFilterInputs.prefixInput.value) manufacturerDataFilter.dataPrefix = manufacturerDataFilterInputs.prefixInput.value.trim().split(/\s+/).map(p => parseInt(p));
+                    if (manufacturerDataFilterInputs.maskInput.value) manufacturerDataFilter.mask = manufacturerDataFilterInputs.maskInput.value.trim().split(/\s+/).map(m => parseInt(m));
+                }
+                if (hasManufacturerDataFilters) {
+                    filter.manufacturerData = manufacturerDataFilters;
+                }
                 filters.push(filter);
             }
 
