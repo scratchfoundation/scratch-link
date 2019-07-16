@@ -6,8 +6,13 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-COpenSSL.git",
         "state": {
           "branch": null,
+<<<<<<< HEAD
           "revision": "4669765f9c301a91cf76ad0ddeece27367017acc",
           "version": "4.0.1"
+=======
+          "revision": "6976c2cdb7b74ec4d4f12f15db8a2655e38866e6",
+          "version": "3.2.1"
+>>>>>>> b82dd236fef49c43750df70213f4bbf910045fed
         }
       },
       {
@@ -33,8 +38,13 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-HTTP.git",
         "state": {
           "branch": null,
+<<<<<<< HEAD
           "revision": "a730fecd51cc7adca74adb260f5bcc0ad1378583",
           "version": "3.2.6"
+=======
+          "revision": "d57687c25a6fa676dee0f9f61e1049a34a5fd96f",
+          "version": "3.2.0"
+>>>>>>> b82dd236fef49c43750df70213f4bbf910045fed
         }
       },
       {
@@ -42,8 +52,13 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-HTTPServer.git",
         "state": {
           "branch": null,
+<<<<<<< HEAD
           "revision": "4843cd54762d59b7e70841663ae561b279b80946",
           "version": "3.0.23"
+=======
+          "revision": "49981001cd6ac7c9e19ea06e3a94a58e8b2b3f98",
+          "version": "3.0.19"
+>>>>>>> b82dd236fef49c43750df70213f4bbf910045fed
         }
       },
       {
@@ -51,8 +66,13 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-Net.git",
         "state": {
           "branch": null,
+<<<<<<< HEAD
           "revision": "d00b2b9f4cccb4c398e1bcf18f767d6b8add6af7",
           "version": "3.3.0"
+=======
+          "revision": "ff9d3bed8d8ea936968ace4c38dd77825123c0d0",
+          "version": "3.2.2"
+>>>>>>> b82dd236fef49c43750df70213f4bbf910045fed
         }
       },
       {
@@ -60,8 +80,13 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-Thread.git",
         "state": {
           "branch": null,
+<<<<<<< HEAD
           "revision": "fbbd7aec0ebe06fbeed58da54153226dd7613c4a",
           "version": "3.0.6"
+=======
+          "revision": "04fcd2d29f50e05dbca907219322fd475c205c33",
+          "version": "3.0.5"
+>>>>>>> b82dd236fef49c43750df70213f4bbf910045fed
         }
       },
       {
@@ -69,8 +94,13 @@
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-WebSockets.git",
         "state": {
           "branch": null,
+<<<<<<< HEAD
           "revision": "9e6ad7068cf91b751f0b5329aea507e54fbda62f",
           "version": "3.1.1"
+=======
+          "revision": "30df21244dfbdccd9d6ea09033fb6dc2b7a84ab4",
+          "version": "3.1.0"
+>>>>>>> b82dd236fef49c43750df70213f4bbf910045fed
         }
       },
       {
@@ -78,8 +108,13 @@
         "repositoryURL": "https://github.com/PerfectlySoft/PerfectLib.git",
         "state": {
           "branch": null,
+<<<<<<< HEAD
           "revision": "5a08c2a596df23a3ae30b6ac9cb509a38384166c",
           "version": "3.1.4"
+=======
+          "revision": "60e44e4c62e293844581205528eefdc7e1153199",
+          "version": "3.1.2"
+>>>>>>> b82dd236fef49c43750df70213f4bbf910045fed
         }
       }
     ]

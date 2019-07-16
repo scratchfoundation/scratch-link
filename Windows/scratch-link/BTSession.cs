@@ -1,4 +1,4 @@
-﻿using Fleck;
+using Fleck;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -24,6 +24,8 @@ namespace scratch_link
 
         /// <summary>
         /// Indicates that the device returned is actually available and not discovered from a cache
+        /// NOTE: This property is not currently used since it reports 'False' for paired devices
+        /// which are currently advertising and within discoverable range.
         /// </summary>
         private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
 
@@ -33,9 +35,14 @@ namespace scratch_link
         private const string BluetoothAddressPropertyName = "System.Devices.Aep.DeviceAddress";
 
         /// <summary>
+        /// PIN code for pairing
+        /// </summary>
+        private string _pairingCode = null;
+
+        /// <summary>
         /// PIN code for auto-pairing
         /// </summary>
-        private string _pairingCode = "1234";
+        private string _autoPairingCode = "0000";
 
         private DeviceWatcher _watcher;
         private StreamSocket _connectedSocket;
@@ -134,7 +141,7 @@ namespace scratch_link
             {
                 if (parameters.TryGetValue("pin", out var pin))
                 {
-                    _pairingCode = (string) pin;
+                    _pairingCode = (string)pin;
                 }
                 var pairingResult = await Pair(bluetoothDevice);
                 if (pairingResult != DevicePairingResultStatus.Paired &&
@@ -152,7 +159,7 @@ namespace scratch_link
                 await _connectedSocket.ConnectAsync(services.Services[0].ConnectionHostName,
                     services.Services[0].ConnectionServiceName);
                 _socketWriter = new DataWriter(_connectedSocket.OutputStream);
-                _socketReader = new DataReader(_connectedSocket.InputStream) {ByteOrder = ByteOrder.LittleEndian};
+                _socketReader = new DataReader(_connectedSocket.InputStream) { ByteOrder = ByteOrder.LittleEndian };
                 ListenForMessages();
             }
             else
@@ -164,8 +171,18 @@ namespace scratch_link
         private async Task<DevicePairingResultStatus> Pair(BluetoothDevice bluetoothDevice)
         {
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested += CustomOnPairingRequested;
-            var pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
-                DevicePairingKinds.ProvidePin);
+            var pairingResult = (DevicePairingResult)null;
+            if (_pairingCode == null)
+            {
+                _pairingCode = _autoPairingCode;
+                pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
+                    DevicePairingKinds.ConfirmOnly);
+            }
+            else
+            {
+                pairingResult = await bluetoothDevice.DeviceInformation.Pairing.Custom.PairAsync(
+                    DevicePairingKinds.ProvidePin);
+            }
             bluetoothDevice.DeviceInformation.Pairing.Custom.PairingRequested -= CustomOnPairingRequested;
             return pairingResult.Status;
         }
@@ -234,14 +251,14 @@ namespace scratch_link
 
         private void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
         {
-            if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
-                || isPresent == null || (bool)isPresent == false)
-            {
-                return;
-            }
+            // Note that we don't filter out by 'IsPresentPropertyName' here because we need to return devices
+            // which are paired and within discoverable range. However, 'IsPresentPropertyName' is set to False
+            // for paired devices that are discovered automatically from a cache, so we ignore that property
+            // and simply return all discovered devices.
+
             deviceInformation.Properties.TryGetValue(BluetoothAddressPropertyName, out var address);
             deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
-            var peripheralId = ((string) address)?.Replace(":", "");
+            var peripheralId = ((string)address)?.Replace(":", "");
 
             var peripheralInfo = new JObject
             {

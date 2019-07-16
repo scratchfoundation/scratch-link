@@ -40,7 +40,7 @@ dist/tmp.mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	cp -aR "$<" "$@"
 	xcrun swift-stdlib-tool --copy --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
-	find "$@" -type f -executable -print0 | xargs -0 codesign --verify -r
+	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify -r
 
 # For "Developer ID" distribution outside the Mac App Store
 dist-devid: dist/$(PACKAGE_FILE)
@@ -59,7 +59,7 @@ dist/tmp.devid/app/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	cp -aR "$<" "$@"
 	xcrun swift-stdlib-tool --copy --sign "Developer ID Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
-	find "$@" -type f -executable -print0 | xargs -0 codesign --verify -r
+	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify -r
 
 $(BIN_FILE): $(SWIFT_SOURCES)
 	@echo "Build Version: $(APP_VERSION) $(VERSION_DETAIL)"

@@ -187,6 +187,14 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
         // swiftlint:enable force_cast
     }
 
+    // Canonicalizing into a full 128-bit UUID string using the canonicalUUID algorithm
+    // see https://webbluetoothcg.github.io/web-bluetooth/#standardized-uuids
+    private func getCanonicalUUIDString(uuid: String) -> String {
+        var canonicalUUID = "0000" + uuid
+        canonicalUUID = canonicalUUID + "-0000-1000-8000-00805f9b34fb"
+        return canonicalUUID
+    }
+
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
                         advertisementData: [String: Any], rssi rssiRaw: NSNumber) {
         let rssi = RSSI(rawValue: rssiRaw)
@@ -540,6 +548,12 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             startNotifications(withParams: params, completion: completion)
         case "stopNotifications":
             stopNotifications(withParams: params, completion: completion)
+        case "getServices":
+            var services = [String]()
+            connectedPeripheral?.services?.forEach{
+                services.append(getCanonicalUUIDString(uuid: $0.uuid.uuidString))
+            }
+            completion(services, nil)
         case "pingMe":
             completion("willPing", nil)
             sendRemoteRequest("ping") { (result: Any?, _: JSONRPCError?) in

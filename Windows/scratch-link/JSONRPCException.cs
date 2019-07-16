@@ -1,6 +1,6 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 
 namespace scratch_link
 {
@@ -63,7 +63,7 @@ namespace scratch_link
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var exception = (JsonRpcException) value;
+            var exception = (JsonRpcException)value;
 
             writer.WriteStartObject();
             writer.WritePropertyName("code");
