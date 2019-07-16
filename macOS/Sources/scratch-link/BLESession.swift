@@ -641,7 +641,8 @@ struct BLEScanFilter {
             if let manufacturer = manufacturerData, !manufacturer.isEmpty {
                 let filteredManufacturer = manufacturer.filter{
                     // check if a prefix and mask have been supplied by the extension and that their lengths match
-                    if let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"] {
+                    if let id = $0.key as? UInt16, let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"] {
+
                         // create an array that is the result of the prefix and mask AND'ed
                         let maskedPrefix = prefix.enumerated().map { (key, value) in
                             return value & mask[key]
@@ -649,11 +650,15 @@ struct BLEScanFilter {
                         // if discovered device has ManufacturerData, take the first slice and AND it with the mask
                         // return true if the masked prefix supplied by the extension matches the masked data supplied by the device
                         if let deviceData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
-                            let devicePrefix = [UInt8](deviceData).prefix(upTo:prefix.count)
+                            // take two first bytes of advertisementData and use as Device ID
+                            let deviceId = (deviceData)[..<2].withUnsafeBytes{$0.load(as:UInt16.self)}
+                            // take remaining number of bytes equal to the length of the mask to be used for comparison
+                            let devicePrefix = [UInt8](deviceData).dropFirst(2).prefix(mask.count)
+
                             let maskedDevice = devicePrefix.enumerated().map { (key, value) in
                                 return value & mask[key]
                             }
-                            return maskedPrefix == maskedDevice
+                            return deviceId == id && maskedPrefix == maskedDevice
                         }
                     }
                     return false
