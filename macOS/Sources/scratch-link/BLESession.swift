@@ -609,20 +609,23 @@ struct BLEScanFilter {
                     throw JSONRPCError.invalidParams(data: "could not parse manufacturer data")
                 }
 
-                if(values.index(forKey: "dataPrefix") == nil) {
-                    throw JSONRPCError.invalidParams(data: "no data prefix specified")
+                guard let dataPrefix = values["dataPrefix"] as? [UInt8] else {
+                    throw JSONRPCError.invalidParams(data:"no data prefix specified")
                 }
 
-                // Create an empty mask. If one is provided by the extension, use that instead.
-                if(values.index(forKey: "mask") == nil) {
-                    values["mask"] = Array(repeating:0xFF, count:values["dataPrefix"]!.count)
+                // Create a mask. If one is provided by the extension, use that instead.
+                var mask = [UInt8](Array(repeating:0xFF, count:dataPrefix.count))
+                if let m = values["mask"] as? [UInt8] {
+                    mask = m
                 }
+                values["mask"] = mask
 
-                if values["dataPrefix"]!.count != values["mask"]!.count {
+                if dataPrefix.count != mask.count {
                     throw JSONRPCError.invalidParams(data: "length of data prefix does not match length of mask")
                 }
 
                 dict[key] = values
+                dump(dict)
             }
             self.manufacturerData = dict
         } else {
