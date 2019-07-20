@@ -198,7 +198,6 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral,
                         advertisementData: [String: Any], rssi rssiRaw: NSNumber) {
         let rssi = RSSI(rawValue: rssiRaw)
-
         if case .valid(let value) = rssi, value < BLESession.MinimumSignalStrength {
             // signal too weak
             return
@@ -570,7 +569,6 @@ struct BLEScanFilter {
     public let namePrefix: String?
     public let requiredServices: Set<CBUUID>?
     public let manufacturerData: [UInt16:[String:[UInt8]]]?
-    
     public var isEmpty: Bool {
         return (name?.isEmpty ?? true) && (namePrefix?.isEmpty ?? true) && (requiredServices?.isEmpty ?? true) && (manufacturerData?.isEmpty ?? true)
     }
