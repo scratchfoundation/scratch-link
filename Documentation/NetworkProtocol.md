@@ -17,6 +17,8 @@ This version number shall follow the Semantic Versioning specification, found he
 
 ### Version History
 
+- Version 1.2:
+  - Add `manufacturerData` filtering for BLE discovery.
 - Version 1.1:
   - Add protocol version number.
   - Bluetooth LE:
