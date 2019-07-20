@@ -625,7 +625,6 @@ struct BLEScanFilter {
                 }
 
                 dict[key] = values
-                dump(dict)
             }
             self.manufacturerData = dict
         } else {
