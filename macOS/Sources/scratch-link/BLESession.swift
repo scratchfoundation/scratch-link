@@ -608,14 +608,11 @@ struct BLEScanFilter {
                 }
 
                 guard let dataPrefix = values["dataPrefix"] as? [UInt8] else {
-                    throw JSONRPCError.invalidParams(data:"no data prefix specified")
+                    throw JSONRPCError.invalidParams(data:"no data prefix or invalid data prefix specified")
                 }
 
-                // Create a mask. If one is provided by the extension, use that instead.
-                var mask = [UInt8](Array(repeating:0xFF, count:dataPrefix.count))
-                if let m = values["mask"] as? [UInt8] {
-                    mask = m
-                }
+                // If no mask is supplied, create a mask matching the length of dataPrefix
+                let mask = (values["mask"] as? [UInt8] ?? [UInt8](Array(repeating:0xFF, count:dataPrefix.count)))
                 values["mask"] = mask
 
                 if dataPrefix.count != mask.count {
