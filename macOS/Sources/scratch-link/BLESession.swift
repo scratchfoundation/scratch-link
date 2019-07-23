@@ -568,9 +568,9 @@ struct BLEScanFilter {
     public let name: String?
     public let namePrefix: String?
     public let requiredServices: Set<CBUUID>?
-
+    public let manufacturerData: [UInt16:[String:[UInt8]]]?
     public var isEmpty: Bool {
-        return (name?.isEmpty ?? true) && (namePrefix?.isEmpty ?? true) && (requiredServices?.isEmpty ?? true)
+        return (name?.isEmpty ?? true) && (namePrefix?.isEmpty ?? true) && (requiredServices?.isEmpty ?? true) && (manufacturerData?.isEmpty ?? true)
     }
 
     // See https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing
@@ -596,6 +596,34 @@ struct BLEScanFilter {
             }))
         } else {
             self.requiredServices = nil
+        }
+
+        if let manufacturerData = json["manufacturerData"] as? [String:[String:[UInt8]]] {
+            // Javascript sends over object-indexes as strings, so it's necessary to cast to the proper datatypes
+            var dict = [UInt16:[String:[UInt8]]]()
+            for (k, v) in manufacturerData {
+                // Make sure that manufacturerData is [UInt16:[String:[UInt8]]]
+                guard let key = UInt16(k), var values = v as? [String:[UInt8]] else {
+                    throw JSONRPCError.invalidParams(data: "could not parse manufacturer data")
+                }
+
+                guard let dataPrefix = values["dataPrefix"] as? [UInt8] else {
+                    throw JSONRPCError.invalidParams(data:"no data prefix or invalid data prefix specified")
+                }
+
+                // If no mask is supplied, create a mask matching the length of dataPrefix
+                let mask = (values["mask"] as? [UInt8] ?? [UInt8](Array(repeating:0xFF, count:dataPrefix.count)))
+                values["mask"] = mask
+
+                if dataPrefix.count != mask.count {
+                    throw JSONRPCError.invalidParams(data: "length of data prefix does not match length of mask")
+                }
+
+                dict[key] = values
+            }
+            self.manufacturerData = dict
+        } else {
+            self.manufacturerData = nil
         }
     }
 
@@ -626,9 +654,38 @@ struct BLEScanFilter {
             if let serviceUUIDs = advertisementData["kCBAdvDataServiceUUIDs"] as? [CBUUID] {
                 available.formUnion(serviceUUIDs)
             }
-            return required.isSubset(of: available)
-        }
+            if !required.isSubset(of: available) {
+                return false
+            }
+            
+            if let manufacturer = manufacturerData, !manufacturer.isEmpty {
+                let filteredManufacturer = manufacturer.filter{
+                    // check if a prefix and mask have been supplied by the extension and that their lengths match
+                    if let id = $0.key as? UInt16, let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"] {
 
+                        // create an array that is the result of the prefix and mask AND'ed
+                        let maskedPrefix = prefix.enumerated().map { (key, value) in
+                            return value & mask[key]
+                        }
+                        // if discovered device has ManufacturerData, take the first slice and AND it with the mask
+                        // return true if the masked prefix supplied by the extension matches the masked data supplied by the device
+                        if let deviceData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
+                            // take two first bytes of advertisementData and use as Device ID
+                            let deviceId = (deviceData)[..<2].withUnsafeBytes{$0.load(as:UInt16.self)}
+                            // take remaining number of bytes equal to the length of the mask to be used for comparison
+                            let devicePrefix = [UInt8](deviceData).dropFirst(2).prefix(mask.count)
+
+                            let maskedDevice = devicePrefix.enumerated().map { (key, value) in
+                                return value & mask[key]
+                            }
+                            return deviceId == id && maskedPrefix == maskedDevice
+                        }
+                    }
+                    return false
+                }
+                return !filteredManufacturer.isEmpty
+            }
+        }
         return true
     }
 }
