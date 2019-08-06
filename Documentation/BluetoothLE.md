@@ -11,7 +11,18 @@ can be found here: <https://webbluetoothcg.github.io/web-bluetooth/>
 
 ### Initiating Communication with Scratch Link
 
-For BLE connections, an extension connects to Scratch Link’s WebSocket server at the path "/scratch/ble".
+For BLE connections, an extension connects to Scratch Link's WebSocket server at the path "/scratch/ble".
+
+### Common Methods
+
+Methods in this section must be supported by all session types. This section documents any protocol-specific qualities
+of these methods.
+
+#### Request: `getVersion`
+
+*Added in network protocol version 1.3*
+
+No additional version information is provided beyond the base implementation.
 
 ### Initial State
 
