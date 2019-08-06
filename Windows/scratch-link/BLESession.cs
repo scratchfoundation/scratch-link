@@ -168,16 +168,10 @@ namespace scratch_link
                     }
                     await completion(JToken.FromObject(allServices), null);
                     break;
-                case "pingMe":
-                    await completion("willPing", null);
-                    SendRemoteRequest("ping", null, (result, error) =>
-                    {
-                        Debug.Print($"Got result from ping: {result}");
-                        return Task.CompletedTask;
-                    });
-                    break;
                 default:
-                    throw JsonRpcException.MethodNotFound(method);
+                    // unrecognized method: pass to base class
+                    await base.DidReceiveCall(method, parameters, completion);
+                    break;
             }
         }
 

@@ -91,7 +91,9 @@ namespace scratch_link
                     await completion(await SendMessage(parameters), null);
                     break;
                 default:
-                    throw JsonRpcException.MethodNotFound(method);
+                    // unrecognized method: pass to base class
+                    await base.DidReceiveCall(method, parameters, completion);
+                    break;
             }
         }
 
