@@ -17,10 +17,9 @@ This version number shall follow the Semantic Versioning specification, found he
 
 ### Version History
 
-- Version 1.3:
-  - Add common `getVersion` method.
 - Version 1.2:
   - Add `manufacturerData` filtering for BLE discovery.
+  - Add common `getVersion` method.
 - Version 1.1:
   - Add protocol version number.
   - Bluetooth LE:
@@ -54,7 +53,7 @@ otherwise specified.
 
 #### Request: `getVersion`
 
-*Added in network protocol version 1.3*
+*Added in network protocol version 1.2*
 
 This is a JSON-RPC **request** sent from Scratch Extension to Scratch Link to retrieve version information about
 Scratch Link itself. No parameters are necessary.
@@ -74,7 +73,7 @@ JSON-RPC **response** sent from Scratch Link to Scratch Extension .
   "jsonrpc": "2.0",   // JSON-RPC version indicator
   "id": 1,            // Message sequence identifier
   "result": {
-    "protocol": "1.3" // Version number for the overall network protocol
+    "protocol": "1.2" // Version number for the overall network protocol
   }
 }
 ```

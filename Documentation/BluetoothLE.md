@@ -20,7 +20,7 @@ of these methods.
 
 #### Request: `getVersion`
 
-*Added in network protocol version 1.3*
+*Added in network protocol version 1.2*
 
 No additional version information is provided beyond the base implementation.
 

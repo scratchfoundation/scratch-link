@@ -5,7 +5,7 @@ import PerfectWebSockets
 // TODO: implement remaining JSON-RPC 2.0 features like batching
 class Session {
     // Keep this in sync with the version number in `NetworkProtocol.md`
-    private let NetworkProtocolVersion: String = "1.3"
+    private let NetworkProtocolVersion: String = "1.2"
 
     typealias RequestID = Int
     typealias JSONRPCCompletionHandler = (_ result: Any?, _ error: JSONRPCError?) -> Void

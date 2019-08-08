@@ -16,7 +16,7 @@ namespace scratch_link
     internal abstract class Session : IDisposable
     {
         // Keep this in sync with the version number in `NetworkProtocol.md`
-        private const string NetworkProtocolVersion = "1.3";
+        private const string NetworkProtocolVersion = "1.2";
 
         private static readonly Encoding Encoding = Encoding.UTF8;
 
