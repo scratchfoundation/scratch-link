@@ -4,8 +4,8 @@ APP_BUNDLE=Scratch\ Link.app
 CONFIG=release
 
 # Assume there's a recent tag called something like "1.1" and turn "1.1-2-g123abc" into "1.1.2"
-APP_VERSION=$(shell git describe --always | sed 's/-\([0-9]*\)-g.*/.\1/')
-VERSION_DETAIL=$(shell git describe --always --dirty --exclude '*')
+APP_VERSION=$(shell git describe --always --long | sed 's/-\([0-9]*\)-g.*/.\1/')
+VERSION_DETAIL=$(shell git describe --always --long --dirty --exclude '*')
 BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 
 BIN_FILE=$(BIN_PATH)/scratch-link

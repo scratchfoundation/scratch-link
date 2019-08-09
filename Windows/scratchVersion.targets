@@ -28,10 +28,10 @@
     <!--
       Replace "%" in Exec Command values with "%25%25": first MSBuild converts %25%25 to %%, then CMD's batch file processing converts %% to %
     -->
-    <Exec Command="&quot;$(GIT)&quot; describe --always --dirty --exclude *" ConsoleToMSBuild="true" StandardOutputImportance="low">
+    <Exec Command="&quot;$(GIT)&quot; describe --always --long --dirty --exclude *" ConsoleToMSBuild="true" StandardOutputImportance="low">
       <Output TaskParameter="ConsoleOutput" PropertyName="GitHash" />
     </Exec>
-    <Exec Command="&quot;$(GIT)&quot; describe --always" ConsoleToMSBuild="true" StandardOutputImportance="low">
+    <Exec Command="&quot;$(GIT)&quot; describe --always --long" ConsoleToMSBuild="true" StandardOutputImportance="low">
       <Output TaskParameter="ConsoleOutput" PropertyName="GitDescribe" />
     </Exec>
     <ConvertDescribeToVersion Description="$(GitDescribe)">
