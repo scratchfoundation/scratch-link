@@ -1,4 +1,4 @@
-﻿using Fleck;
+using Fleck;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -15,6 +15,9 @@ namespace scratch_link
 
     internal abstract class Session : IDisposable
     {
+        // Keep this in sync with the version number in `NetworkProtocol.md`
+        private const string NetworkProtocolVersion = "1.2";
+
         private static readonly Encoding Encoding = Encoding.UTF8;
 
         private readonly IWebSocketConnection _webSocket;
@@ -66,13 +69,46 @@ namespace scratch_link
         }
 
         // Override this to handle received RPC requests & notifications.
+        // Call this method with `await super.DidReceiveCall(...)` to implement default calls like `getVersion`.
         // Call the completion handler when done with a request:
         // - pass your call's "return value" (or null) as `result` on success
         // - pass an instance of `JsonRpcException` for `error` on failure
         // You may also throw a `JsonRpcException` (or any other `Exception`) to signal failure.
         // Exceptions are caught even when thrown in an `async` method after `await`:
         // http://www.interact-sw.co.uk/iangblog/2010/11/01/csharp5-async-exceptions
-        protected abstract Task DidReceiveCall(string method, JObject parameters, CompletionHandler completion);
+        protected virtual async Task DidReceiveCall(string method, JObject parameters, CompletionHandler completion)
+        {
+            switch (method)
+            {
+                case "pingMe":
+                    await completion("willPing", null);
+                    SendRemoteRequest("ping", null, (result, error) =>
+                    {
+                        Debug.Print($"Got result from ping: {result}");
+                        return Task.CompletedTask;
+                    });
+                    break;
+                case "getVersion":
+                    await completion(GetVersion(), null);
+                    break;
+                default:
+                    // unrecognized method
+                    throw JsonRpcException.MethodNotFound(method);
+            }
+        }
+
+        // Create a `JObject` containing version information. All version values must be strings.
+        // This base version puts the network protocol version in a property called `protocol`.
+        // Subclasses may choose to override this method to add more info; the recommended pattern is:
+        //   var versionInfo = base.GetVersion();
+        //   versionInfo.Add("mySpecialVersion", someValue);
+        //   return versionInfo;
+        protected virtual JObject GetVersion()
+        {
+            return new JObject(
+                new JProperty("protocol", NetworkProtocolVersion)
+            );
+        }
 
         // Omit (or pass null for) the completion handler to send a Notification.
         // Completion handlers may be async. If your completion handler is not async, return `Task.CompletedTask`.

@@ -26,38 +26,38 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                                  completion: @escaping JSONRPCCompletionHandler) throws {
         switch state {
         case .initial:
-            if method != "discover" {
-                completion(nil, JSONRPCError.methodNotFound(data: "Cannot call \(method) in initial state"))
+            if method == "discover" {
+                if let major = params["majorDeviceClass"] as? UInt, let minor = params["minorDeviceClass"] as? UInt {
+                    if let prefix = params["ouiPrefix"] as? String { self.ouiPrefix = prefix }
+                    state = .discovery
+                    discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, completion: completion)
+                } else {
+                    completion(nil, JSONRPCError.invalidParams(data: "majorDeviceClass and minorDeviceClass required"))
+                }
                 return
-            }
-            if let major = params["majorDeviceClass"] as? UInt, let minor = params["minorDeviceClass"] as? UInt {
-                if let prefix = params["ouiPrefix"] as? String { self.ouiPrefix = prefix }
-                state = .discovery
-                discover(inMajorDeviceClass: major, inMinorDeviceClass: minor, completion: completion)
-            } else {
-                completion(nil, JSONRPCError.invalidParams(data: "majorDeviceClass and minorDeviceClass required"))
             }
         case .discovery:
-            if method != "connect" {
-                completion(nil, JSONRPCError.methodNotFound(data: "Cannot call \(method) in discovery state"))
+            if method == "connect" {
+                if let peripheralId = params["peripheralId"] as? String {
+                    connect(toDevice: peripheralId, completion: completion)
+                } else {
+                    completion(nil, JSONRPCError.invalidParams(data: "peripheralId required"))
+                }
                 return
             }
-            if let peripheralId = params["peripheralId"] as? String {
-                connect(toDevice: peripheralId, completion: completion)
-            } else {
-                completion(nil, JSONRPCError.invalidParams(data: "peripheralId required"))
-            }
         case .connected:
-            if method != "send" {
-                completion(nil, JSONRPCError.methodNotFound(data: "Cannot call \(method) in connected state"))
-            }
-            if connectedChannel == nil || connectedChannel?.isOpen() == false {
-                completion(nil, JSONRPCError.invalidRequest(data: "No peripheral connected"))
-            } else {
-                let decodedMessage = try EncodingHelpers.decodeBuffer(fromJSON: params)
-                sendMessage(decodedMessage, completion: completion)
+            if method == "send" {
+                if connectedChannel == nil || connectedChannel?.isOpen() == false {
+                    completion(nil, JSONRPCError.invalidRequest(data: "No peripheral connected"))
+                } else {
+                    let decodedMessage = try EncodingHelpers.decodeBuffer(fromJSON: params)
+                    sendMessage(decodedMessage, completion: completion)
+                }
+                return
             }
         }
+        // unrecognized method in this state: pass to base class
+        try super.didReceiveCall(method, withParams: params, completion: completion)
     }
 
     override func sessionWasClosed() {

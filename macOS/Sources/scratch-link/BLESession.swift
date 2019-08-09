@@ -553,13 +553,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
                 services.append(getCanonicalUUIDString(uuid: $0.uuid.uuidString))
             }
             completion(services, nil)
-        case "pingMe":
-            completion("willPing", nil)
-            sendRemoteRequest("ping") { (result: Any?, _: JSONRPCError?) in
-                print("Got result from ping:", String(describing: result))
-            }
         default:
-            throw JSONRPCError.methodNotFound(data: method)
+            // unrecognized method: pass to base class
+            try super.didReceiveCall(method, withParams: params, completion: completion)
         }
     }
 }

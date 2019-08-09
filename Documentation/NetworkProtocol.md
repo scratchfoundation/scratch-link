@@ -19,6 +19,7 @@ This version number shall follow the Semantic Versioning specification, found he
 
 - Version 1.2:
   - Add `manufacturerData` filtering for BLE discovery.
+  - Add common `getVersion` method.
 - Version 1.1:
   - Add protocol version number.
   - Bluetooth LE:
@@ -42,8 +43,44 @@ The JSON-RPC 2.0 specification may be found here: <http://www.jsonrpc.org/specif
 
 Communication with Scratch Link is performed over WebSockets. When initiating a WebSocket connection between the Scratch
 Extension and Scratch Link, the choice of path determines which Transport Protocol will be used. For example, when
-initiating a BLE connection the extension connects to Scratch Link’s WebSocket server at path `/scratch/ble`, and for
+initiating a BLE connection the extension connects to Scratch Link's WebSocket server at path `/scratch/ble`, and for
 Bluetooth Classic (BT) connections the extension connects to the path `/scratch/bt`.
+
+### Common Methods
+
+Methods in this section must be supported by all session types. In general, these methods are stateless unless
+otherwise specified.
+
+#### Request: `getVersion`
+
+*Added in network protocol version 1.2*
+
+This is a JSON-RPC **request** sent from Scratch Extension to Scratch Link to retrieve version information about
+Scratch Link itself. No parameters are necessary.
+
+```json5
+{
+  "jsonrpc": "2.0",      // JSON-RPC version indicator
+  "id": 1,               // Message sequence identifier
+  "method": "getVersion" // Command identifier
+}
+```
+
+JSON-RPC **response** sent from Scratch Link to Scratch Extension .
+
+```json5
+{
+  "jsonrpc": "2.0",   // JSON-RPC version indicator
+  "id": 1,            // Message sequence identifier
+  "result": {
+    "protocol": "1.2" // Version number for the overall network protocol
+  }
+}
+```
+
+The version number in the `protocol` property corresponds to the network protocol version defined in this document.
+Other properties may be present and may contain more version information about the particular session; see
+protocol-specific documentation for details.
 
 ### Stateful Connections
 

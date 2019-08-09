@@ -19,6 +19,7 @@
         <legend>BLE</legend>
         <div>
             <button id="initBLE">Connect to app</button>
+            <button id="getVersionBLE">Get Version</button>
             <button id="pingBLE">Request ping</button>
         </div>
         <div>
@@ -53,6 +54,7 @@
         <legend>BT / EV3</legend>
         <div>
             <button id="initBT">Connect to app (BT)</button>
+            <button id="getVersionBT">Get Version</button>
             <button id="discoverBT">Find BT devices</button>
             <button id="closeBT">Goodbye</button>
         </div>
@@ -314,6 +316,17 @@
             }
         }
 
+        function getVersion(session) {
+            session.sendRemoteRequest('getVersion').then(
+                x => {
+                    addLine(`Version request resolved with: ${stringify(x)}`);
+                },
+                e => {
+                    addLine(`Version request rejected with: ${stringify(e)}`);
+                }
+            );
+        }
+
         function initBLE() {
             addLine('Connecting...');
             self.Scratch.BLE = new ScratchBLE();
@@ -552,6 +565,7 @@
         }
 
         attachFunctionToButton('initBLE', initBLE);
+        attachFunctionToButton('getVersionBLE', () => getVersion(self.Scratch.BLE));
         attachFunctionToButton('pingBLE', pingBLE);
         attachFunctionToButton('discoverBLE', discoverBLE);
         attachFunctionToButton('connectBLE', connectBLE);
@@ -644,6 +658,7 @@
         };
 
         attachFunctionToButton('initBT', initBT);
+        attachFunctionToButton('getVersionBT', () => getVersion(self.Scratch.BT));
         attachFunctionToButton('discoverBT', discoverBT);
         attachFunctionToButton('connectBT', connectBT);
         attachFunctionToButton('send', sendMessage);

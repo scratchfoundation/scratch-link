@@ -8,7 +8,18 @@ Protocol" document describing the portions of the protocol common to all periphe
 
 ### Initiating Communication with Scratch Link
 
-For Bluetooth (BT) connections, an extension connects to Scratch Link’s WebSocket server at the path "/scratch/bt".
+For Bluetooth (BT) connections, an extension connects to Scratch Link's WebSocket server at the path "/scratch/bt".
+
+### Common Methods
+
+Methods in this section must be supported by all session types. This section documents any protocol-specific qualities
+of these methods.
+
+#### Request: `getVersion`
+
+*Added in network protocol version 1.2*
+
+No additional version information is provided beyond the base implementation.
 
 ### Initial State
 

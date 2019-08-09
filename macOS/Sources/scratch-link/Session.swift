@@ -4,6 +4,9 @@ import PerfectWebSockets
 
 // TODO: implement remaining JSON-RPC 2.0 features like batching
 class Session {
+    // Keep this in sync with the version number in `NetworkProtocol.md`
+    private let NetworkProtocolVersion: String = "1.2"
+
     typealias RequestID = Int
     typealias JSONRPCCompletionHandler = (_ result: Any?, _ error: JSONRPCError?) -> Void
 
@@ -82,13 +85,37 @@ class Session {
     }
 
     // Override this to handle received RPC requests & notifications.
+    // Call this method with `await super.DidReceiveCall(...)` to implement default calls like `getVersion`.
     // Call the completion handler when done with a request:
     // - pass your call's "return value" (or nil) as `result` on success
     // - pass an instance of `JSONRPCError` for `error` on failure
     // You may also throw a `JSONRPCError` (or any other `Error`) iff it is encountered synchronously.
     func didReceiveCall(_ method: String, withParams params: [String: Any],
                         completion: @escaping JSONRPCCompletionHandler) throws {
-        preconditionFailure("Must override didReceiveCall")
+        switch method {
+        case "pingMe":
+            completion("willPing", nil)
+            sendRemoteRequest("ping") { (result: Any?, _: JSONRPCError?) in
+                print("Got result from ping:", String(describing: result))
+            }
+        case "getVersion":
+            completion(getVersion(), nil)
+        default:
+            throw JSONRPCError.methodNotFound(data: method)
+        }
+    }
+
+    // Create an associative array containing version information. All version values must be strings.
+    // This base version puts the network protocol version in a property called `protocol`.
+    // Subclasses may choose to override this method to add more info; the recommended pattern is:
+    //   var versionInfo = super.getVersion()
+    //   versionInfo["mySpecialVersion"] = someValue
+    //   return versionInfo
+    func getVersion() -> [String: String] {
+        let versionInfo: [String: String] = [
+            "protocol": NetworkProtocolVersion
+        ]
+        return versionInfo
     }
 
     // Pass nil for the completion handler to send a Notification
