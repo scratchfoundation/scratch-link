@@ -653,35 +653,42 @@ struct BLEScanFilter {
             if !required.isSubset(of: available) {
                 return false
             }
-            
-            if let manufacturer = manufacturerData, !manufacturer.isEmpty {
-                let filteredManufacturer = manufacturer.filter{
-                    // check if a prefix and mask have been supplied by the extension and that their lengths match
-                    if let id = $0.key as? UInt16, let prefix = $0.value["dataPrefix"], let mask = $0.value["mask"] {
+        }
 
-                        // create an array that is the result of the prefix and mask AND'ed
-                        let maskedPrefix = prefix.enumerated().map { (key, value) in
-                            return value & mask[key]
-                        }
-                        // if discovered device has ManufacturerData, take the first slice and AND it with the mask
-                        // return true if the masked prefix supplied by the extension matches the masked data supplied by the device
-                        if let deviceData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
-                            // take two first bytes of advertisementData and use as Device ID
-                            let deviceId = (deviceData)[..<2].withUnsafeBytes{$0.load(as:UInt16.self)}
-                            // take remaining number of bytes equal to the length of the mask to be used for comparison
-                            let devicePrefix = [UInt8](deviceData).dropFirst(2).prefix(mask.count)
-
-                            let maskedDevice = devicePrefix.enumerated().map { (key, value) in
-                                return value & mask[key]
-                            }
-                            return deviceId == id && maskedPrefix == maskedDevice
-                        }
-                    }
+        if let manufacturer = manufacturerData, !manufacturer.isEmpty {
+            // TODO: figure out whether it's possible to have a device with two manufacturerData items
+            // if so, fix this code to handle that
+            for i in manufacturer {
+                // check if a prefix and mask have been supplied by the extension and that their lengths match
+                guard let id = i.key as? UInt16, let prefix = i.value["dataPrefix"], let mask = i.value["mask"] else {
                     return false
                 }
-                return !filteredManufacturer.isEmpty
+                // create an array that is the result of the prefix and mask AND'ed
+                let maskedPrefix = prefix.enumerated().map { (key, value) in
+                    return value & mask[key]
+                }
+                // if discovered device has ManufacturerData, take the first slice and AND it with the mask
+                // return true if the masked prefix from the extension matches the masked data supplied by the device
+                if let deviceData = advertisementData[CBAdvertisementDataManufacturerDataKey] as? Data {
+                    // take two first bytes of advertisementData and use as Device ID
+                    let deviceId = UInt16(deviceData[0]) | UInt16(deviceData[1]) << 8;
+                    // take remaining number of bytes equal to the length of the mask to be used for comparison
+                    let devicePrefix = [UInt8](deviceData).dropFirst(2).prefix(mask.count)
+
+                    let maskedDevice = devicePrefix.enumerated().map { (key, value) in
+                        return value & mask[key]
+                    }
+                    if deviceId != id || maskedPrefix != maskedDevice {
+                        return false
+                    }
+                } else {
+                    // no manufacturerData available from device
+                    return false
+                }
             }
         }
+
+        // nothing failed so the filter as a whole matches
         return true
     }
 }

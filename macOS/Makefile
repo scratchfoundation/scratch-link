@@ -38,7 +38,7 @@ dist/tmp.mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/tmp.mas/
 	mkdir -p dist/tmp.mas/
 	cp -aR "$<" "$@"
-	xcrun swift-stdlib-tool --copy --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
+	swift-stdlib-tool --copy --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify -r
 
@@ -57,7 +57,7 @@ dist/tmp.devid/app/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/tmp.devid/app
 	mkdir -p dist/tmp.devid/app
 	cp -aR "$<" "$@"
-	xcrun swift-stdlib-tool --copy --sign "Developer ID Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
+	swift-stdlib-tool --copy --sign "Developer ID Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify -r
 

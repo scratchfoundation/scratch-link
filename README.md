@@ -50,7 +50,7 @@ To prepare certificates for Scratch Link development:
 
 ### macOS
 
-The macOS version of this project is in the `macOS` subdirectory. It uses Swift 4.1 and the Swift Package Manager.
+The macOS version of this project is in the `macOS` subdirectory. It uses Swift 4.x and the Swift Package Manager.
 
 Developer prerequisites on macOS, most of which are available through [Homebrew](https://brew.sh/):
 
@@ -59,6 +59,8 @@ Developer prerequisites on macOS, most of which are available through [Homebrew]
 * [git](https://git-scm.com/)
 * [pngcrush](https://pmt.sourceforge.io/pngcrush/)
 * [swiftlint](https://github.com/realm/SwiftLint) (optional)
+* Swift Version Manager [swiftenv](https://swiftenv.fuller.li/) (optional)
+  * If you have Swift 5 or above / Xcode 10.2 or above `swiftenv` might be the best way to get Swift 4.x
 
 The build is primarily controlled through `make`:
 
