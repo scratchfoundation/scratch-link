@@ -1,4 +1,4 @@
-﻿// This sample is provided "AS IS" and confers no warranties.
+// This sample is provided "AS IS" and confers no warranties.
 // You are granted a non-exclusive, worldwide, royalty-free license to reproduce this code,
 // prepare derivative works, and distribute it or any derivative works that you create.
 //
@@ -118,14 +118,14 @@ namespace Fiddler
             }
 
             // Determine the size of the memory block to allocate
-            if (ERROR_INSUFFICIENT_BUFFER == GetExtendedTcpTable(ptrTcpTable, ref tcpTableLength, false, iAddressType, TcpTableType.OwnerPidListener, 0))
+            if (ERROR_INSUFFICIENT_BUFFER == GetExtendedTcpTable(ptrTcpTable, ref tcpTableLength, false, iAddressType, TcpTableType.OwnerPidAll, 0))
             {
                 try
                 {
                     ptrTcpTable = Marshal.AllocHGlobal((Int32)tcpTableLength);
 
                     // Would it be faster to set the SORTED argument to true, and then iterate the table in reverse order?
-                    if (NO_ERROR == GetExtendedTcpTable(ptrTcpTable, ref tcpTableLength, false, iAddressType, TcpTableType.OwnerPidListener, 0))
+                    if (NO_ERROR == GetExtendedTcpTable(ptrTcpTable, ref tcpTableLength, false, iAddressType, TcpTableType.OwnerPidAll, 0))
                     {
                         // Convert port we're looking for into Network byte order
                         int iTargetPortInNetOrder = ((iTargetPort & 0xFF) << 8) + ((iTargetPort & 0xFF00) >> 8);

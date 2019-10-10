@@ -31,12 +31,13 @@ namespace scratch_link.Dialogs
             this.label1 = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.OkButton = new System.Windows.Forms.Button();
+            this.CloseButton = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.listView1 = new System.Windows.Forms.ListView();
             this.processName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.processId = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.label2 = new System.Windows.Forms.Label();
+            this.CopyButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -78,16 +79,17 @@ namespace scratch_link.Dialogs
             this.panel1.Size = new System.Drawing.Size(410, 105);
             this.panel1.TabIndex = 2;
             // 
-            // OkButton
+            // CloseButton
             // 
-            this.OkButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.OkButton.Location = new System.Drawing.Point(323, 233);
-            this.OkButton.Name = "OkButton";
-            this.OkButton.Size = new System.Drawing.Size(75, 23);
-            this.OkButton.TabIndex = 3;
-            this.OkButton.Text = "OK";
-            this.OkButton.UseVisualStyleBackColor = true;
-            this.OkButton.Click += new System.EventHandler(this.button1_Click);
+            this.CloseButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.CloseButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.CloseButton.Location = new System.Drawing.Point(323, 233);
+            this.CloseButton.Name = "CloseButton";
+            this.CloseButton.Size = new System.Drawing.Size(75, 23);
+            this.CloseButton.TabIndex = 3;
+            this.CloseButton.Text = "Close";
+            this.CloseButton.UseVisualStyleBackColor = true;
+            this.CloseButton.Click += new System.EventHandler(this.CloseButton_Click);
             // 
             // groupBox1
             // 
@@ -112,7 +114,9 @@ namespace scratch_link.Dialogs
             this.listView1.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.processName,
             this.processId});
+            this.listView1.FullRowSelect = true;
             this.listView1.GridLines = true;
+            this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(6, 19);
             this.listView1.Name = "listView1";
             this.listView1.Size = new System.Drawing.Size(374, 75);
@@ -141,17 +145,30 @@ namespace scratch_link.Dialogs
             this.label2.TabIndex = 0;
             this.label2.Text = "Some details may be missing if this application is not running as Administrator.";
             // 
+            // CopyButton
+            // 
+            this.CopyButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.CopyButton.Location = new System.Drawing.Point(242, 233);
+            this.CopyButton.Name = "CopyButton";
+            this.CopyButton.Size = new System.Drawing.Size(75, 23);
+            this.CopyButton.TabIndex = 5;
+            this.CopyButton.Text = "Copy";
+            this.CopyButton.UseVisualStyleBackColor = true;
+            this.CopyButton.Click += new System.EventHandler(this.CopyButton_Click);
+            // 
             // AddressInUse
             // 
-            this.AcceptButton = this.OkButton;
+            this.AcceptButton = this.CloseButton;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.BackColor = System.Drawing.SystemColors.Control;
+            this.CancelButton = this.CloseButton;
             this.ClientSize = new System.Drawing.Size(410, 268);
+            this.Controls.Add(this.CopyButton);
             this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.OkButton);
+            this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.panel1);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -174,11 +191,12 @@ namespace scratch_link.Dialogs
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Button OkButton;
+        private System.Windows.Forms.Button CloseButton;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.ListView listView1;
         private System.Windows.Forms.ColumnHeader processName;
         private System.Windows.Forms.ColumnHeader processId;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button CopyButton;
     }
 }
