@@ -66,6 +66,12 @@
   <ItemGroup>
     <Compile Include="AssemblyExtensions.cs" />
     <Compile Include="BLESession.cs" />
+    <Compile Include="Dialogs\AddressInUse.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Dialogs\AddressInUse.Designer.cs">
+      <DependentUpon>AddressInUse.cs</DependentUpon>
+    </Compile>
     <Compile Include="EncodingHelpers.cs" />
     <Compile Include="GattHelpers.cs" />
     <Compile Include="BTSession.cs" />
@@ -85,6 +91,10 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Program.cs" />
+    <Compile Include="Util\FiddlerWinsock.cs" />
+    <EmbeddedResource Include="Dialogs\AddressInUse.resx">
+      <DependentUpon>AddressInUse.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

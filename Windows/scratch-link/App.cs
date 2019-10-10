@@ -12,7 +12,7 @@ namespace scratch_link
 {
     public class App : ApplicationContext
     {
-        const int SDMPort = 20110;
+        public const int SDMPort = 20110;
 
         private static class SDMPath
         {
@@ -89,17 +89,10 @@ namespace scratch_link
         {
             PrepareToClose();
 
-            var title = "Address already in use!";
-            var body = String.Format(
-                "{0} was unable to start because port {1} is already in use.\n" +
-                "\n" +
-                "This means {0} is already running or another application is using that port.\n" +
-                "\n" +
-                "This application will now exit.",
-                scratch_link.Properties.Resources.AppTitle,
-                SDMPort
-            );
-            MessageBox.Show(body, title, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            using (var dialog = new Dialogs.AddressInUse())
+            {
+                dialog.ShowDialog();
+            }
 
             Environment.Exit(1);
         }
