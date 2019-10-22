@@ -10,10 +10,7 @@ using System.Windows.Forms;
 
 namespace scratch_link
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App
+    public class App : ApplicationContext
     {
         const int SDMPort = 20110;
 
@@ -27,8 +24,10 @@ namespace scratch_link
         private readonly WebSocketServer _server;
         private readonly SortedDictionary<string, SessionManager> _sessionManagers;
 
-        private App()
+        public App()
         {
+            Application.ApplicationExit += new EventHandler(Application_Exit);
+
             var appAssembly = typeof(App).Assembly;
             var simpleVersionString = $"{scratch_link.Properties.Resources.AppTitle} {appAssembly.GetName().Version}";
             _icon = new NotifyIcon
@@ -55,6 +54,10 @@ namespace scratch_link
                 [SDMPath.BLE] = new SessionManager(webSocket => new BLESession(webSocket)),
                 [SDMPath.BT] = new SessionManager(webSocket => new BTSession(webSocket))
             };
+            foreach (var sessionManager in _sessionManagers.Values)
+            {
+                sessionManager.ActiveSessionCountChanged += new EventHandler(UpdateIconText);
+            }
 
             var certificate = new X509Certificate2(scratch_link.Properties.Resources.WssCertificate, "Scratch");
             _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}")
@@ -79,7 +82,7 @@ namespace scratch_link
                 }
             }
 
-            UpdateIconText();
+            UpdateIconText(this, null);
         }
 
         private void OnAddressInUse()
@@ -144,7 +147,7 @@ namespace scratch_link
             }
         }
 
-        internal void UpdateIconText()
+        internal void UpdateIconText(object sender, EventArgs e)
         {
             int totalSessions = _sessionManagers.Values.Aggregate(0,
                 (total, sessionManager) =>
@@ -161,7 +164,7 @@ namespace scratch_link
             _icon.Text = text;
         }
 
-        private void Application_Exit(object sender, System.Windows.ExitEventArgs e)
+        private void Application_Exit(object sender, EventArgs args)
         {
             PrepareToClose();
         }

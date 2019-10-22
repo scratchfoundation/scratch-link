@@ -1,12 +1,12 @@
-﻿using Fleck;
+using Fleck;
 using System;
-using System.Windows;
 
 namespace scratch_link
 {
     internal class SessionManager
     {
         public int ActiveSessionCount { get; private set; }
+        public event EventHandler ActiveSessionCountChanged;
 
         private readonly Func<IWebSocketConnection, Session> _sessionCreationDelegate;
 
@@ -23,14 +23,14 @@ namespace scratch_link
             webSocket.OnOpen = () =>
             {
                 ++ActiveSessionCount;
-                ((App)(Application.Current)).UpdateIconText();
+                ActiveSessionCountChanged(this, null);
             };
             webSocket.OnMessage = async message => await session.OnMessage(message);
             webSocket.OnBinary = async message => await session.OnBinary(message);
             webSocket.OnClose = () =>
             {
                 --ActiveSessionCount;
-                ((App)(Application.Current)).UpdateIconText();
+                ActiveSessionCountChanged(this, null);
                 session.Dispose();
                 session = null;
             };
