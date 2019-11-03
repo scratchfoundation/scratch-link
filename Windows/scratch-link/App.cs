@@ -65,6 +65,7 @@ namespace scratch_link
                 RestartAfterListenError = true,
                 Certificate = certificate
             };
+            _server.ListenerSocket.NoDelay = true;
 
             try
             {
