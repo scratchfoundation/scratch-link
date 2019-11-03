@@ -26,7 +26,6 @@ namespace scratch_link
         private readonly int _maxMessageSize;
 
         private readonly SemaphoreSlim _sessionLock;
-        private readonly SemaphoreSlim _socketLock;
 
         private RequestId _nextId;
         private readonly Dictionary<RequestId, CompletionHandler> _completionHandlers;
@@ -34,7 +33,6 @@ namespace scratch_link
         protected Session(IWebSocketConnection webSocket, int bufferSize = 4096, int maxMessageSize = 1024 * 1024)
         {
             _sessionLock = new SemaphoreSlim(1);
-            _socketLock = new SemaphoreSlim(1);
             _webSocket = webSocket;
             _readBuffer = new ArraySegment<byte>(new byte[bufferSize]);
             _decodeBuffer = new char[bufferSize];
@@ -49,15 +47,7 @@ namespace scratch_link
             {
                 if (_webSocket != null)
                 {
-                    _socketLock.Wait();
-                    try
-                    {
-                        _webSocket.Close();
-                    }
-                    finally
-                    {
-                        _socketLock.Release();
-                    }
+                    _webSocket.Close();
                 }
             }
         }
@@ -134,15 +124,7 @@ namespace scratch_link
             try
             {
                 var requestText = JsonConvert.SerializeObject(request);
-                _socketLock.Wait();
-                try
-                {
-                    await _webSocket.Send(requestText);
-                }
-                finally
-                {
-                    _socketLock.Release();
-                }
+                await _webSocket.Send(requestText);
             }
             catch (Exception e)
             {
@@ -158,15 +140,7 @@ namespace scratch_link
                 var message = MakeResponse(null, null, error);
                 var messageText = JsonConvert.SerializeObject(message);
 
-                _socketLock.Wait();
-                try
-                {
-                    await _webSocket.Send(messageText);
-                }
-                finally
-                {
-                    _socketLock.Release();
-                }
+                await _webSocket.Send(messageText);
             }
             catch (Exception e)
             {
@@ -183,15 +157,7 @@ namespace scratch_link
         {
             await DidReceiveMessage(message, async response =>
             {
-                _socketLock.Wait();
-                try
-                {
-                    await _webSocket.Send(response);
-                }
-                finally
-                {
-                    _socketLock.Release();
-                }
+                await _webSocket.Send(response);
             });
         }
 
@@ -202,15 +168,7 @@ namespace scratch_link
             await DidReceiveMessage(message, async response =>
             {
                 var responseBytes = Encoding.UTF8.GetBytes(response);
-                _socketLock.Wait();
-                try
-                {
-                    await _webSocket.Send(responseBytes);
-                }
-                finally
-                {
-                    _socketLock.Release();
-                }
+                await _webSocket.Send(responseBytes);
             });
         }
 
