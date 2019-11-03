@@ -338,7 +338,7 @@ namespace scratch_link
         {
             var buffer = EncodingHelpers.DecodeBuffer(parameters);
             var endpoint = await GetEndpoint("write request", parameters, GattHelpers.BlockListStatus.ExcludeWrites);
-            var withResponse = (parameters["withResponse"]?.ToObject<bool>() ?? false) ||
+            var withResponse = parameters["withResponse"]?.ToObject<bool>() ??
                 !endpoint.CharacteristicProperties.HasFlag(GattCharacteristicProperties.WriteWithoutResponse);
 
             var result = await endpoint.WriteValueWithResultAsync(buffer.AsBuffer(),
