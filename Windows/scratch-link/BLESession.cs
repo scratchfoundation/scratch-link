@@ -301,6 +301,18 @@ namespace scratch_link
             _peripheral.ConnectionStatusChanged += OnPeripheralStatusChanged;
             _services = servicesResult.Services;
 
+            // cache all characteristics in all services
+            foreach (var service in _services) {
+                var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
+                if (characteristicsResult.Status != GattCommunicationStatus.Success) {
+                    continue;
+                }
+
+                foreach (var characteristic in characteristicsResult.Characteristics) {
+                    _cachedCharacteristics.Add(characteristic.Uuid, characteristic);
+                }
+            }
+
             // collect optional services plus all services from all filters
             // Note: this modifies _optionalServices for convenience since we know it'll go away soon.
             _allowedServices = _optionalServices ?? new HashSet<Guid>();
