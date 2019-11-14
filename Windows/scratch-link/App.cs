@@ -60,7 +60,7 @@ namespace scratch_link
             }
 
             var certificate = new X509Certificate2(scratch_link.Properties.Resources.WssCertificate, "Scratch");
-            _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}")
+            _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}", false)
             {
                 RestartAfterListenError = true,
                 Certificate = certificate
