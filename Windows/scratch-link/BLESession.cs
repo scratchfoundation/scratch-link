@@ -304,6 +304,10 @@ namespace scratch_link
             // cache all characteristics in all services
             foreach (var service in _services) {
                 var characteristicsResult = await service.GetCharacteristicsAsync(BluetoothCacheMode.Uncached);
+                if (characteristicsResult.Status != GattCommunicationStatus.Success) {
+                    continue;
+                }
+
                 foreach (var characteristic in characteristicsResult.Characteristics) {
                     _cachedCharacteristics.Add(characteristic.Uuid, characteristic);
                 }
