@@ -277,7 +277,7 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
     func write(withParams params: [String: Any], completion: @escaping JSONRPCCompletionHandler) throws {
         let buffer = try EncodingHelpers.decodeBuffer(fromJSON: params)
-        let withResponse = params["withResponse"] as? Bool ?? false
+        let withResponse = params["withResponse"] as? Bool
 
         getEndpoint(for: "write request", withParams: params, blockedBy: .ExcludeWrites) { endpoint, error in
             if let error = error {
@@ -297,7 +297,10 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
                 return
             }
 
-            let writeType = (withResponse || !endpoint.properties.contains(.writeWithoutResponse)) ?
+            // If the client specified a write type, honor that.
+            // Otherwise, if the characteristic claims to support writing without response, do that.
+            // Otherwise, write with response.
+            let writeType = (withResponse ?? !endpoint.properties.contains(.writeWithoutResponse)) ?
                 CBCharacteristicWriteType.withResponse : CBCharacteristicWriteType.withoutResponse
             peripheral.writeValue(buffer, for: endpoint, type: writeType)
             completion(buffer.count, nil)
