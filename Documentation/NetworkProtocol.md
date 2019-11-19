@@ -17,6 +17,10 @@ This version number shall follow the Semantic Versioning specification, found he
 
 ### Version History
 
+- Version 1.3:
+  - Bluetooth LE:
+    - Alter Scratch Link's handling of the `withResponse` flag on a `write` request. The flag now overrides Scratch
+      Link's detection of GATT characteristic flags.
 - Version 1.2:
   - Add `manufacturerData` filtering for BLE discovery.
   - Add common `getVersion` method.

@@ -274,11 +274,13 @@ controls which of these modes shall be used for a particular write.
   the write was received without error, and Scratch Link's response to the client shall report any error reported by the
   BLE peripheral. If the peripheral reports an error, that error shall be forwarded to the client as an error response
   to the "write" request.
-- If false or absent, Scratch Link shall write without response. That is, Scratch Link shall make a [best-effort
+- If false, Scratch Link shall write without response. That is, Scratch Link shall make a [best-effort
   delivery](https://en.wikipedia.org/wiki/Best-effort_delivery) attempt then report success. There is no way for the
   peripheral to report an error in this mode.
-- If the peripheral or characteristic does not support writing with response, Scratch Link may choose to write without
-  response even when the "withResponse" flag is true.
+- If absent, Scratch Link shall check if the characteristic appears to support writing without response. If so,
+  Scratch Link shall write without response. Otherwise, Scratch shall write with response.
+
+Generally, writing without response is significantly faster.
 
 On success, Scratch Link's **response** shall contain the number of bytes written, which may differ from the number of
 characters in the string value of the initiating request's "message" property:
