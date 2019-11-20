@@ -1,0 +1,38 @@
+version: 2.1
+workflows:
+  macos:
+    jobs:
+      - build_for_mac
+  windows:
+    jobs:
+      - build_for_windows:
+          context: code-sign-generic
+orbs:
+  windows: circleci/windows@2.2.0
+jobs:
+  build_for_mac:
+    macos:
+      xcode: "10.1.0"
+    steps:
+      - checkout
+      - run:
+          name: make dist
+          command: make --directory=macOS dist
+      - store_artifacts:
+          path: macOS/dist/scratch-link-*.pkg
+      - store_artifacts:
+          path: macOS/dist/mas-scratch-link-*.pkg
+  build_for_windows:
+    executor: windows/default
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies using NuGet
+          command: nuget restore Windows/
+      - run:
+          name: Build using MSBuild
+          command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
+      - store_artifacts:
+          path: Windows/ScratchLinkSetup/bin/Release/ScratchLinkSetup-*.zip
+      - store_artifacts:
+          path: Windows/ScratchLinkAPPX/AppPackages/ScratchLinkAPPX_*_AnyCPU_bundle.appxupload
