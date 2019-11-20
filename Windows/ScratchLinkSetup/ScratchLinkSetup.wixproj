@@ -44,9 +44,6 @@
     <SignToolPath Condition=" '$(SignToolPath)' == '' And '$(Platform)' == 'AnyCPU' ">"$(WindowsKitsRoot)bin\x86\"</SignToolPath>
     <SignToolPath Condition="'$(SignToolPath)' == ''">"$(WindowsKitsRoot)bin\$(Platform)\"</SignToolPath>
   </PropertyGroup>
-  <PropertyGroup>
-    <PostBuildEvent>$(SignToolPath)signtool.exe sign /v /a /sha1 d2c122499f125dca4c5eb65598a4f292b3a84cd5 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
-  </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.
 	Other similar extension points exist, see Wix.targets.
@@ -55,5 +52,8 @@
 	<Target Name="AfterBuild">
 	</Target>
 	-->
-  <Import Project="..\msiZipWithVersion.targets"/>
+  <Import Project="..\msiZipWithVersion.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>$(SignToolPath)signtool.exe sign /v /a /sha1 fafb6925eba28dcdce5440f3c2b79616f7b597e8 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
+  </PropertyGroup>
 </Project>
