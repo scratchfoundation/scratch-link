@@ -12,3 +12,7 @@ indent_style = space
 
 [*.sh]
 indent_style = tab
+
+[*.{yaml,yml}]
+indent_size = 2
+indent_style = space

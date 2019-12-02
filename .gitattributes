@@ -12,6 +12,8 @@
 *.md text eol=lf
 *.sh text eol=lf
 *.svg text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
 
 # Prefer LF for these files
 .editorconfig text eol=lf
