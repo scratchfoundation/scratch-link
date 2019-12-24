@@ -30,6 +30,9 @@ jobs:
           name: Install dependencies using NuGet
           command: nuget restore Windows/
       - run:
+          name: Import code-signing certificate
+          command: ./Windows/Import-WIN_CSC.ps1
+      - run:
           name: Build using MSBuild
           command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
       - store_artifacts:
