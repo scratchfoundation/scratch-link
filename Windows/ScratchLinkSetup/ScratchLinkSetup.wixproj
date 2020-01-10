@@ -44,11 +44,11 @@
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
   <PropertyGroup>
-    <WindowsKitsRoot>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot10', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
-    <WindowsKitsRoot Condition="'$(WindowsKitsRoot)' == ''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot81', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
-    <WindowsKitsRoot Condition="'$(WindowsKitsRoot)' == ''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
-    <SignToolPath Condition=" '$(SignToolPath)' == '' And '$(Platform)' == 'AnyCPU' ">"$(WindowsKitsRoot)bin\x86\"</SignToolPath>
-    <SignToolPath Condition="'$(SignToolPath)' == ''">"$(WindowsKitsRoot)bin\$(Platform)\"</SignToolPath>
+    <WindowsKitsRoot Condition="'$(WindowsKitsRoot)' == ''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot10', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.18362.0\')">$(WindowsKitsRoot)bin\10.0.18362.0\$(Platform)\</SignToolPath>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.17763.0\')">$(WindowsKitsRoot)bin\10.0.17763.0\$(Platform)\</SignToolPath>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.17134.0\')">$(WindowsKitsRoot)bin\10.0.17134.0\$(Platform)\</SignToolPath>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.16299.0\')">$(WindowsKitsRoot)bin\10.0.16299.0\$(Platform)\</SignToolPath>
   </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.
@@ -60,7 +60,7 @@
 	-->
   <Import Project="..\msiZipWithVersion.targets" />
   <PropertyGroup>
-    <PostBuildEvent>$(SignToolPath)signtool.exe sign /debug /v /a /sha1 fafb6925eba28dcdce5440f3c2b79616f7b597e8 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
+    <PostBuildEvent>"$(SignToolPath)signtool.exe" sign /debug /v /a /sm /sha1 fafb6925eba28dcdce5440f3c2b79616f7b597e8 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
