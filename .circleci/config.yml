@@ -26,16 +26,30 @@ jobs:
     executor: windows/default
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
       - run:
           name: Install dependencies using NuGet
           command: nuget restore Windows/
+      - save_cache:
+          paths:
+            - Windows/packages/
+          key: nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
       - run:
           name: Import code-signing certificate
           command: ./Windows/Import-WIN_CSC.ps1
       - run:
           name: Build using MSBuild
           command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
+      - run:
+          name: Make artifacts directory
+          command: New-Item -Path Windows/ -Name Artifacts -ItemType directory
+      - run:
+          name: Move Microsoft Store APPX to artifacts directory
+          command: Move-Item -Path Windows/ScratchLinkAPPX/AppPackages/ScratchLinkAPPX_*_AnyCPU_bundle.appxupload -Destination Windows/Artifacts/
+      - run:
+          name: Move direct-download setup ZIP to artifacts directory
+          command: Move-Item -Path Windows/ScratchLinkSetup/bin/Release/ScratchLinkSetup-*.zip -Destination Windows/Artifacts/
       - store_artifacts:
-          path: Windows/ScratchLinkSetup/bin/Release/ScratchLinkSetup-*.zip
-      - store_artifacts:
-          path: Windows/ScratchLinkAPPX/AppPackages/ScratchLinkAPPX_*_AnyCPU_bundle.appxupload
+          path: Windows/Artifacts/
