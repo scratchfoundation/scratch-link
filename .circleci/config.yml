@@ -43,13 +43,10 @@ jobs:
           name: Build using MSBuild
           command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
       - run:
-          name: Make artifacts directory
-          command: New-Item -Path Windows/ -Name Artifacts -ItemType directory
-      - run:
-          name: Move Microsoft Store APPX to artifacts directory
-          command: Move-Item -Path Windows/ScratchLinkAPPX/AppPackages/ScratchLinkAPPX_*_AnyCPU_bundle.appxupload -Destination Windows/Artifacts/
-      - run:
-          name: Move direct-download setup ZIP to artifacts directory
-          command: Move-Item -Path Windows/ScratchLinkSetup/bin/Release/ScratchLinkSetup-*.zip -Destination Windows/Artifacts/
+          name: Move build products to artifacts directory
+          command: |
+            New-Item -Path Windows/ -Name Artifacts -ItemType directory
+            Move-Item -Path Windows/ScratchLinkAPPX/AppPackages/ScratchLinkAPPX_*_AnyCPU_bundle.appxupload -Destination Windows/Artifacts/
+            Move-Item -Path Windows/ScratchLinkSetup/bin/Release/ScratchLinkSetup-*.zip -Destination Windows/Artifacts/
       - store_artifacts:
           path: Windows/Artifacts/
