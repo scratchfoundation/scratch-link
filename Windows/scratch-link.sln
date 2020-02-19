@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27428.2037
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29509.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScratchLink", "scratch-link\ScratchLink.csproj", "{711F5DBA-7A5D-447A-A9BA-50CB2096E00A}"
 EndProject
@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		generate-images.sh = generate-images.sh
+		Import-WIN_CSC.ps1 = Import-WIN_CSC.ps1
 		msiZipWithVersion.targets = msiZipWithVersion.targets
 		..\playground.html = ..\playground.html
 		..\README.md = ..\README.md
@@ -27,6 +28,11 @@ EndProject
 Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "ScratchLinkAPPX", "ScratchLinkAPPX\ScratchLinkAPPX.wapproj", "{34A8A49D-CF32-4812-8DF1-6A52E664C4AB}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "ScratchLinkSetup", "ScratchLinkSetup\ScratchLinkSetup.wixproj", "{5AC1AA26-9C7C-4A81-99B7-21222DA0D89E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".circleci", ".circleci", "{2E316847-3325-4060-9560-ED29CF3D1156}"
+	ProjectSection(SolutionItems) = preProject
+		..\.circleci\config.yml = ..\.circleci\config.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +57,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3721552C-638C-48CC-A154-F995CEA87505} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
+		{2E316847-3325-4060-9560-ED29CF3D1156} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8DE7771A-9DD3-44DD-AA08-46514DA0F673}

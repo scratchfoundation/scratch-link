@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" InitialTargets="EnsureWixToolsetInstalled" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\WiX.3.11.2\build\wix.props" Condition="Exists('..\packages\WiX.3.11.2\build\wix.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -8,6 +9,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>ScratchLinkSetup</OutputName>
     <OutputType>Package</OutputType>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -32,17 +35,20 @@
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(WixTargetsPath)" Condition=" '$(WixTargetsPath)' != '' " />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets" Condition=" '$(WixTargetsPath)' == '' AND Exists('$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets') " />
   <Target Name="EnsureWixToolsetInstalled" Condition=" '$(WixTargetsImported)' != 'true' ">
     <Error Text="The WiX Toolset v3.11 (or newer) build tools must be installed to build this project. To download the WiX Toolset, see http://wixtoolset.org/releases/" />
   </Target>
   <PropertyGroup>
-    <WindowsKitsRoot>$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot10', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
-    <WindowsKitsRoot Condition="'$(WindowsKitsRoot)' == ''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot81', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
-    <WindowsKitsRoot Condition="'$(WindowsKitsRoot)' == ''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
-    <SignToolPath Condition=" '$(SignToolPath)' == '' And '$(Platform)' == 'AnyCPU' ">"$(WindowsKitsRoot)bin\x86\"</SignToolPath>
-    <SignToolPath Condition="'$(SignToolPath)' == ''">"$(WindowsKitsRoot)bin\$(Platform)\"</SignToolPath>
+    <WindowsKitsRoot Condition="'$(WindowsKitsRoot)' == ''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots', 'KitsRoot10', null, RegistryView.Registry32, RegistryView.Default))</WindowsKitsRoot>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.18362.0\')">$(WindowsKitsRoot)bin\10.0.18362.0\$(Platform)\</SignToolPath>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.17763.0\')">$(WindowsKitsRoot)bin\10.0.17763.0\$(Platform)\</SignToolPath>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.17134.0\')">$(WindowsKitsRoot)bin\10.0.17134.0\$(Platform)\</SignToolPath>
+    <SignToolPath Condition="'$(WindowsKitsRoot)' != '' And '$(SignToolPath)' == '' And exists('$(WindowsKitsRoot)bin\10.0.16299.0\')">$(WindowsKitsRoot)bin\10.0.16299.0\$(Platform)\</SignToolPath>
   </PropertyGroup>
   <!--
 	To modify your build process, add your task inside one of the targets below and uncomment it.
@@ -54,6 +60,12 @@
 	-->
   <Import Project="..\msiZipWithVersion.targets" />
   <PropertyGroup>
-    <PostBuildEvent>$(SignToolPath)signtool.exe sign /v /a /sha1 fafb6925eba28dcdce5440f3c2b79616f7b597e8 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
+    <PostBuildEvent>"$(SignToolPath)signtool.exe" sign /debug /v /a /sm /sha1 fafb6925eba28dcdce5440f3c2b79616f7b597e8 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
   </PropertyGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\WiX.3.11.2\build\wix.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\WiX.3.11.2\build\wix.props'))" />
+  </Target>
 </Project>

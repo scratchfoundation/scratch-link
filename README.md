@@ -90,14 +90,16 @@ The Windows version of this project is in the `Windows` subdirectory.
 
 Prerequisites:
 
-* [Visual Studio 2017](https://visualstudio.microsoft.com/vs/) (Community Edition is sufficient)
+* [Visual Studio 2017 or newer](https://visualstudio.microsoft.com/vs/) (Community Edition is sufficient)
 * Windows 10.0.16299 SDK (install with Visual Studio)
-* [WiX Toolset](http://wixtoolset.org/releases/) (tested with 3.11.1)
-* [WiX Toolset Visual Studio Extension](
-  https://marketplace.visualstudio.com/items?itemName=RobMensching.WixToolsetVisualStudio2017Extension)
-  (tested with 0.9.21.62588)
+* Some of the Scratch Link project files depend on NuGet packages. Visual Studio should prompt you to install these
+  packages when you open the Solution file. Without these packages, Scratch Link may fail to build or run.
 
-Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio 2017.
+Optional:
+
+* [MSBuildStructuredLog](https://github.com/KirillOsenkov/MSBuildStructuredLog) is a huge help for debugging MSBuild.
+
+Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio.
 
 #### Signing the MSI installer
 
