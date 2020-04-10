@@ -7,14 +7,17 @@
             margin: 0.125rem auto;
         }
     </style>
+    <script src="stringify.js"></script>
 </head>
 <body>
-    <div><label for="log">Log</label></div>
-    <textarea id="log" title="log" readonly style="width: 40rem; height: 10rem;"></textarea>
-    <div>
-        <input id="follow" type="checkbox" title="Follow" checked>
-        <label for="follow">Follow</label>
-    </div>
+    <fieldset>
+        <legend><label for="log">Log</label></legend>
+        <textarea id="log" title="log" readonly style="width: 100%; height: 10rem;"></textarea>
+        <div>
+            <input id="follow" type="checkbox" title="Follow" checked>
+            <label for="follow">Follow</label>
+        </div>
+    </fieldset>
     <fieldset>
         <legend>BLE</legend>
         <div>
@@ -195,6 +198,7 @@
                 this._ws.onopen = e => this._onSocketOpen(e);
                 this._ws.onclose = e => this._onSocketClose(e);
                 this._ws.onerror = e => this._onSocketError(e);
+                addLine('WS created');
             }
 
             dispose() {
@@ -328,9 +332,7 @@
         }
 
         function initBLE() {
-            addLine('Connecting...');
             self.Scratch.BLE = new ScratchBLE();
-            addLine('Connected.');
         }
 
         function pingBLE() {
@@ -510,7 +512,12 @@
         }
 
         function setServiceMicroBit() {
-            document.getElementById('serviceBLE').value = '0xf005';
+            if (filtersBLE.length < 1) addFilterBLE();
+            const optionalServicesBLE = document.getElementById('optionalServicesBLE');
+            optionalServicesBLE.value = null;
+            filterInputsBLE[0].namePrefixInput.value = null;
+            filterInputsBLE[0].exactNameInput.value = null;
+            filterInputsBLE[0].servicesInput.value = '0xf005';
         }
 
         function readMicroBit() {
@@ -537,7 +544,12 @@
         }
 
         function setServiceWeDo2() {
-            document.getElementById('serviceBLE').value = '00001523-1212-efde-1523-785feabcd123';
+            if (filtersBLE.length < 1) addFilterBLE();
+            const optionalServicesBLE = document.getElementById('optionalServicesBLE');
+            optionalServicesBLE.value = null;
+            filterInputsBLE[0].namePrefixInput.value = null;
+            filterInputsBLE[0].exactNameInput.value = null;
+            filterInputsBLE[0].servicesInput.value = '00001523-1212-efde-1523-785feabcd123';
         }
 
         function setGDXFOR() {
@@ -584,9 +596,7 @@
         addFilterBLE();
 
         function initBT() {
-            addLine('Connecting...');
             self.Scratch.BT = new ScratchBT();
-            addLine('Connected.');
         }
 
         function discoverBT() {
@@ -643,10 +653,6 @@
                     addLine(`sendMessage rejected with: ${stringify(e)}`);
                 }
             );
-        }
-
-        function stringify(o) {
-            return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
         }
 
         const follow = document.getElementById('follow');

@@ -1,9 +1,14 @@
 [*.{cs,xaml}]
-indent_style = space
-indent_size = 4
 end_of_line = crlf
+indent_size = 4
+indent_style = space
+
+[*.ps1]
+end_of_line = crlf
+indent_size = 4
+indent_style = space
 
 [*.wxs]
-indent_style = space
-indent_size = 2
 end_of_line = crlf
+indent_size = 2
+indent_style = space
