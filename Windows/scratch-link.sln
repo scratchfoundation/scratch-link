@@ -35,7 +35,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".circleci", ".circleci", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "playground", "playground", "{838F85E3-CDF7-4E59-B649-C36AFE302697}"
 	ProjectSection(SolutionItems) = preProject
+		..\playground\legend-collapse.js = ..\playground\legend-collapse.js
 		..\playground\playground.html = ..\playground\playground.html
+		..\playground\scratch-link-client.js = ..\playground\scratch-link-client.js
 		..\playground\stringify.js = ..\playground\stringify.js
 	EndProjectSection
 EndProject
