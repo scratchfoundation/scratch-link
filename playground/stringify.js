@@ -41,7 +41,7 @@ function stringify(o, depth=4) {
         } else {
             parts.push('\u2026'); // "Horizontal Ellipsis"
         }
-        return `${o.constructor.name} {${parts.join(', ')}}`;
+        return o && o.constructor ? `${o.constructor.name} {${parts.join(', ')}}` : o;
     case 'string':
         return `"${sanitizeString(o)}"`;
     default:
