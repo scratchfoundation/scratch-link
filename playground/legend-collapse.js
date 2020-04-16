@@ -3,7 +3,6 @@
  */
 
 window.addEventListener('load', function () {
-    console.log('document:load');
     document.querySelectorAll('fieldset > legend').forEach(function (legendElement) {
         function toggleCollapseFieldSet(mouseEvent) {
             const legend = mouseEvent.currentTarget;

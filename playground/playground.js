@@ -1,5 +1,46 @@
 self.Scratch = self.Scratch || {};
 
+/*
+ ******** common helpers
+ */
+
+class LogDisplay {
+    constructor(logElement, lineCount = 256) {
+        this._logElement = logElement;
+        this._lineCount = lineCount;
+        this._lines = [];
+        this._dirty = false;
+        this._follow = true;
+    }
+
+    addLine(text) {
+        this._lines.push(text);
+        if (!this._dirty) {
+            this._dirty = true;
+            requestAnimationFrame(() => {
+                this._trim();
+                this._logElement.textContent = this._lines.join('\n');
+                if (this._follow) {
+                    this._logElement.scrollTop = this._logElement.scrollHeight;
+                }
+                this._dirty = false;
+            });
+        }
+    }
+
+    _trim() {
+        this._lines = this._lines.splice(-this._lineCount);
+    }
+}
+
+const follow = document.getElementById('follow');
+const log = document.getElementById('log');
+const logDisplay = new LogDisplay(log);
+function addLine(text) {
+    logDisplay.addLine(text);
+    logDisplay._follow = follow.checked;
+}
+
 function attachFunctionToButton(buttonId, func) {
     const button = document.getElementById(buttonId);
     button.onclick = () => {
@@ -71,29 +112,29 @@ function ping(session) {
     );
 }
 
-function initBLE() {
-    self.Scratch.BLE = new ScratchBLE();
-}
+/*
+ ******** Bluetooth Low Energy (BLE)
+ */
 
-const filterInputsBLE = [];
-function addFilterBLE() {
+const bleFilterInputs = [];
+function bleAddFilter() {
     const filter = {};
-    filterInputsBLE.push(filter);
+    bleFilterInputs.push(filter);
 
     const fieldset = document.createElement('fieldset');
 
     const legend = document.createElement('legend');
-    legend.appendChild(document.createTextNode('Filter ' + filterInputsBLE.length));
+    legend.appendChild(document.createTextNode('Filter ' + bleFilterInputs.length));
     fieldset.appendChild(legend);
 
     const name = makeFilterInput('Discover peripherals with exact name: ', {placeholder: 'Name'});
     const namePrefix = makeFilterInput('Discover peripherals with name prefix: ', {placeholder: 'Name Prefix'});
-    const requiredServices = makeFilterInput('Discover peripherals with these services:', {
-        type: 'textarea',
-        doLineBreak: true,
-        placeholder: 'Required services, if any, separated by whitespace',
-        style: 'width:20rem;height:3rem;',
-    });
+
+    const requiredServicesInput = document.createElement('textarea');
+    requiredServicesInput.placeholder = 'Required services, if any, separated by whitespace';
+    requiredServicesInput.style = 'width:20rem;height:3rem;';
+    const requiredServicesDiv = makeFilterEntry(
+        'Discover peripherals with these services:', requiredServicesInput, true);
 
     const addManufacturerDataFilterButton = document.createElement('button');
     addManufacturerDataFilterButton.appendChild(document.createTextNode('Add data filter'));
@@ -102,14 +143,14 @@ function addFilterBLE() {
 
     fieldset.appendChild(name.div);
     fieldset.appendChild(namePrefix.div);
-    fieldset.appendChild(requiredServices.div);
+    fieldset.appendChild(requiredServicesDiv);
     fieldset.appendChild(manufacturerDataDiv);
 
     filter.exactNameInput = name.input;
     filter.namePrefixInput = namePrefix.input;
-    filter.servicesInput = requiredServices.input;
+    filter.servicesInput = requiredServicesInput;
 
-    const filtersParent = document.getElementById('filtersBLE');
+    const filtersParent = document.getElementById('bleFilterInputs');
     filtersParent.appendChild(fieldset);
 
     const manufacturerDataFilterInputs = [];
@@ -138,9 +179,9 @@ function addFilterBLE() {
     };
 }
 
-function discoverBLE() {
+function bleDiscover() {
     const filters = [];
-    for (const filterInputs of filterInputsBLE) {
+    for (const filterInputs of bleFilterInputs) {
         const filter = {};
         if (filterInputs.exactNameInput.value) filter.name = filterInputs.exactNameInput.value;
         if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
@@ -172,8 +213,8 @@ function discoverBLE() {
         filters: filters
     };
 
-    const optionalServicesBLE = document.getElementById('optionalServicesBLE');
-    if (optionalServicesBLE.value.trim()) deviceDetails.optionalServices = optionalServicesBLE.value.trim().split(/\s+/);
+    const bleOptionalServices = document.getElementById('bleOptionalServices');
+    if (bleOptionalServices.value.trim()) deviceDetails.optionalServices = bleOptionalServices.value.trim().split(/\s+/);
 
     Scratch.BLE.requestDevice(
         deviceDetails
@@ -187,7 +228,7 @@ function discoverBLE() {
     );
 }
 
-function connectBLE() {
+function bleConnect() {
     // this should really be implicit in `requestDevice` but splitting it out helps with debugging
     Scratch.BLE.sendRemoteRequest(
         'connect',
@@ -202,7 +243,7 @@ function connectBLE() {
     );
 }
 
-function getServicesBLE() {
+function bleGetServices() {
     Scratch.BLE.sendRemoteRequest(
         'getServices'
     ).then(
@@ -215,16 +256,16 @@ function getServicesBLE() {
     );
 }
 
-function setServiceMicroBit() {
-    if (filtersBLE.length < 1) addFilterBLE();
-    const optionalServicesBLE = document.getElementById('optionalServicesBLE');
-    optionalServicesBLE.value = null;
-    filterInputsBLE[0].namePrefixInput.value = null;
-    filterInputsBLE[0].exactNameInput.value = null;
-    filterInputsBLE[0].servicesInput.value = '0xf005';
+function bleSetServiceMicroBit() {
+    if (bleFilterInputs.length < 1) bleAddFilter();
+    const bleOptionalServices = document.getElementById('bleOptionalServices');
+    bleOptionalServices.value = null;
+    bleFilterInputs[0].namePrefixInput.value = null;
+    bleFilterInputs[0].exactNameInput.value = null;
+    bleFilterInputs[0].servicesInput.value = '0xf005';
 }
 
-function readMicroBit() {
+function bleReadMicroBit() {
     Scratch.BLE.read(0xf005, '5261da01-fa7e-42ab-850b-7c80220097cc', true).then(
         x => {
             addLine(`read resolved to: ${stringify(x)}`);
@@ -235,7 +276,7 @@ function readMicroBit() {
     );
 }
 
-function writeMicroBit() {
+function bleWriteMicroBit() {
     const message = _encodeMessage('LINK');
     Scratch.BLE.write(0xf005, '5261da02-fa7e-42ab-850b-7c80220097cc', message, 'base64').then(
         x => {
@@ -247,22 +288,22 @@ function writeMicroBit() {
     );
 }
 
-function setServiceWeDo2() {
-    if (filtersBLE.length < 1) addFilterBLE();
-    const optionalServicesBLE = document.getElementById('optionalServicesBLE');
-    optionalServicesBLE.value = null;
-    filterInputsBLE[0].namePrefixInput.value = null;
-    filterInputsBLE[0].exactNameInput.value = null;
-    filterInputsBLE[0].servicesInput.value = '00001523-1212-efde-1523-785feabcd123';
+function bleSetServiceWeDo2() {
+    if (bleFilterInputs.length < 1) bleAddFilter();
+    const bleOptionalServices = document.getElementById('bleOptionalServices');
+    bleOptionalServices.value = null;
+    bleFilterInputs[0].namePrefixInput.value = null;
+    bleFilterInputs[0].exactNameInput.value = null;
+    bleFilterInputs[0].servicesInput.value = '00001523-1212-efde-1523-785feabcd123';
 }
 
-function setGDXFOR() {
-    if (filtersBLE.length < 1) addFilterBLE();
-    const optionalServicesBLE = document.getElementById('optionalServicesBLE');
-    optionalServicesBLE.value = 'd91714ef-28b9-4f91-ba16-f0d9a604f112';
-    filterInputsBLE[0].namePrefixInput.value = 'GDX';
-    filterInputsBLE[0].exactNameInput.value = null;
-    filterInputsBLE[0].servicesInput.value = null;
+function bleSetGDXFOR() {
+    if (bleFilterInputs.length < 1) bleAddFilter();
+    const bleOptionalServices = document.getElementById('bleOptionalServices');
+    bleOptionalServices.value = 'd91714ef-28b9-4f91-ba16-f0d9a604f112';
+    bleFilterInputs[0].namePrefixInput.value = 'GDX';
+    bleFilterInputs[0].exactNameInput.value = null;
+    bleFilterInputs[0].servicesInput.value = null;
 }
 
 // micro:bit base64 encoding
@@ -280,30 +321,29 @@ function _encodeMessage(message) {
     return base64 = window.btoa(String.fromCharCode.apply(null, output2));
 }
 
-attachFunctionToButton('initBLE', initBLE);
-attachFunctionToButton('getVersionBLE', () => getVersion(self.Scratch.BLE));
-attachFunctionToButton('pingBLE', () => ping(self.Scratch.BLE));
-attachFunctionToButton('discoverBLE', discoverBLE);
-attachFunctionToButton('connectBLE', connectBLE);
-attachFunctionToButton('getServicesBLE', getServicesBLE);
+attachFunctionToButton('bleInit', () => self.Scratch.BLE = new ScratchBLE());
+attachFunctionToButton('bleClose', () => self.Scratch.BLE.dispose());
+attachFunctionToButton('bleGetVersion', () => getVersion(self.Scratch.BLE));
+attachFunctionToButton('blePing', () => ping(self.Scratch.BLE));
+attachFunctionToButton('bleDiscover', bleDiscover);
+attachFunctionToButton('bleConnect', bleConnect);
+attachFunctionToButton('bleGetServices', bleGetServices);
 
-attachFunctionToButton('setServiceMicroBit', setServiceMicroBit);
-attachFunctionToButton('readMicroBit', readMicroBit);
-attachFunctionToButton('writeMicroBit', writeMicroBit);
+attachFunctionToButton('bleSetServiceMicroBit', bleSetServiceMicroBit);
+attachFunctionToButton('bleReadMicroBit', bleReadMicroBit);
+attachFunctionToButton('bleWriteMicroBit', bleWriteMicroBit);
 
-attachFunctionToButton('setServiceWeDo2', setServiceWeDo2);
+attachFunctionToButton('bleSetServiceWeDo2', bleSetServiceWeDo2);
 
-attachFunctionToButton('setGDXFOR', setGDXFOR);
+attachFunctionToButton('bleSetGDXFOR', bleSetGDXFOR);
 
-attachFunctionToButton('addFilterBLE', addFilterBLE);
+attachFunctionToButton('bleAddFilter', bleAddFilter);
 
-addFilterBLE();
+/*
+ ******** Bluetooth Classic (BT / RFCOMM)
+ */
 
-function initBT() {
-    self.Scratch.BT = new ScratchBT();
-}
-
-function discoverBT() {
+function btDiscover() {
     Scratch.BT.requestDevice({
         majorDeviceClass: 8,
         minorDeviceClass: 1
@@ -317,9 +357,9 @@ function discoverBT() {
     );
 }
 
-function connectBT() {
+function btConnect() {
     Scratch.BT.connectDevice({
-        peripheralId: document.getElementById('peripheralId').value,
+        peripheralId: document.getElementById('btPeripheralId').value,
         pin: "1234"
     }).then(
         x => {
@@ -331,9 +371,12 @@ function connectBT() {
     );
 }
 
-function sendMessage(message) {
+function btSendMessage(message = null) {
+    if (message === null) {
+        message = document.getElementById('btMessageBody').value;
+    }
     Scratch.BT.sendMessage({
-        message: document.getElementById('messageBody').value,
+        message,
         encoding: 'base64'
     }).then(
         x => {
@@ -345,67 +388,15 @@ function sendMessage(message) {
     );
 }
 
-function beep() {
-    Scratch.BT.sendMessage({
-        message: 'DwAAAIAAAJQBgQKC6AOC6AM=',
-        encoding: 'base64'
-    }).then(
-        x => {
-            addLine(`sendMessage resolved to: ${stringify(x)}`);
-        },
-        e => {
-            addLine(`sendMessage rejected with: ${stringify(e)}`);
-        }
-    );
+function btBeep() {
+    btSendMessage('DwAAAIAAAJQBgQKC6AOC6AM=');
 }
 
-const follow = document.getElementById('follow');
-const log = document.getElementById('log');
-
-const closeButton = document.getElementById('closeBT');
-closeButton.onclick = () => {
-    self.Scratch.BT.dispose();
-};
-
-attachFunctionToButton('initBT', initBT);
-attachFunctionToButton('getVersionBT', () => getVersion(self.Scratch.BT));
-attachFunctionToButton('pingBT', () => ping(self.Scratch.BT));
-attachFunctionToButton('discoverBT', discoverBT);
-attachFunctionToButton('connectBT', connectBT);
-attachFunctionToButton('send', sendMessage);
-attachFunctionToButton('beep', beep);
-
-class LogDisplay {
-    constructor(logElement, lineCount = 256) {
-        this._logElement = logElement;
-        this._lineCount = lineCount;
-        this._lines = [];
-        this._dirty = false;
-        this._follow = true;
-    }
-
-    addLine(text) {
-        this._lines.push(text);
-        if (!this._dirty) {
-            this._dirty = true;
-            requestAnimationFrame(() => {
-                this._trim();
-                this._logElement.textContent = this._lines.join('\n');
-                if (this._follow) {
-                    this._logElement.scrollTop = this._logElement.scrollHeight;
-                }
-                this._dirty = false;
-            });
-        }
-    }
-
-    _trim() {
-        this._lines = this._lines.splice(-this._lineCount);
-    }
-}
-
-const logDisplay = new LogDisplay(log);
-function addLine(text) {
-    logDisplay.addLine(text);
-    logDisplay._follow = follow.checked;
-}
+attachFunctionToButton('btInit', () => self.Scratch.BT = new ScratchBT());
+attachFunctionToButton('btClose', () => self.Scratch.BT.dispose());
+attachFunctionToButton('btGetVersion', () => getVersion(self.Scratch.BT));
+attachFunctionToButton('btPing', () => ping(self.Scratch.BT));
+attachFunctionToButton('btDiscover', btDiscover);
+attachFunctionToButton('btConnect', btConnect);
+attachFunctionToButton('btSendMessage', btSendMessage);
+attachFunctionToButton('btBeep', btBeep);
