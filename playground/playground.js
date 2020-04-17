@@ -116,6 +116,17 @@ function ping(session) {
  ******** Bluetooth Low Energy (BLE)
  */
 
+function bleInit() {
+    const BLE = new ScratchBLE();
+    BLE.addEventListener(BLE.EVENT_didDiscoverPeripheral, event => {
+        console.dir(event);
+        if (event.detail && event.detail.peripheralId) {
+            document.getElementById('blePeripheralId').value = event.detail.peripheralId;
+        }
+    });
+    self.Scratch.BLE = BLE;
+}
+
 const bleFilterInputs = [];
 function bleAddFilter() {
     const filter = {};
@@ -146,7 +157,7 @@ function bleAddFilter() {
     fieldset.appendChild(requiredServicesDiv);
     fieldset.appendChild(manufacturerDataDiv);
 
-    filter.exactNameInput = name.input;
+    filter.nameInput = name.input;
     filter.namePrefixInput = namePrefix.input;
     filter.servicesInput = requiredServicesInput;
 
@@ -183,7 +194,7 @@ function bleDiscover() {
     const filters = [];
     for (const filterInputs of bleFilterInputs) {
         const filter = {};
-        if (filterInputs.exactNameInput.value) filter.name = filterInputs.exactNameInput.value;
+        if (filterInputs.nameInput.value) filter.name = filterInputs.nameInput.value;
         if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
         if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.value.trim().split(/\s+/);
         if (filter.services) filter.services = filter.services.map(s => parseInt(s));
@@ -232,7 +243,7 @@ function bleConnect() {
     // this should really be implicit in `requestDevice` but splitting it out helps with debugging
     Scratch.BLE.sendRemoteRequest(
         'connect',
-        {peripheralId: Scratch.BLE.discoveredPeripheralId}
+        {peripheralId: document.getElementById('blePeripheralId').value}
     ).then(
         x => {
             addLine(`connect resolved to: ${stringify(x)}`);
@@ -261,7 +272,7 @@ function bleSetServiceMicroBit() {
     const bleOptionalServices = document.getElementById('bleOptionalServices');
     bleOptionalServices.value = null;
     bleFilterInputs[0].namePrefixInput.value = null;
-    bleFilterInputs[0].exactNameInput.value = null;
+    bleFilterInputs[0].nameInput.value = null;
     bleFilterInputs[0].servicesInput.value = '0xf005';
 }
 
@@ -293,7 +304,7 @@ function bleSetServiceWeDo2() {
     const bleOptionalServices = document.getElementById('bleOptionalServices');
     bleOptionalServices.value = null;
     bleFilterInputs[0].namePrefixInput.value = null;
-    bleFilterInputs[0].exactNameInput.value = null;
+    bleFilterInputs[0].nameInput.value = null;
     bleFilterInputs[0].servicesInput.value = '00001523-1212-efde-1523-785feabcd123';
 }
 
@@ -302,7 +313,7 @@ function bleSetGDXFOR() {
     const bleOptionalServices = document.getElementById('bleOptionalServices');
     bleOptionalServices.value = 'd91714ef-28b9-4f91-ba16-f0d9a604f112';
     bleFilterInputs[0].namePrefixInput.value = 'GDX';
-    bleFilterInputs[0].exactNameInput.value = null;
+    bleFilterInputs[0].nameInput.value = null;
     bleFilterInputs[0].servicesInput.value = null;
 }
 
@@ -321,13 +332,14 @@ function _encodeMessage(message) {
     return base64 = window.btoa(String.fromCharCode.apply(null, output2));
 }
 
-attachFunctionToButton('bleInit', () => self.Scratch.BLE = new ScratchBLE());
+attachFunctionToButton('bleInit', bleInit);
 attachFunctionToButton('bleClose', () => self.Scratch.BLE.dispose());
 attachFunctionToButton('bleGetVersion', () => getVersion(self.Scratch.BLE));
 attachFunctionToButton('blePing', () => ping(self.Scratch.BLE));
 attachFunctionToButton('bleDiscover', bleDiscover);
 attachFunctionToButton('bleConnect', bleConnect);
 attachFunctionToButton('bleGetServices', bleGetServices);
+attachFunctionToButton('bleAddFilter', bleAddFilter);
 
 attachFunctionToButton('bleSetServiceMicroBit', bleSetServiceMicroBit);
 attachFunctionToButton('bleReadMicroBit', bleReadMicroBit);
@@ -337,17 +349,38 @@ attachFunctionToButton('bleSetServiceWeDo2', bleSetServiceWeDo2);
 
 attachFunctionToButton('bleSetGDXFOR', bleSetGDXFOR);
 
-attachFunctionToButton('bleAddFilter', bleAddFilter);
-
 /*
  ******** Bluetooth Classic (BT / RFCOMM)
  */
 
+function btInit() {
+    const BT = new ScratchBT();
+    BT.addEventListener(BT.EVENT_didDiscoverPeripheral, event => {
+        if (event.detail && event.detail.peripheralId) {
+            document.getElementById('btPeripheralId').value = event.detail.peripheralId;
+        }
+    });
+    self.Scratch.BT = BT;
+}
+
 function btDiscover() {
-    Scratch.BT.requestDevice({
-        majorDeviceClass: 8,
-        minorDeviceClass: 1
-    }).then(
+    const discoveryParameters = {};
+    const btFilter = btFilterInputs[0]; // we currently only support one filter
+
+    if (btFilter.majorDeviceClassInput.value !== null) {
+        discoveryParameters.majorDeviceClass = btFilter.majorDeviceClassInput.value;
+    }
+    if (btFilter.minorDeviceClassInput.value !== null) {
+        discoveryParameters.minorDeviceClass = btFilter.minorDeviceClassInput.value;
+    }
+    if (btFilter.nameInput.value) {
+        discoveryParameters.name = btFilter.nameInput.value;
+    }
+    if (btFilter.namePrefixInput.value) {
+        discoveryParameters.namePrefix = btFilter.namePrefixInput.value;
+    }
+
+    Scratch.BT.requestDevice(discoveryParameters).then(
         x => {
             addLine(`requestDevice resolved to: ${stringify(x)}`);
         },
@@ -388,15 +421,71 @@ function btSendMessage(message = null) {
     );
 }
 
-function btBeep() {
-    btSendMessage('DwAAAIAAAJQBgQKC6AOC6AM=');
+const btFilterInputs = [];
+function btAddFilter() {
+    const filter = {};
+    btFilterInputs.push(filter);
+
+    const fieldset = document.createElement('fieldset');
+
+    const legend = document.createElement('legend');
+    legend.appendChild(document.createTextNode('Filter ' + btFilterInputs.length));
+    fieldset.appendChild(legend);
+
+    const majorDeviceClass = makeFilterInput('Major device class: ', {placeholder: '"Toy" is 8'});
+    const minorDeviceClass = makeFilterInput('Minor device class: ', {placeholder: 'If "Toy", "Robot" is 1'});
+    const name = makeFilterInput('Discover peripherals with exact name: ', {placeholder: 'Name'});
+    const namePrefix = makeFilterInput('Discover peripherals with name prefix: ', {placeholder: 'Name Prefix'});
+
+    fieldset.appendChild(majorDeviceClass.div);
+    fieldset.appendChild(minorDeviceClass.div);
+    fieldset.appendChild(name.div);
+    fieldset.appendChild(namePrefix.div);
+
+    filter.majorDeviceClassInput = majorDeviceClass.input;
+    filter.minorDeviceClassInput = minorDeviceClass.input;
+    filter.nameInput = name.input;
+    filter.namePrefixInput = namePrefix.input;
+
+    const filtersParent = document.getElementById('btFilterInputs');
+    filtersParent.appendChild(fieldset);
 }
 
-attachFunctionToButton('btInit', () => self.Scratch.BT = new ScratchBT());
+// BT currently supports only one filter and might not ever support multiple
+// Just go ahead and add one so we don't need to have an "Add Filter" button
+btAddFilter();
+
+function btSetForSpikePrime() {
+    if (btFilterInputs.length < 1) btAddFilter();
+    document.getElementById('btPeripheralPIN').value = null;
+    btFilterInputs[0].majorDeviceClassInput.value = '8';
+    btFilterInputs[0].minorDeviceClassInput.value = '1';
+    btFilterInputs[0].nameInput.value = null;
+    btFilterInputs[0].namePrefixInput.value = 'LEGO Hub@';
+}
+
+function btSetForEV3() {
+    if (btFilterInputs.length < 1) btAddFilter();
+    document.getElementById('btPeripheralPIN').value = '1234';
+    btFilterInputs[0].majorDeviceClassInput.value = '8';
+    btFilterInputs[0].minorDeviceClassInput.value = '1';
+    btFilterInputs[0].nameInput.value = null;
+    btFilterInputs[0].namePrefixInput.value = null;
+}
+
+function btBeepEV3() {
+    document.getElementById('btMessageBody').value = 'DwAAAIAAAJQBgQKC6AOC6AM=';
+}
+
+attachFunctionToButton('btInit', btInit);
 attachFunctionToButton('btClose', () => self.Scratch.BT.dispose());
 attachFunctionToButton('btGetVersion', () => getVersion(self.Scratch.BT));
 attachFunctionToButton('btPing', () => ping(self.Scratch.BT));
 attachFunctionToButton('btDiscover', btDiscover);
 attachFunctionToButton('btConnect', btConnect);
 attachFunctionToButton('btSendMessage', btSendMessage);
-attachFunctionToButton('btBeep', btBeep);
+
+attachFunctionToButton('btSetForSpikePrime', btSetForSpikePrime);
+
+attachFunctionToButton('btSetForEV3', btSetForEV3);
+attachFunctionToButton('btBeepEV3', btBeepEV3);

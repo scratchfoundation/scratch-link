@@ -4,8 +4,9 @@
  * client.
  */
 
-class JSONRPC {
+class JSONRPC extends EventTarget {
     constructor() {
+        super();
         this._requestID = 0;
         this._openRequests = {};
     }
@@ -166,21 +167,22 @@ class JSONRPCWebSocket extends JSONRPC {
 class ScratchBLE extends JSONRPCWebSocket {
     constructor() {
         super(new WebSocket('wss://device-manager.scratch.mit.edu:20110/scratch/ble'));
-
-        this.discoveredPeripheralId = null;
     }
+
+    get EVENT_didDiscoverPeripheral() {return 'didDiscoverPeripheral';}
+    get EVENT_ping() {return 'ping';}
 
     requestDevice(options) {
         return this.sendRemoteRequest('discover', options);
     }
 
     didReceiveCall(method, params) {
+        this.dispatchEvent(new CustomEvent(method, {detail: params}));
         switch (method) {
-        case 'didDiscoverPeripheral':
+        case this.EVENT_didDiscoverPeripheral:
             addLine(`Peripheral discovered: ${stringify(params)}`);
-            this.discoveredPeripheralId = params['peripheralId'];
             break;
-        case 'ping':
+        case this.EVENT_ping:
             return 42;
         }
     }
@@ -213,6 +215,10 @@ class ScratchBT extends JSONRPCWebSocket {
         super(new WebSocket('wss://device-manager.scratch.mit.edu:20110/scratch/bt'));
     }
 
+    get EVENT_didDiscoverPeripheral() {return 'didDiscoverPeripheral';}
+    get EVENT_didReceiveMessage() {return 'didReceiveMessage';}
+    get EVENT_ping() {return 'ping';}
+
     requestDevice(options) {
         return this.sendRemoteRequest('discover', options);
     }
@@ -226,13 +232,16 @@ class ScratchBT extends JSONRPCWebSocket {
     }
 
     didReceiveCall(method, params) {
+        this.dispatchEvent(new CustomEvent(method, {detail: params}));
         switch (method) {
-            case 'didDiscoverPeripheral':
+            case this.EVENT_didDiscoverPeripheral:
                 addLine(`Peripheral discovered: ${stringify(params)}`);
                 break;
-            case 'didReceiveMessage':
+            case this.EVENT_didReceiveMessage:
                 addLine(`Message received from peripheral: ${stringify(params)}`);
                 break;
+            case this.EVENT_ping:
+                return 42;
             default:
                 return 'nah';
         }

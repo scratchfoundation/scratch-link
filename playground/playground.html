@@ -22,37 +22,52 @@
         </div>
     </fieldset>
     <fieldset>
-        <legend>BT / EV3</legend>
+        <legend>BT / RFCOMM</legend>
         <div>
             <button id="btInit">Connect to app</button>
+            <button id="btDiscover">Discover peripherals</button>
             <button id="btClose">Disconnect</button>
             <button id="btGetVersion">Get Version</button>
             <button id="btPing">Request ping</button>
         </div>
         <div>
-            <button id="btDiscover">Discover peripherals</button>
+            <button id="btConnect">Connect to peripheral</button>
+            <input id="btPeripheralId" type="text" placeholder="Peripheral id">
+            <input id="btPeripheralPIN" type="text" placeholder="PIN">
         </div>
         <div>
-            <input id="btPeripheralId" value="0016533d0504" type="text" placeholder="Peripheral id">
-            <button id="btConnect">Make friends</button>
+            <button id="btSendMessage">Send Message</button>
         </div>
         <div>
-            <input id="btMessageBody" style="width:20em;" value="DQAAAAAEAJkdAAAAAgFg" type="text" placeholder="data">
-            <button id="btSendMessage">Converse!</button>
-            <button id="btBeep">Yell</button>
+            <textarea id="btMessageBody" style="width:20em;" type="text" placeholder="Base64 message"></textarea>
         </div>
+        <fieldset id="btFilterInputs">
+            <legend>Discovery filters</legend>
+        </fieldset>
+        <fieldset>
+            <legend>SPIKE Prime</legend>
+            <button id="btSetForSpikePrime">Set discovery parameters</button>
+        </fieldset>
+        <fieldset>
+            <legend>EV3</legend>
+            <button id="btSetForEV3">Set discovery parameters</button>
+            <button id="btBeepEV3">Set message: beep</button>
+        </fieldset>
     </fieldset>
     <fieldset>
         <legend>BLE</legend>
         <div>
             <button id="bleInit">Connect to app</button>
+            <button id="bleDiscover">Discover peripherals</button>
             <button id="bleClose">Disconnect</button>
             <button id="bleGetVersion">Get Version</button>
             <button id="blePing">Request ping</button>
         </div>
         <div>
-            <button id="bleDiscover">Discover peripherals</button>
-            <button id="bleConnect">Connect to discovered peripheral</button>
+            <button id="bleConnect">Connect to peripheral</button>
+            <input id="blePeripheralId" type="text" placeholder="Peripheral id">
+        </div>
+        <div>
             <button id="bleGetServices">Get services of connected peripheral</button>
         </div>
         <fieldset>
