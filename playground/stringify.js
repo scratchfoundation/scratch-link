@@ -7,8 +7,8 @@ function getInterestingPropNames (o) {
     const props = [];
     for (const prop in o) {
         // if (!o.hasOwnProperty(prop)) continue;
-        if (typeof o[prop] === 'function') continue;
-        if (o.constructor.hasOwnProperty(prop)) continue;
+        if (typeof o[prop] === 'function') continue; // hide methods even if overridden
+        if (o[prop] === o.constructor[prop]) continue; // hide static properties unless overridden
 
         props.push(prop);
     }

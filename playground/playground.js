@@ -4,6 +4,17 @@ self.Scratch = self.Scratch || {};
  ******** common helpers
  */
 
+function attachFunctionToButton(buttonId, func) {
+    const button = document.getElementById(buttonId);
+    button.onclick = () => {
+        try {
+            func();
+        } catch (e) {
+            addLine(`Button ${buttonId} caught exception: ${stringify(e)})`);
+        }
+    }
+}
+
 class LogDisplay {
     constructor(logElement, lineCount = 256) {
         this._logElement = logElement;
@@ -11,14 +22,24 @@ class LogDisplay {
         this._lines = [];
         this._dirty = false;
         this._follow = true;
+        this._setDirty();
     }
 
     addLine(text) {
         this._lines.push(text);
+        this._setDirty();
+    }
+
+    clear() {
+        this._lines.length = 0;
+        this._setDirty();
+    }
+
+    _setDirty() {
         if (!this._dirty) {
             this._dirty = true;
             requestAnimationFrame(() => {
-                this._trim();
+                this._lines = this._lines.splice(-this._lineCount);
                 this._logElement.textContent = this._lines.join('\n');
                 if (this._follow) {
                     this._logElement.scrollTop = this._logElement.scrollHeight;
@@ -26,10 +47,6 @@ class LogDisplay {
                 this._dirty = false;
             });
         }
-    }
-
-    _trim() {
-        this._lines = this._lines.splice(-this._lineCount);
     }
 }
 
@@ -41,16 +58,7 @@ function addLine(text) {
     logDisplay._follow = follow.checked;
 }
 
-function attachFunctionToButton(buttonId, func) {
-    const button = document.getElementById(buttonId);
-    button.onclick = () => {
-        try {
-            func();
-        } catch (e) {
-            addLine(`Button ${buttonId} caught exception: ${stringify(e)})`);
-        }
-    }
-}
+attachFunctionToButton('logClear', () => logDisplay.clear());
 
 /**
  * Create a <div> element containing an arbitrary child element and a label for it.
