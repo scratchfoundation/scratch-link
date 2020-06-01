@@ -3,7 +3,7 @@ import CoreBluetooth
 struct GATTBlockListStatus: OptionSet {
     let rawValue: Int
 
-    static let Include = GATTBlockListStatus(rawValue: 0)
+    static let Include: GATTBlockListStatus = []
     static let ExcludeReads = GATTBlockListStatus(rawValue: 1 << 0)
     static let ExcludeWrites = GATTBlockListStatus(rawValue: 1 << 1)
     static let Exclude: GATTBlockListStatus = [.ExcludeReads, .ExcludeWrites]
@@ -83,7 +83,7 @@ class GATTHelpers {
                 uint8(alias & 0xff),
                 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb
         ]
-        return CBUUID(data: Data(bytes: uuidBytes))
+        return CBUUID(data: Data(uuidBytes))
     }
 
     /// Check if a service, characteristic, or descriptor is blocked.

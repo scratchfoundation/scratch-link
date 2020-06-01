@@ -95,7 +95,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         if let button = statusBarItem.button {
             button.imageScaling = .scaleProportionallyUpOrDown
             if let statusBarIcon = NSImage(
-                named: NSImage.Name("iconTemplate")) ?? NSImage(named: NSImage.Name.caution) {
+                named: NSImage.Name("iconTemplate")) ?? NSImage(named: NSImage.cautionName) {
                 button.image = statusBarIcon
             }
         }

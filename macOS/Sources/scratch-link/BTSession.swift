@@ -104,7 +104,7 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
                 // run loop specifically for this device: necessary to get delegate callbacks
                 var nextCheck = Date()
                 while (self.connectedChannel?.isOpen() ?? false) &&
-                              RunLoop.current.run(mode: .defaultRunLoopMode, before: nextCheck) {
+                              RunLoop.current.run(mode: .default, before: nextCheck) {
                     nextCheck.addTimeInterval(0.5)
                 }
                 print("RFCOMM run loop exited")
