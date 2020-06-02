@@ -132,8 +132,8 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
         let maxMessageSize = Int(mtu)
         if message.count <= maxMessageSize {
             DispatchQueue.global(qos: .userInitiated).async {
-                let messageResult = data.withUnsafeMutableBytes { bytes in
-                    return connectedChannel.writeSync(bytes, length: UInt16(message.count))
+                let messageResult = data.withUnsafeMutableBytes { (bytes: UnsafeMutableRawBufferPointer) in
+                    return connectedChannel.writeSync(bytes.baseAddress, length: UInt16(bytes.count))
                 }
                 if messageResult != kIOReturnSuccess {
                     completion(nil, JSONRPCError.serverError(code: -32500, data: "Failed to send message"))
@@ -171,8 +171,8 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!) {
         if(device.addressString.hasPrefix(self.ouiPrefix)) {
             let peripheralData: [String: Any] = [
-                "peripheralId": device.addressString,
-                "name": device.name,
+                "peripheralId": device.addressString as Any,
+                "name": device.name as Any,
 
                 // BT on Mac can't get a real RSSI without connecting (device.rawRSSI() is +127 unless connected)
                 "rssi": RSSI.unsupported.rawValue as Any

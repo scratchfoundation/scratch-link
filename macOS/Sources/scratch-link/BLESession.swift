@@ -35,14 +35,15 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
 
     private var currentState: BluetoothState {
         switch central.state {
-        case .unknown: return .unknown
-        case .resetting: return .unknown // probably the OS Bluetooth stack crashed and will "power on" again soon
-
         case .unsupported: return .unavailable
         case .unauthorized: return .unavailable
         case .poweredOff: return .unavailable
 
         case .poweredOn: return .available
+
+        case .resetting: return .unknown // probably the OS Bluetooth stack crashed and will "power on" again soon
+        case .unknown: return .unknown
+        @unknown default: return .unknown
         }
     }
 
@@ -63,8 +64,6 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         // debugging
         switch central.state {
-        case .unknown:
-            print("Bluetooth transitioned to unknown state")
         case .resetting:
             print("Bluetooth is resetting")
         case .unsupported:
@@ -75,6 +74,9 @@ class BLESession: Session, SwiftCBCentralManagerDelegate, SwiftCBPeripheralDeleg
             print("Bluetooth is now powered off")
         case .poweredOn:
             print("Bluetooth is now powered on")
+        case .unknown: fallthrough
+        @unknown default:
+            print("Bluetooth transitioned to unknown state")
         }
 
         // actual work
@@ -597,21 +599,21 @@ struct BLEScanFilter {
             self.requiredServices = nil
         }
 
-        if let manufacturerData = json["manufacturerData"] as? [String:[String:[UInt8]]] {
+        if let manufacturerData = json["manufacturerData"] as? [String: Any] {
             // Javascript sends over object-indexes as strings, so it's necessary to cast to the proper datatypes
-            var dict = [UInt16:[String:[UInt8]]]()
+            var dict = [UInt16: [String: [UInt8]]]()
             for (k, v) in manufacturerData {
-                // Make sure that manufacturerData is [UInt16:[String:[UInt8]]]
-                guard let key = UInt16(k), var values = v as? [String:[UInt8]] else {
+                // Make sure that manufacturerData is [UInt16: [String: [UInt8]]]
+                guard let key = UInt16(k), var values = v as? [String: [UInt8]] else {
                     throw JSONRPCError.invalidParams(data: "could not parse manufacturer data")
                 }
 
-                guard let dataPrefix = values["dataPrefix"] as? [UInt8] else {
-                    throw JSONRPCError.invalidParams(data:"no data prefix or invalid data prefix specified")
+                guard let dataPrefix = values["dataPrefix"] else {
+                    throw JSONRPCError.invalidParams(data: "no data prefix specified")
                 }
 
                 // If no mask is supplied, create a mask matching the length of dataPrefix
-                let mask = (values["mask"] as? [UInt8] ?? [UInt8](Array(repeating:0xFF, count:dataPrefix.count)))
+                let mask = (values["mask"] ?? [UInt8](Array(repeating: 0xFF, count: dataPrefix.count)))
                 values["mask"] = mask
 
                 if dataPrefix.count != mask.count {
@@ -663,7 +665,8 @@ struct BLEScanFilter {
             // if so, fix this code to handle that
             for i in manufacturer {
                 // check if a prefix and mask have been supplied by the extension and that their lengths match
-                guard let id = i.key as? UInt16, let prefix = i.value["dataPrefix"], let mask = i.value["mask"] else {
+                let id = i.key
+                guard let prefix = i.value["dataPrefix"], let mask = i.value["mask"] else {
                     return false
                 }
                 // create an array that is the result of the prefix and mask AND'ed
