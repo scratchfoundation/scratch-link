@@ -15,7 +15,7 @@ set -e
 
 ######
 
-mkdir -p out
+mkdir -p int out
 
 # Code to split a PEM, in case a future version of the certificate goes back to PEM format:
 #if [ "`uname`" == "Darwin" ]; then
@@ -37,15 +37,16 @@ openssl pkcs12 \
 	-in scratch-device-manager.cer \
 	-name "Scratch Link & Scratch Device Manager" \
 	-passout pass:Scratch \
-	-export -out out/scratch-device-manager.pfx
+	-export -out int/scratch-device-manager.pfx
+
+openssl enc -aes-256-cbc -pass pass:Scratch -in int/scratch-device-manager.pfx -out out/scratch-device-manager.pfx.enc
 
 # Perfect on Mac wants a single PEM containing the certificate and key along with the whole CA chain
 # Using grep this way enforces newlines between files
 grep -h ^ {scratch-device-manager,intermediate,certificate-authority}.cer scratch-device-manager.key \
 	| tr -d '\r' \
-	> out/scratch-device-manager.pem
+	> int/scratch-device-manager.pem
 
-# Copy the PFX for the Windows build (the Mac Makefile "pulls" its certificates)
-cp -v out/scratch-device-manager.pfx ../Windows/scratch-link/Resources/
+openssl enc -aes-256-cbc -pass pass:Scratch -in int/scratch-device-manager.pem -out out/scratch-device-manager.pem.enc
 
 ls -l out/
