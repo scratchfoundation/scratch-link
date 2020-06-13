@@ -15,6 +15,20 @@ set -e
 
 ######
 
+# https://xkcd.com/221/
+# see also roll.sh
+IV="B5E41DCC5B4D6FCD1C1E028430B921E6"
+KEY="D897EB08E0E9DE8F0B77AD423502AFA51372F8DAB0CBBE650C1A1CBD5B1090D9"
+
+# $1: input file
+# $2: output file
+function encryptFile () {
+	# the '-p' causes OpenSSL to output the key & iv
+	# the 'sed' command reformats them for easier use in scratch-link code
+	openssl enc -nosalt -p -aes-256-cbc -K "$KEY" -iv "$IV" -in "$1" -out "$2" | \
+		sed "s/\([0-9A-Fa-f][0-9A-Fa-f]\)/0x\1,/g"
+}
+
 mkdir -p int out
 
 # Code to split a PEM, in case a future version of the certificate goes back to PEM format:
@@ -39,7 +53,7 @@ openssl pkcs12 \
 	-passout pass:Scratch \
 	-export -out int/scratch-device-manager.pfx
 
-openssl enc -aes-256-cbc -pass pass:Scratch -in int/scratch-device-manager.pfx -out out/scratch-device-manager.pfx.enc
+encryptFile int/scratch-device-manager.pfx out/scratch-device-manager.pfx.enc
 
 # Perfect on Mac wants a single PEM containing the certificate and key along with the whole CA chain
 # Using grep this way enforces newlines between files
@@ -47,6 +61,6 @@ grep -h ^ {scratch-device-manager,intermediate,certificate-authority}.cer scratc
 	| tr -d '\r' \
 	> int/scratch-device-manager.pem
 
-openssl enc -aes-256-cbc -pass pass:Scratch -in int/scratch-device-manager.pem -out out/scratch-device-manager.pem.enc
+encryptFile int/scratch-device-manager.pem out/scratch-device-manager.pem.enc
 
 ls -l out/
