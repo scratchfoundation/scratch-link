@@ -69,9 +69,11 @@ dist/tmp.devid/app/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
 	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify --verbose
 
+# TODO: remove "-Xswiftc -Xfrontend -Xswiftc -validate-tbd-against-ir=none"
+# once Perfect-Crypto builds in debug without it
 $(BIN_FILE): $(SWIFT_SOURCES)
 	@echo "Build Version: $(APP_VERSION) $(VERSION_DETAIL)"
-	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xlinker -rpath -Xlinker '@executable_path/../Frameworks'
+	swift build --configuration $(CONFIG) --no-static-swift-stdlib -Xlinker -rpath -Xlinker '@executable_path/../Frameworks' -Xswiftc -Xfrontend -Xswiftc -validate-tbd-against-ir=none
 
 xcodeproj:
 	swift package generate-xcodeproj
@@ -88,7 +90,7 @@ $(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist dist/
 	plutil -replace "CFBundleShortVersionString" -string "$(APP_VERSION)" "$@/Contents/Info.plist"
 	plutil -replace "ScratchVersionDetail" -string "$(VERSION_DETAIL)" "$@/Contents/Info.plist"
 	mkdir -p "$@/Contents/Resources"
-	cp -rv ../Certificates/out/scratch-device-manager.pem "$@/Contents/Resources/"
+	cp -rv ../Certificates/out/scratch-device-manager.pem.enc "$@/Contents/Resources/"
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "dist/Scratch Link.iconset"
 	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "dist/iconTemplate.iconset"
 
