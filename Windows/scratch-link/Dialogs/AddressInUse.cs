@@ -26,16 +26,32 @@ namespace scratch_link.Dialogs
             );
             label1.Text = textContent;
 
-            textContent += "\n\nDetails:\n PID \tProcess Name\n";
+            textContent += "\n\nDetails:\n";
 
             var pid = Fiddler.Winsock.MapLocalPortToProcessId(App.SDMPort);
             if (pid > 0)
             {
                 var process = Process.GetProcessById(pid);
-                var item = new ListViewItem(new [] { process.ProcessName, pid.ToString() });
-                listView1.Items.Add(item);
-                textContent += pid.ToString() + '\t' + process.ProcessName + '\n';
+                AddProcessPropertyValue("Process Name", process.ProcessName);
+                AddProcessPropertyValue("Window Title", process.MainWindowTitle);
+                AddProcessPropertyValue("File Name", process.MainModule.FileName);
+                AddProcessPropertyValue("Process ID", pid.ToString());
+                AddProcessPropertyValue("TCP Port", App.SDMPort.ToString());
+                labelNoResults.Visible = false;
+                listView1.Visible = true;
             }
+            else
+            {
+                textContent += labelNoResults.Text + '\n';
+                labelNoResults.Visible = true;
+                listView1.Visible = false;
+            }
+        }
+
+        private void AddProcessPropertyValue(string property, string value)
+        {
+            listView1.Items.Add(new ListViewItem(new[] { property, value }));
+            textContent += property + ":\t" + value + "\n";
         }
 
         private void CloseButton_Click(object sender, EventArgs e)
