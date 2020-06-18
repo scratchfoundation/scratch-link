@@ -16,8 +16,18 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install Homebrew packages
+          command: brew install pngcrush
+      - restore_cache:
+          key: spm-cache-{{ checksum "macOS/Package.resolved" }}
+      - run:
           name: make dist
           command: make --directory=macOS dist
+      - save_cache:
+          key: spm-cache-{{ checksum "macOS/Package.resolved" }}
+          paths:
+            - macOS/.build/repositories
+            - macOS/.build/checkouts
       - store_artifacts:
           path: macOS/dist/scratch-link-*.pkg
       - store_artifacts:
