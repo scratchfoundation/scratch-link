@@ -32,7 +32,7 @@ namespace scratch_link.Dialogs
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panel1 = new System.Windows.Forms.Panel();
             this.CloseButton = new System.Windows.Forms.Button();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.detailsBox = new System.Windows.Forms.GroupBox();
             this.listView1 = new System.Windows.Forms.ListView();
             this.propertyColumn = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.valueColumn = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -40,7 +40,7 @@ namespace scratch_link.Dialogs
             this.CopyButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel1.SuspendLayout();
-            this.groupBox1.SuspendLayout();
+            this.detailsBox.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
@@ -91,20 +91,20 @@ namespace scratch_link.Dialogs
             this.CloseButton.UseVisualStyleBackColor = true;
             this.CloseButton.Click += new System.EventHandler(this.CloseButton_Click);
             // 
-            // groupBox1
+            // detailsBox
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.detailsBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.groupBox1.Controls.Add(this.listView1);
-            this.groupBox1.Controls.Add(this.labelNoResults);
-            this.groupBox1.Location = new System.Drawing.Point(12, 111);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(386, 116);
-            this.groupBox1.TabIndex = 4;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Details";
+            this.detailsBox.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.detailsBox.Controls.Add(this.listView1);
+            this.detailsBox.Controls.Add(this.labelNoResults);
+            this.detailsBox.Location = new System.Drawing.Point(12, 111);
+            this.detailsBox.Name = "detailsBox";
+            this.detailsBox.Size = new System.Drawing.Size(386, 116);
+            this.detailsBox.TabIndex = 4;
+            this.detailsBox.TabStop = false;
+            this.detailsBox.Text = "Details about the conflicting program";
             // 
             // listView1
             // 
@@ -168,7 +168,7 @@ namespace scratch_link.Dialogs
             this.CancelButton = this.CloseButton;
             this.ClientSize = new System.Drawing.Size(410, 268);
             this.Controls.Add(this.CopyButton);
-            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.detailsBox);
             this.Controls.Add(this.CloseButton);
             this.Controls.Add(this.panel1);
             this.MaximizeBox = false;
@@ -180,7 +180,7 @@ namespace scratch_link.Dialogs
             this.TopMost = true;
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.panel1.ResumeLayout(false);
-            this.groupBox1.ResumeLayout(false);
+            this.detailsBox.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -192,7 +192,7 @@ namespace scratch_link.Dialogs
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Button CloseButton;
-        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.GroupBox detailsBox;
         private System.Windows.Forms.ListView listView1;
         private System.Windows.Forms.ColumnHeader propertyColumn;
         private System.Windows.Forms.ColumnHeader valueColumn;

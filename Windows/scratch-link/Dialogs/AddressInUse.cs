@@ -26,7 +26,8 @@ namespace scratch_link.Dialogs
             );
             label1.Text = textContent;
 
-            textContent += "\n\nDetails:\n";
+            // detailsBox.Text is the label for the group box around the details
+            textContent += "\n\n" + detailsBox.Text + ":\n";
 
             var pid = Fiddler.Winsock.MapLocalPortToProcessId(App.SDMPort);
             if (pid > 0)
