@@ -20,6 +20,20 @@ jobs:
           command: brew install pngcrush
       - restore_cache:
           key: spm-cache-{{ checksum "macOS/Package.resolved" }}
+      - unless:
+          condition:
+            or:
+              - equal: [ master, << pipeline.git.branch >> ]
+              - equal: [ develop, << pipeline.git.branch >> ]
+          steps:
+              - run:
+                  name: Generate mock certificates
+                  working_directory: ./Certificates
+                  command: ./mock-certificates.sh
+      - run:
+          name: Convert certificates
+          working_directory: ./Certificates
+          command: ./convert-certificates.sh
       - run:
           name: make dist
           command: make --directory=macOS dist
