@@ -36,9 +36,15 @@ jobs:
           paths:
             - Windows/packages/
           key: nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
-      - run:
-          name: Import code-signing certificate
-          command: ./Windows/Import-WIN_CSC.ps1
+      - when:
+          condition:
+            or:
+              - equal: [ master, << pipeline.git.branch >> ]
+              - equal: [ develop, << pipeline.git.branch >> ]
+          steps:
+            - run:
+              name: Import code-signing certificate
+              command: ./Windows/Import-WIN_CSC.ps1
       - run:
           name: Build using MSBuild
           command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
