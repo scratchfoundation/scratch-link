@@ -1,8 +1,8 @@
 version: 2.1
 workflows:
-#  macos:
-#    jobs:
-#      - build_for_mac
+  macos:
+    jobs:
+      - build_for_mac
   windows:
     jobs:
       - build_for_windows:
@@ -10,18 +10,18 @@ workflows:
 orbs:
   windows: circleci/windows@2.2.0
 jobs:
-#  build_for_mac:
-#    macos:
-#      xcode: "10.1.0"
-#    steps:
-#      - checkout
-#      - run:
-#          name: make dist
-#          command: make --directory=macOS dist
-#      - store_artifacts:
-#          path: macOS/dist/scratch-link-*.pkg
-#      - store_artifacts:
-#          path: macOS/dist/mas-scratch-link-*.pkg
+  build_for_mac:
+    macos:
+      xcode: "11.3.1"
+    steps:
+      - checkout
+      - run:
+          name: make dist
+          command: make --directory=macOS dist
+      - store_artifacts:
+          path: macOS/dist/scratch-link-*.pkg
+      - store_artifacts:
+          path: macOS/dist/mas-scratch-link-*.pkg
   build_for_windows:
     executor: windows/default
     steps:
