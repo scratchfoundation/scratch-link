@@ -14,7 +14,7 @@ PACKAGE_FILE="scratch-link-$(APP_VERSION).pkg"
 ZIP_FILE="scratch-link-$(APP_VERSION).zip"
 SWIFT_SOURCES=$(wildcard Sources/scratch-link/*.swift)
 
-.PHONY: all bin clean dist dist-mas dist-devid distclean lint uninstall xcodeproj zip
+.PHONY: all bin clean dist dist-mas dist-devid distclean lint resolve-dependencies uninstall xcodeproj zip
 
 all: $(APP_DEST)
 
@@ -46,6 +46,9 @@ dist/tmp.mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 
 # For "Developer ID" distribution outside the Mac App Store
 dist-devid: dist/$(PACKAGE_FILE)
+
+resolve-dependencies:
+	swift package resolve
 
 zip: dist/$(ZIP_FILE)
 

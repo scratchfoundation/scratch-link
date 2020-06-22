@@ -55,7 +55,15 @@ jobs:
           key: homebrew-cache-v2
       - restore_cache:
           name: Restore Swift dependency cache
-          key: spm-cache-{{ checksum "macOS/Package.resolved" }}
+          key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
+      - run:
+          name: Resolve Swift dependencies
+          command: make --directory=macOS resolve-dependencies
+      - save_cache:
+          name: Save Swift dependency cache
+          key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
+          paths:
+            - macOS/.build
       - run:
           name: Build the application
           command: make --directory=macOS zip
@@ -64,12 +72,6 @@ jobs:
           command: |
             mkdir -p macOS/Artifacts/
             mv -v macOS/dist/scratch-link-*.zip macOS/Artifacts/
-      - save_cache:
-          name: Save Swift dependency cache
-          key: spm-cache-{{ checksum "macOS/Package.resolved" }}
-          paths:
-            - macOS/.build/repositories
-            - macOS/.build/checkouts
       - when:
           condition:
             *should_sign
