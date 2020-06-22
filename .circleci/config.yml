@@ -3,11 +3,11 @@ workflows:
   macos:
     jobs:
       - build_for_mac:
-          context: scratch-device-manager
+          context: scratch-desktop-and-link
   windows:
     jobs:
       - build_for_windows:
-          context: code-sign-generic
+          context: scratch-desktop-and-link
 orbs:
   windows: circleci/windows@2.2.0
 aliases:
@@ -27,9 +27,23 @@ jobs:
             *should_sign
           steps:
               - run:
-                  name: Write real SSL certificate files
+                  name: Import from CI context
                   working_directory: ./Certificates
                   command: ./import-certificates.sh
+              - run:
+                  name: Set up code-signing keychain
+                  # DO NOT RUN THIS on your own computer unless you really know what you're doing!
+                  command: |
+                    security -v create-keychain -p circleci circleci.keychain
+                    security -v default-keychain -s circleci.keychain
+                    security -v import Certificates/code-to-learn-macos.p12 -k circleci.keychain -P "" -T /usr/bin/codesign -T /usr/bin/productbuild
+                    security -v unlock-keychain -p circleci circleci.keychain
+                    # "set-key-partition-list" prints extensive not-so-useful output and adding "-q" (even multiple times) doesn't suppress it.
+                    # The "grep -v" at the end of this line suppresses all of that so any errors or warnings might be more visible.
+                    security -v set-key-partition-list -S apple-tool:,apple:,codesign: -s -k circleci circleci.keychain | grep -v '^    0x'
+                    security -v set-keychain-settings -lut 600 circleci.keychain
+                    security -v find-identity circleci.keychain
+                    rm Certificates/code-to-learn-macos.p12
       - unless:
           condition:
             *should_sign
@@ -65,6 +79,9 @@ jobs:
           key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
           paths:
             - macOS/.build
+      - run:
+          name: Check git status
+          command: git status
       - run:
           name: Build the application
           command: make --directory=macOS zip
