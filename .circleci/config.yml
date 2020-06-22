@@ -2,7 +2,8 @@ version: 2.1
 workflows:
   macos:
     jobs:
-      - build_for_mac
+      - build_for_mac:
+          context: scratch-device-manager
   windows:
     jobs:
       - build_for_windows:
@@ -26,7 +27,7 @@ jobs:
             *should_sign
           steps:
               - run:
-                  name: Write real certificate files
+                  name: Write real SSL certificate files
                   working_directory: ./Certificates
                   command: ./import-certificates.sh
       - unless:
@@ -34,11 +35,11 @@ jobs:
             *should_sign
           steps:
               - run:
-                  name: Generate mock certificates
+                  name: Generate mock SSL certificates
                   working_directory: ./Certificates
                   command: ./mock-certificates.sh
       - run:
-          name: Convert certificates
+          name: Convert SSL certificates
           working_directory: ./Certificates
           command: ./convert-certificates.sh
       - restore_cache:
