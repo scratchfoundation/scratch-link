@@ -11,9 +11,10 @@ BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 BIN_FILE=$(BIN_PATH)/scratch-link
 APP_DEST=dist/$(APP_BUNDLE)
 PACKAGE_FILE="scratch-link-$(APP_VERSION).pkg"
+ZIP_FILE="scratch-link-$(APP_VERSION).zip"
 SWIFT_SOURCES=$(wildcard Sources/scratch-link/*.swift)
 
-.PHONY: all bin clean dist dist-mas dist-devid distclean lint uninstall xcodeproj
+.PHONY: all bin clean dist dist-mas dist-devid distclean lint uninstall xcodeproj zip
 
 all: $(APP_DEST)
 
@@ -46,6 +47,8 @@ dist/tmp.mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 # For "Developer ID" distribution outside the Mac App Store
 dist-devid: dist/$(PACKAGE_FILE)
 
+zip: dist/$(ZIP_FILE)
+
 dist/$(PACKAGE_FILE): dist/tmp.devid/app/$(APP_BUNDLE)
 	pkgbuild --analyze --root dist/tmp.devid/app/ dist/tmp.devid/components.plist
 	plutil -replace "BundleIsRelocatable" -bool "NO" dist/tmp.devid/components.plist
@@ -69,6 +72,9 @@ $(BIN_FILE): $(SWIFT_SOURCES)
 
 xcodeproj:
 	swift package generate-xcodeproj
+
+dist/$(ZIP_FILE): dist/$(APP_BUNDLE)
+	cd dist && zip -v9r $(ZIP_FILE) $(APP_BUNDLE)
 
 $(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist dist/Scratch\ Link.iconset dist/iconTemplate.iconset
 	rm -rf "$@"

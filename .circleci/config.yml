@@ -9,22 +9,29 @@ workflows:
           context: code-sign-generic
 orbs:
   windows: circleci/windows@2.2.0
+aliases:
+  - &should_sign
+    or:
+      - equal: [ develop, << pipeline.git.branch >> ]
+      - equal: [ main, << pipeline.git.branch >> ]
+      - equal: [ master, << pipeline.git.branch >> ]
 jobs:
   build_for_mac:
     macos:
       xcode: "11.3.1"
     steps:
       - checkout
-      - run:
-          name: Install Homebrew packages
-          command: brew install pngcrush
-      - restore_cache:
-          key: spm-cache-{{ checksum "macOS/Package.resolved" }}
+      - when:
+          condition:
+            *should_sign
+          steps:
+              - run:
+                  name: Write real certificate files
+                  working_directory: ./Certificates
+                  command: ./import-certificates.sh
       - unless:
           condition:
-            or:
-              - equal: [ master, << pipeline.git.branch >> ]
-              - equal: [ develop, << pipeline.git.branch >> ]
+            *should_sign
           steps:
               - run:
                   name: Generate mock certificates
@@ -35,17 +42,31 @@ jobs:
           working_directory: ./Certificates
           command: ./convert-certificates.sh
       - run:
-          name: make dist
-          command: make --directory=macOS dist
+          name: Install Homebrew packages
+          command: brew install pngcrush
+      - restore_cache:
+          key: spm-cache-{{ checksum "macOS/Package.resolved" }}
+      - run:
+          name: Build the application
+          command: make --directory=macOS zip
       - save_cache:
           key: spm-cache-{{ checksum "macOS/Package.resolved" }}
           paths:
             - macOS/.build/repositories
             - macOS/.build/checkouts
       - store_artifacts:
-          path: macOS/dist/scratch-link-*.pkg
-      - store_artifacts:
-          path: macOS/dist/mas-scratch-link-*.pkg
+          path: macOS/dist/scratch-link-*.zip
+      - when:
+          condition:
+            *should_sign
+          steps:
+              - run:
+                  name: Sign the application
+                  command: make --directory=macOS dist
+              - store_artifacts:
+                  path: macOS/dist/scratch-link-*.pkg
+              - store_artifacts:
+                  path: macOS/dist/mas-scratch-link-*.pkg
   build_for_windows:
     executor: windows/default
     steps:
@@ -62,13 +83,11 @@ jobs:
           key: nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
       - when:
           condition:
-            or:
-              - equal: [ master, << pipeline.git.branch >> ]
-              - equal: [ develop, << pipeline.git.branch >> ]
+            *should_sign
           steps:
             - run:
-              name: Import code-signing certificate
-              command: ./Windows/Import-WIN_CSC.ps1
+                name: Import code-signing certificate
+                command: ./Windows/Import-WIN_CSC.ps1
       - run:
           name: Build using MSBuild
           command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
