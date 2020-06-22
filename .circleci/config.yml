@@ -41,10 +41,20 @@ jobs:
           name: Convert certificates
           working_directory: ./Certificates
           command: ./convert-certificates.sh
+      - restore_cache:
+          name: Restore Homebrew cache
+          key: homebrew-cache-v2
       - run:
           name: Install Homebrew packages
           command: brew install pngcrush
+      - save_cache:
+          name: Save Homebrew cache
+          paths:
+            - ~/Library/Caches/Homebrew
+            - /usr/local/Homebrew
+          key: homebrew-cache-v2
       - restore_cache:
+          name: Restore Swift dependency cache
           key: spm-cache-{{ checksum "macOS/Package.resolved" }}
       - run:
           name: Build the application
@@ -55,6 +65,7 @@ jobs:
             mkdir -p macOS/Artifacts/
             mv -v macOS/dist/scratch-link-*.zip macOS/Artifacts/
       - save_cache:
+          name: Save Swift dependency cache
           key: spm-cache-{{ checksum "macOS/Package.resolved" }}
           paths:
             - macOS/.build/repositories
