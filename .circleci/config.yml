@@ -49,13 +49,16 @@ jobs:
       - run:
           name: Build the application
           command: make --directory=macOS zip
+      - run:
+          name: Move ZIP to Artifacts directory
+          command: |
+            mkdir -p macOS/Artifacts/
+            mv -v macOS/dist/scratch-link-*.zip macOS/Artifacts/
       - save_cache:
           key: spm-cache-{{ checksum "macOS/Package.resolved" }}
           paths:
             - macOS/.build/repositories
             - macOS/.build/checkouts
-      - store_artifacts:
-          path: macOS/dist/scratch-link-*.zip
       - when:
           condition:
             *should_sign
@@ -63,10 +66,13 @@ jobs:
               - run:
                   name: Sign the application
                   command: make --directory=macOS dist
-              - store_artifacts:
-                  path: macOS/dist/scratch-link-*.pkg
-              - store_artifacts:
-                  path: macOS/dist/mas-scratch-link-*.pkg
+              - run:
+                  name: Move signed build products to Artifacts directory
+                  command: |
+                    mkdir -p macOS/Artifacts/
+                    mv -v macOS/dist/{scratch-link,mas-scratch-link}-*.pkg macOS/Artifacts/
+      - store_artifacts:
+          path: macOS/Artifacts/
   build_for_windows:
     executor: windows/default
     steps:
