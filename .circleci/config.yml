@@ -132,6 +132,12 @@ jobs:
             - run:
                 name: Build and sign
                 command: msbuild Windows/scratch-link.sln -p:Configuration=Release -p:Platform="Any CPU" -p:SignedBuild=true
+                environment: # WiX fails with ICE errors if the environment is too big
+                  CSC_MACOS: ""
+                  SDM_CERT: ""
+                  SDM_CERT_CA: ""
+                  SDM_CERT_INT: ""
+                  SDM_CERT_KEY: ""
       - unless:
           condition:
             *should_sign
@@ -139,6 +145,12 @@ jobs:
             - run:
                 name: Build without signing
                 command: msbuild Windows/scratch-link.sln -p:Configuration=Release -p:Platform="Any CPU" -p:SignedBuild=false
+                environment: # WiX fails with ICE errors if the environment is too big
+                  CSC_MACOS: ""
+                  SDM_CERT: ""
+                  SDM_CERT_CA: ""
+                  SDM_CERT_INT: ""
+                  SDM_CERT_KEY: ""
       - run:
           name: Move build products to artifacts directory
           command: |
