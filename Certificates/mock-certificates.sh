@@ -9,6 +9,10 @@ function display_info () {
 	echo "*****"
 }
 
+# Disable path mangling in MSYS on Windows
+export MSYS_NO_PATHCONV=1
+export MSYS2_ARG_CONV_EXCL="*"
+
 # Usage: prep_openssl path/to/destination/directory
 function prep_openssl () {
 	mkdir -p "$1"/{certs,crl,newcerts,private}
@@ -43,12 +47,9 @@ function prep_openssl () {
 		emailAddress = optional
 
 		[ req ]
-		req_extensions = v3_req
 		distinguished_name = req_distinguished_name
 
 		[ req_distinguished_name ]
-
-		[ v3_req ]
 
 		[ req_ca ]
 		subjectKeyIdentifier = hash
@@ -77,15 +78,15 @@ function prep_openssl () {
 function generate_all () {
 	prep_openssl mock/ca
 	openssl genrsa -out mock/ca/private/ca.key 4096
-	openssl req -config mock/ca/openssl.conf -new -x509 -sha384 -extensions req_ca -subj '/CN=mock-ca' -key mock/ca/private/ca.key -out certificate-authority.cer
+	openssl req -config mock/ca/openssl.conf -new -x509 -sha384 -extensions req_ca -subj "/CN=mock-ca" -key mock/ca/private/ca.key -out certificate-authority.cer
 
 	prep_openssl mock/intermediate
 	openssl genrsa -out mock/intermediate/private/intermediate.key 2048
-	openssl req -config mock/intermediate/openssl.conf -new -sha384 -key mock/intermediate/private/intermediate.key -out mock/intermediate/certs/intermediate.csr -subj '/CN=mock-intermediate'
+	openssl req -config mock/intermediate/openssl.conf -new -sha384 -key mock/intermediate/private/intermediate.key -out mock/intermediate/certs/intermediate.csr -subj "/CN=mock-intermediate"
 	openssl ca -batch -config mock/ca/openssl.conf -md sha384 -extensions req_int -notext -keyfile mock/ca/private/ca.key -cert certificate-authority.cer -in mock/intermediate/certs/intermediate.csr -out intermediate.cer
 
 	mkdir -p mock/scratch-device-manager
-	openssl req -new -keyout scratch-device-manager.key -newkey rsa:2048 -subj "/OU=Domain Control Validated/OU=PositiveSSL/CN=device-manager.scratch.mit.edu" -nodes -out mock/scratch-device-manager/scratch-device-manager.request
+	openssl req -config mock/intermediate/openssl.conf -new -keyout scratch-device-manager.key -newkey rsa:2048 -subj "/OU=Domain Control Validated/OU=PositiveSSL/CN=device-manager.scratch.mit.edu" -nodes -out mock/scratch-device-manager/scratch-device-manager.request
 	openssl ca -batch -config mock/intermediate/openssl.conf -md sha256 -extensions req_cert -keyfile mock/intermediate/private/intermediate.key -cert intermediate.cer -out scratch-device-manager.cer -infiles mock/scratch-device-manager/scratch-device-manager.request
 }
 
