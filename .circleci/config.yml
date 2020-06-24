@@ -186,6 +186,9 @@ jobs:
           paths:
             - Windows/packages/
           key: nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
+      - run:
+          name: Check git status
+          command: git status
       - when:
           condition:
             *should_sign
