@@ -108,6 +108,13 @@ jobs:
     executor: windows/default
     steps:
       - checkout
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                name: Import code-signing certificate
+                command: ./Windows/Import-WIN_CSC.ps1
       - restore_cache:
           keys:
             - nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
@@ -123,11 +130,15 @@ jobs:
             *should_sign
           steps:
             - run:
-                name: Import code-signing certificate
-                command: ./Windows/Import-WIN_CSC.ps1
-      - run:
-          name: Build using MSBuild
-          command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
+                name: Build and sign
+                command: msbuild Windows/scratch-link.sln -p:Configuration=Release -p:Platform="Any CPU" -p:SignedBuild=true
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                name: Build without signing
+                command: msbuild Windows/scratch-link.sln -p:Configuration=Release -p:Platform="Any CPU" -p:SignedBuild=false
       - run:
           name: Move build products to artifacts directory
           command: |

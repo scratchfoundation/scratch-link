@@ -9,6 +9,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputName>ScratchLinkSetup</OutputName>
     <OutputType>Package</OutputType>
+    <SignedBuild>false</SignedBuild>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
   </PropertyGroup>
@@ -60,7 +61,7 @@
 	-->
   <Import Project="..\msiZipWithVersion.targets" />
   <PropertyGroup>
-    <PostBuildEvent Condition="'$(CI_PULL_REQUEST)' == ''">"$(SignToolPath)signtool.exe" sign /debug /v /a /sm /sha1 fafb6925eba28dcdce5440f3c2b79616f7b597e8 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
+    <PostBuildEvent Condition="$(SignedBuild)">"$(SignToolPath)signtool.exe" sign /debug /v /a /sm /sha1 fafb6925eba28dcdce5440f3c2b79616f7b597e8 /t http://timestamp.digicert.com /d "Scratch Link" !(TargetPath)</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
