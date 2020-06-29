@@ -25,6 +25,8 @@ commands:
             *should_sign
           steps:
             - run:
+                # This generates files similar to the ones we get from our certificate provider.
+                # That way we effectively test the `convert-certificates.sh` script even on non-signed builds.
                 name: Generate mock SSL certificates
                 working_directory: ./Certificates
                 shell: bash
@@ -60,6 +62,12 @@ commands:
                     decodeToFile code-to-learn-macos.p12 "${CSC_MACOS}"
                   fi
       - run:
+          # The certificate files we get from our provider aren't quite in the format that Scratch Link wants, which
+          # is actually different on macOS vs. Windows, so this script converts the files as needed. We could convert
+          # the files before putting them into the CI context, but that means documenting the conversion steps
+          # somewhere outside this repository. Converting them as part of the build prep process means we can not only
+          # document but also regularly test the steps as part of this repository, with the added bonus that this
+          # build process can be independent of other builds which use the same context.
           name: Convert SSL certificates
           working_directory: ./Certificates
           shell: bash
@@ -115,7 +123,7 @@ jobs:
           paths:
             - ~/Library/Caches/Homebrew
             - /usr/local/Homebrew
-          key: homebrew-cache-v2
+          key: homebrew-cache-v2 # bump this version (and the one above) if you change the list of paths
       - restore_cache:
           name: Restore Swift dependency cache
           key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
@@ -128,6 +136,8 @@ jobs:
           paths:
             - macOS/.build
       - run:
+          # Scratch Link determines its version number based on repository status and commit log.
+          # Print a basic status report to aid debugging.
           name: Check git status
           command: git status
       - run:
@@ -162,6 +172,11 @@ jobs:
             *should_sign
           steps:
             - run:
+                # Because of the non-standard user configuration on CircleCI's Windows VM, attempting to import a
+                # certificate into the user's certificate store ("Cert:/LocalUser/My") will fail. Instead, this code
+                # imports the PFX into the machine certificate store. That usually requires Administrator permissions,
+                # but on CircleCI's setup it works just fine. See also: https://github.com/ShabadOS/desktop/issues/265
+                # and https://github.com/ShabadOS/desktop/pull/266
                 name: Import code-signing certificate
                 shell: powershell
                 command: |
@@ -187,6 +202,8 @@ jobs:
             - Windows/packages/
           key: nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
       - run:
+          # Scratch Link determines its version number based on repository status and commit log.
+          # Print a basic status report to aid debugging.
           name: Check git status
           command: git status
       - when:
