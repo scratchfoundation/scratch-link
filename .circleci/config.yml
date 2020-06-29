@@ -1,31 +1,196 @@
 version: 2.1
 workflows:
-#  macos:
-#    jobs:
-#      - build_for_mac
+  macos:
+    jobs:
+      - build_for_mac:
+          context: scratch-desktop-and-link
   windows:
     jobs:
       - build_for_windows:
-          context: code-sign-generic
+          context: scratch-desktop-and-link
 orbs:
   windows: circleci/windows@2.2.0
+aliases:
+  - &should_sign
+    or:
+      - equal: [ develop, << pipeline.git.branch >> ]
+      - equal: [ main, << pipeline.git.branch >> ]
+      - equal: [ master, << pipeline.git.branch >> ]
+commands:
+  prepare_certificates:
+    description: "This command prepares SSL certificates in the Certificates directory."
+    steps:
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                # This generates files similar to the ones we get from our certificate provider.
+                # That way we effectively test the `convert-certificates.sh` script even on non-signed builds.
+                name: Generate mock SSL certificates
+                working_directory: ./Certificates
+                shell: bash
+                command: ./mock-certificates.sh
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                name: Import from CI context
+                working_directory: ./Certificates
+                shell: bash
+                command: |
+                  set -e
+                  function decodeToFile () {
+                    if [ -z "$1" ]; then
+                      echo "Missing or invalid filename"
+                      return 1
+                    fi
+                    if [ -z "$2" ]; then
+                      echo "Missing environment variable contents for file: $1"
+                      return 2
+                    fi
+                    echo "$2" | base64 --decode > "$1"
+                  }
+                  echo "Importing SSL certificate"
+                  decodeToFile scratch-device-manager.cer "${SDM_CERT}"
+                  decodeToFile certificate-authority.cer "${SDM_CERT_CA}"
+                  decodeToFile intermediate.cer "${SDM_CERT_INT}"
+                  decodeToFile scratch-device-manager.key "${SDM_CERT_KEY}"
+                  echo "Importing OS-specific imformation (OSTYPE=${OSTYPE})"
+                  if [[ "$OSTYPE" == "darwin"* ]]; then
+                    decodeToFile code-to-learn-macos.p12 "${CSC_MACOS}"
+                  fi
+      - run:
+          # The certificate files we get from our provider aren't quite in the format that Scratch Link wants, which
+          # is actually different on macOS vs. Windows, so this script converts the files as needed. We could convert
+          # the files before putting them into the CI context, but that means documenting the conversion steps
+          # somewhere outside this repository. Converting them as part of the build prep process means we can not only
+          # document but also regularly test the steps as part of this repository, with the added bonus that this
+          # build process can be independent of other builds which use the same context.
+          name: Convert SSL certificates
+          working_directory: ./Certificates
+          shell: bash
+          command: ./convert-certificates.sh
+  build_windows_sln:
+    parameters:
+      SignedBuild:
+        type: boolean
+        default: false
+    steps:
+      - run:
+          name: Build scratch-link.sln using MS Build (SignedBuild=<<parameters.SignedBuild>>)
+          command: msbuild Windows/scratch-link.sln -p:Configuration=Release -p:Platform="Any CPU" -p:SignedBuild=<<parameters.SignedBuild>>
+          environment: # WiX fails with ICE errors if the environment is too big
+            CSC_MACOS: ""
+            SDM_CERT: ""
+            SDM_CERT_CA: ""
+            SDM_CERT_INT: ""
+            SDM_CERT_KEY: ""
 jobs:
-#  build_for_mac:
-#    macos:
-#      xcode: "10.1.0"
-#    steps:
-#      - checkout
-#      - run:
-#          name: make dist
-#          command: make --directory=macOS dist
-#      - store_artifacts:
-#          path: macOS/dist/scratch-link-*.pkg
-#      - store_artifacts:
-#          path: macOS/dist/mas-scratch-link-*.pkg
+  build_for_mac:
+    macos:
+      xcode: "11.3.1"
+    steps:
+      - checkout
+      - prepare_certificates
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                name: Set up code-signing keychain
+                # DO NOT RUN THIS on your own computer unless you really know what you're doing!
+                command: |
+                  security -v create-keychain -p circleci circleci.keychain
+                  security -v default-keychain -s circleci.keychain
+                  security -v import Certificates/code-to-learn-macos.p12 -k circleci.keychain -P "" -T /usr/bin/codesign -T /usr/bin/productbuild
+                  security -v unlock-keychain -p circleci circleci.keychain
+                  # "set-key-partition-list" prints extensive not-so-useful output and adding "-q" (even multiple times) doesn't suppress it.
+                  # The "grep -v" at the end of this line suppresses all of that so any errors or warnings might be more visible.
+                  security -v set-key-partition-list -S apple-tool:,apple:,codesign: -s -k circleci circleci.keychain | grep -v '^    0x'
+                  security -v set-keychain-settings -lut 600 circleci.keychain
+                  security -v find-identity circleci.keychain
+                  rm Certificates/code-to-learn-macos.p12
+      - restore_cache:
+          name: Restore Homebrew cache
+          key: homebrew-cache-v2
+      - run:
+          name: Install Homebrew packages
+          command: brew install pngcrush
+      - save_cache:
+          name: Save Homebrew cache
+          paths:
+            - ~/Library/Caches/Homebrew
+            - /usr/local/Homebrew
+          key: homebrew-cache-v2 # bump this version (and the one above) if you change the list of paths
+      - restore_cache:
+          name: Restore Swift dependency cache
+          key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
+      - run:
+          name: Resolve Swift dependencies
+          command: make --directory=macOS resolve-dependencies
+      - save_cache:
+          name: Save Swift dependency cache
+          key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
+          paths:
+            - macOS/.build
+      - run:
+          # Scratch Link determines its version number based on repository status and commit log.
+          # Print a basic status report to aid debugging.
+          name: Check git status
+          command: git status
+      - run:
+          name: Build the application
+          command: make --directory=macOS zip
+      - run:
+          name: Move ZIP to Artifacts directory
+          command: |
+            mkdir -p macOS/Artifacts/
+            mv -v macOS/dist/scratch-link-*.zip macOS/Artifacts/
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                name: Sign the application
+                command: make --directory=macOS dist
+            - run:
+                name: Move signed build products to Artifacts directory
+                command: |
+                  mkdir -p macOS/Artifacts/
+                  mv -v macOS/dist/{scratch-link,mas-scratch-link}-*.pkg macOS/Artifacts/
+      - store_artifacts:
+          path: macOS/Artifacts/
   build_for_windows:
     executor: windows/default
     steps:
       - checkout
+      - prepare_certificates
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                # Because of the non-standard user configuration on CircleCI's Windows VM, attempting to import a
+                # certificate into the user's certificate store ("Cert:/LocalUser/My") will fail. Instead, this code
+                # imports the PFX into the machine certificate store. That usually requires Administrator permissions,
+                # but on CircleCI's setup it works just fine. See also: https://github.com/ShabadOS/desktop/issues/265
+                # and https://github.com/ShabadOS/desktop/pull/266
+                name: Import code-signing certificate
+                shell: powershell
+                command: |
+                  $ErrorActionPreference = "Stop"
+                  # TODO: is there a way to avoid creating a temporary file?
+                  $tempPfx = New-TemporaryFile
+                  try {
+                      $env:WIN_CSC_LINK | Set-Content $tempPfx
+                      $securePassword = (ConvertTo-SecureString -String $env:WIN_CSC_KEY_PASSWORD -AsPlainText -Force)
+                      Import-PfxCertificate -FilePath $tempPfx -Password $securePassword -CertStoreLocation "Cert:/LocalMachine/My"
+                  }
+                  finally {
+                      Remove-Item -Force $tempPfx
+                  }
       - restore_cache:
           keys:
             - nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
@@ -37,11 +202,22 @@ jobs:
             - Windows/packages/
           key: nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
       - run:
-          name: Import code-signing certificate
-          command: ./Windows/Import-WIN_CSC.ps1
-      - run:
-          name: Build using MSBuild
-          command: msbuild Windows/scratch-link.sln -m -p:Configuration=Release -p:Platform="Any CPU"
+          # Scratch Link determines its version number based on repository status and commit log.
+          # Print a basic status report to aid debugging.
+          name: Check git status
+          command: git status
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - build_windows_sln:
+                SignedBuild: true
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - build_windows_sln:
+                SignedBuild: false
       - run:
           name: Move build products to artifacts directory
           command: |

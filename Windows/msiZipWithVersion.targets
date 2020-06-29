@@ -3,7 +3,6 @@ Assuming the output of your project is an MSI file, put it into a ZIP whose name
 This is designed to be used from a WiX project.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildThisFileDirectory)packages\WiX.3.11.2\build\wix.props" />
   <UsingTask TaskName="msiGetVersion" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
     <ParameterGroup>
       <!-- Input -->
