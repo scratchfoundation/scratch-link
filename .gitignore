@@ -1,6 +1,7 @@
 *.cer
 *.crt
 *.der
+*.enc
 *.key
 *.pem
 *.pfx
