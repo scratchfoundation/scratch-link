@@ -30,20 +30,6 @@ function encryptFile () {
 
 mkdir -p temp out
 
-# Code to split a PEM, in case a future version of the certificate goes back to PEM format:
-#if [ "`uname`" == "Darwin" ]; then
-#	split -p "-----BEGIN CERTIFICATE-----" dm.pem temp/cert-
-#	mv temp/{cert-aa,scratch-device-manager.pem}
-#	mv temp/{cert-ab,int.pem}
-#	mv temp/{cert-ac,ca.pem}
-#else
-#	csplit -f temp/cert- dm.pem '/-----BEGIN CERTIFICATE-----/' '{2}'
-#	rm temp/cert-00 # empty
-#	mv temp/{cert-01,scratch-device-manager.pem}
-#	mv temp/{cert-02,int.pem}
-#	mv temp/{cert-03,ca.pem}
-#fi
-
 if [ -r "in/scratch-device-manager.key" ]; then
 	SDM_CERT_DIR="in"
 	echo "Converting from real certificates"
