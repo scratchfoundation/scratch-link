@@ -40,17 +40,20 @@ a pull request.
 Scratch Link provides Secure WebSocket (WSS) communication and uses digital certificates to do so. These certificates
 are **not** provided in this repository.
 
-To prepare certificates for Scratch Link development:
+To prepare certificates for Scratch Link development, run the following commands. These commands should be run from a
+`bash` prompt (or `zsh`, etc.), which on Windows means using something like [Cygwin](https://www.cygwin.com/) or
+[WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 
-* Obtain the raw certificates: see `Certificates/convert-certificates.sh` for details. *Those outside the Scratch Team
-  will need to provide their own certificates for unofficial builds.*
-* `cd Certificates` and run `./convert-certificates.sh` to prepare the necessary certificate files.
-  * On Windows, this script can be run using [Cygwin](https://www.cygwin.com/) or
-    [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+1. `cd Certificates`
+2. Run `./mock-certificates.sh` to generate self-signed certificates.
+3. Run `./convert-certificates.sh` to prepare the certificates for use by Scratch Link.
+
+If you are a member of the Scratch team and need the real certificates,
+see `Certificates/convert-certificates.sh` for details.
 
 ### macOS
 
-The macOS version of this project is in the `macOS` subdirectory. It uses Swift 4.x and the Swift Package Manager.
+The macOS version of this project is in the `macOS` subdirectory. It uses Swift 5.2 and the Swift Package Manager.
 
 Developer prerequisites on macOS, most of which are available through [Homebrew](https://brew.sh/):
 
@@ -60,7 +63,6 @@ Developer prerequisites on macOS, most of which are available through [Homebrew]
 * [pngcrush](https://pmt.sourceforge.io/pngcrush/)
 * [swiftlint](https://github.com/realm/SwiftLint) (optional)
 * Swift Version Manager [swiftenv](https://swiftenv.fuller.li/) (optional)
-  * If you have Swift 5 or above / Xcode 10.2 or above `swiftenv` might be the best way to get Swift 4.x
 
 The build is primarily controlled through `make`:
 
