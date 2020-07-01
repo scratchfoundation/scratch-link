@@ -12,7 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\Certificates\convert-certificates.sh = ..\Certificates\convert-certificates.sh
 		generate-images.sh = generate-images.sh
 		msiZipWithVersion.targets = msiZipWithVersion.targets
-		..\playground.html = ..\playground.html
 		..\README.md = ..\README.md
 		..\Certificates\roll.sh = ..\Certificates\roll.sh
 		scratchVersion.targets = scratchVersion.targets
@@ -33,6 +32,14 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".circleci", ".circleci", "{2E316847-3325-4060-9560-ED29CF3D1156}"
 	ProjectSection(SolutionItems) = preProject
 		..\.circleci\config.yml = ..\.circleci\config.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "playground", "playground", "{838F85E3-CDF7-4E59-B649-C36AFE302697}"
+	ProjectSection(SolutionItems) = preProject
+		..\playground\legend-collapse.js = ..\playground\legend-collapse.js
+		..\playground\playground.html = ..\playground\playground.html
+		..\playground\scratch-link-client.js = ..\playground\scratch-link-client.js
+		..\playground\stringify.js = ..\playground\stringify.js
 	EndProjectSection
 EndProject
 Global
@@ -59,6 +66,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3721552C-638C-48CC-A154-F995CEA87505} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
 		{2E316847-3325-4060-9560-ED29CF3D1156} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
+		{838F85E3-CDF7-4E59-B649-C36AFE302697} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8DE7771A-9DD3-44DD-AA08-46514DA0F673}
