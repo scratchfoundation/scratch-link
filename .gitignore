@@ -1,3 +1,4 @@
+*.ca-bundle
 *.cer
 *.crt
 *.der

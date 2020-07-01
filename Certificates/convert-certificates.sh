@@ -3,14 +3,13 @@ set -e
 
 ######
 
-# Inputs: if you don't know how to get these files, ask @cwillisf or @colbygk
-# - Open "Device Manager Cert & Key"
-# - Save the certificate as "scratch-device-manager.cer"
-# - Save the key as "scratch-device-manager.key"
+# Inputs: certificate files in the "in" or "mock" directory.
+# - If you're a member of the Scratch team and need the real certificates, ask cwillisf or colbygk.
+# - Otherwise run "mock-certificates.sh" which will generate files in the "mock" directory.
 
 # Output: various files in the "out" directory
 
-# A few intermediate files are created in the "int" directory as well
+# A few intermediate files are created in the "temp" directory as well
 # TODO: learn better openssl-fu and avoid the intermediate files (maybe)
 
 ######
@@ -29,38 +28,49 @@ function encryptFile () {
 		sed "s/\([0-9A-Fa-f][0-9A-Fa-f]\)/0x\1,/g"
 }
 
-mkdir -p int out
+mkdir -p temp out
 
 # Code to split a PEM, in case a future version of the certificate goes back to PEM format:
 #if [ "`uname`" == "Darwin" ]; then
-#	split -p "-----BEGIN CERTIFICATE-----" dm.pem int/cert-
-#	mv int/{cert-aa,scratch-device-manager.pem}
-#	mv int/{cert-ab,int.pem}
-#	mv int/{cert-ac,ca.pem}
+#	split -p "-----BEGIN CERTIFICATE-----" dm.pem temp/cert-
+#	mv temp/{cert-aa,scratch-device-manager.pem}
+#	mv temp/{cert-ab,int.pem}
+#	mv temp/{cert-ac,ca.pem}
 #else
-#	csplit -f int/cert- dm.pem '/-----BEGIN CERTIFICATE-----/' '{2}'
-#	rm int/cert-00 # empty
-#	mv int/{cert-01,scratch-device-manager.pem}
-#	mv int/{cert-02,int.pem}
-#	mv int/{cert-03,ca.pem}
+#	csplit -f temp/cert- dm.pem '/-----BEGIN CERTIFICATE-----/' '{2}'
+#	rm temp/cert-00 # empty
+#	mv temp/{cert-01,scratch-device-manager.pem}
+#	mv temp/{cert-02,int.pem}
+#	mv temp/{cert-03,ca.pem}
 #fi
+
+if [ -r "in/scratch-device-manager.key" ]; then
+	SDM_CERT_DIR="in"
+	echo "Converting from real certificates"
+else
+	SDM_CERT_DIR="mock"
+	echo "Converting from mock certificates"
+fi
 
 # Windows wants a single PFX containing the certificate along with its private key
 openssl pkcs12 \
-	-inkey scratch-device-manager.key \
-	-in scratch-device-manager.cer \
+	-inkey "${SDM_CERT_DIR}/scratch-device-manager.key" \
+	-in "${SDM_CERT_DIR}/device-manager_scratch_mit_edu.crt" \
 	-name "Scratch Link & Scratch Device Manager" \
 	-passout pass:Scratch \
-	-export -out int/scratch-device-manager.pfx
+	-export -out temp/scratch-device-manager.pfx
 
-encryptFile int/scratch-device-manager.pfx out/scratch-device-manager.pfx.enc
+encryptFile temp/scratch-device-manager.pfx out/scratch-device-manager.pfx.enc
 
 # Perfect on Mac wants a single PEM containing the certificate and key along with the whole CA chain
 # Using grep this way enforces newlines between files
-grep -h ^ {scratch-device-manager,intermediate,certificate-authority}.cer scratch-device-manager.key \
+grep -h ^ \
+	"${SDM_CERT_DIR}/device-manager_scratch_mit_edu.crt" \
+	"${SDM_CERT_DIR}/device-manager_scratch_mit_edu.ca-bundle" \
+	"${SDM_CERT_DIR}/scratch-device-manager.key" \
 	| tr -d '\r' \
-	> int/scratch-device-manager.pem
+	> temp/scratch-device-manager.pem
 
-encryptFile int/scratch-device-manager.pem out/scratch-device-manager.pem.enc
+encryptFile temp/scratch-device-manager.pem out/scratch-device-manager.pem.enc
 
 ls -l out/
