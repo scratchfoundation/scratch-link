@@ -53,6 +53,7 @@ commands:
                     echo "$2" | base64 --decode > "$1"
                   }
                   echo "Importing SSL certificate"
+                  mkdir -p in
                   decodeToFile in/device-manager_scratch_mit_edu.crt "${SDM_CERT}"
                   decodeToFile in/device-manager_scratch_mit_edu.ca-bundle "${SDM_CERT_CA_BUNDLE}"
                   decodeToFile in/scratch-device-manager.key "${SDM_CERT_KEY}"
