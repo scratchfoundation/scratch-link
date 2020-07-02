@@ -53,10 +53,10 @@ commands:
                     echo "$2" | base64 --decode > "$1"
                   }
                   echo "Importing SSL certificate"
-                  decodeToFile scratch-device-manager.cer "${SDM_CERT}"
-                  decodeToFile certificate-authority.cer "${SDM_CERT_CA}"
-                  decodeToFile intermediate.cer "${SDM_CERT_INT}"
-                  decodeToFile scratch-device-manager.key "${SDM_CERT_KEY}"
+                  mkdir -p in
+                  decodeToFile in/device-manager_scratch_mit_edu.crt "${SDM_CERT}"
+                  decodeToFile in/device-manager_scratch_mit_edu.ca-bundle "${SDM_CERT_CA_BUNDLE}"
+                  decodeToFile in/scratch-device-manager.key "${SDM_CERT_KEY}"
                   echo "Importing OS-specific imformation (OSTYPE=${OSTYPE})"
                   if [[ "$OSTYPE" == "darwin"* ]]; then
                     decodeToFile code-to-learn-macos.p12 "${CSC_MACOS}"
@@ -84,8 +84,7 @@ commands:
           environment: # WiX fails with ICE errors if the environment is too big
             CSC_MACOS: ""
             SDM_CERT: ""
-            SDM_CERT_CA: ""
-            SDM_CERT_INT: ""
+            SDM_CERT_CA_BUNDLE: ""
             SDM_CERT_KEY: ""
 jobs:
   build_for_mac:
