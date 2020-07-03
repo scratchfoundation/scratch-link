@@ -56,8 +56,8 @@ commands:
                   mkdir -p in
                   decodeToFile in/device-manager_scratch_mit_edu.crt "${SDM_CERT}"
                   decodeToFile in/device-manager_scratch_mit_edu.ca-bundle "${SDM_CERT_CA_BUNDLE}"
-                  decodeToFile in/scratch-device-manager.key "${SDM_CERT_KEY}"
-                  echo "Importing OS-specific imformation (OSTYPE=${OSTYPE})"
+                  decodeToFile in/device-manager.scratch.mit.edu.key "${SDM_CERT_KEY}"
+                  echo "Importing OS-specific information (OSTYPE=${OSTYPE})"
                   if [[ "$OSTYPE" == "darwin"* ]]; then
                     decodeToFile code-to-learn-macos.p12 "${CSC_MACOS}"
                   fi

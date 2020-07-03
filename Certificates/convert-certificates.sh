@@ -30,7 +30,7 @@ function encryptFile () {
 
 mkdir -p temp out
 
-if [ -r "in/scratch-device-manager.key" ]; then
+if [ -r "in/device-manager.scratch.mit.edu.key" ]; then
 	SDM_CERT_DIR="in"
 	echo "Converting from real certificates"
 else
@@ -40,7 +40,7 @@ fi
 
 # Windows wants a single PFX containing the certificate along with its private key
 openssl pkcs12 \
-	-inkey "${SDM_CERT_DIR}/scratch-device-manager.key" \
+	-inkey "${SDM_CERT_DIR}/device-manager.scratch.mit.edu.key" \
 	-in "${SDM_CERT_DIR}/device-manager_scratch_mit_edu.crt" \
 	-name "Scratch Link & Scratch Device Manager" \
 	-passout pass:Scratch \
@@ -53,7 +53,7 @@ encryptFile temp/scratch-device-manager.pfx out/scratch-device-manager.pfx.enc
 grep -h ^ \
 	"${SDM_CERT_DIR}/device-manager_scratch_mit_edu.crt" \
 	"${SDM_CERT_DIR}/device-manager_scratch_mit_edu.ca-bundle" \
-	"${SDM_CERT_DIR}/scratch-device-manager.key" \
+	"${SDM_CERT_DIR}/device-manager.scratch.mit.edu.key" \
 	| tr -d '\r' \
 	> temp/scratch-device-manager.pem
 

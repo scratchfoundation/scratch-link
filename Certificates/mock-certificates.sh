@@ -88,7 +88,7 @@ function generate_all () {
 	cat mock/intermediate/intermediate.cer mock/ca/certificate-authority.cer > mock/device-manager_scratch_mit_edu.ca-bundle
 
 	mkdir -p mock/scratch-device-manager
-	openssl req -config mock/intermediate/openssl.conf -new -keyout mock/scratch-device-manager.key -newkey rsa:2048 -subj "/OU=Domain Control Validated/OU=PositiveSSL/CN=device-manager.scratch.mit.edu" -nodes -out mock/scratch-device-manager/scratch-device-manager.request
+	openssl req -config mock/intermediate/openssl.conf -new -keyout mock/device-manager.scratch.mit.edu.key -newkey rsa:2048 -subj "/OU=Domain Control Validated/OU=PositiveSSL/CN=device-manager.scratch.mit.edu" -nodes -out mock/scratch-device-manager/scratch-device-manager.request
 	openssl ca -batch -config mock/intermediate/openssl.conf -md sha256 -extensions req_cert -keyfile mock/intermediate/private/intermediate.key -cert mock/intermediate/intermediate.cer -out mock/device-manager_scratch_mit_edu.crt -infiles mock/scratch-device-manager/scratch-device-manager.request
 }
 
