@@ -94,10 +94,10 @@ $(APP_DEST): $(BIN_FILE) Packaging/entitlements.plist Packaging/Info.plist dist/
 	iconutil -c icns --output "$@/Contents/Resources/Scratch Link.icns" "dist/Scratch Link.iconset"
 	iconutil -c icns --output "$@/Contents/Resources/iconTemplate.icns" "dist/iconTemplate.iconset"
 
-dist/Scratch\ Link.iconset: ../Assets/Mac/PNG/Master\ 1024x1024.png
+dist/Scratch\ Link.iconset: ../Assets/Mac/raster/Master\ 1024x1024.png
 
 # Status bar icon template
-dist/iconTemplate.iconset: ../Assets/Mac/PNG/Mac\ Glyph\ Icon\ 1024x1024.png
+dist/iconTemplate.iconset: ../Assets/Mac/raster/Mac\ Glyph\ Icon\ 1024x1024.png
 
 # Generate a full icon set from an input image.
 # The @2x are marked as 144 DPI while the others are marked as 72 DPI.
