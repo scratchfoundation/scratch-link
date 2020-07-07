@@ -35,7 +35,7 @@ namespace scratch_link.Dialogs
                 var process = Process.GetProcessById(pid);
                 AddProcessPropertyValue("Process Name", process.ProcessName);
                 AddProcessPropertyValue("Window Title", process.MainWindowTitle);
-                AddProcessPropertyValue("File Name", process.MainModule.FileName);
+                AddProcessPropertyValue("File Name", GetMainModuleFileName(process));
                 AddProcessPropertyValue("Process ID", pid.ToString());
                 AddProcessPropertyValue("TCP Port", App.SDMPort.ToString());
                 labelNoResults.Visible = false;
@@ -46,6 +46,21 @@ namespace scratch_link.Dialogs
                 textContent += labelNoResults.Text + '\n';
                 labelNoResults.Visible = true;
                 listView1.Visible = false;
+            }
+        }
+
+        // Attempt to read the file name of the process main module
+        // This can fail if called in a 32-bit process and the argument is a 64-bit process
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types", Justification = "Any failure should result in empty string")]
+        private string GetMainModuleFileName(Process process)
+        {
+            try
+            {
+                return process.MainModule.FileName;
+            }
+            catch
+            {
+                return "";
             }
         }
 
