@@ -77,7 +77,10 @@ namespace scratch_link
             {
                 RestartAfterListenError = true,
                 Certificate = certificate,
-                EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                EnabledSslProtocols =
+                    System.Security.Authentication.SslProtocols.Tls |
+                    System.Security.Authentication.SslProtocols.Tls11 |
+                    System.Security.Authentication.SslProtocols.Tls12
             };
             _server.ListenerSocket.NoDelay = true;
 
