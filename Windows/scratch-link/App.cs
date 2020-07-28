@@ -76,7 +76,11 @@ namespace scratch_link
             _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}", false)
             {
                 RestartAfterListenError = true,
-                Certificate = certificate
+                Certificate = certificate,
+                EnabledSslProtocols =
+                    System.Security.Authentication.SslProtocols.Tls |
+                    System.Security.Authentication.SslProtocols.Tls11 |
+                    System.Security.Authentication.SslProtocols.Tls12
             };
             _server.ListenerSocket.NoDelay = true;
 
