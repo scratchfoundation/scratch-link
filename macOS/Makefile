@@ -1,4 +1,4 @@
-SIGN_ID=Code-to-Learn Foundation
+SIGN_ID=Scratch Foundation
 APP_ID=edu.mit.scratch.scratch-link
 APP_BUNDLE=Scratch\ Link.app
 CONFIG=release
