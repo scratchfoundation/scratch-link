@@ -10,8 +10,8 @@ BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 
 BIN_FILE=$(BIN_PATH)/scratch-link
 APP_DEST=dist/$(APP_BUNDLE)
-PACKAGE_FILE="scratch-link-$(APP_VERSION).pkg"
-ZIP_FILE="scratch-link-$(APP_VERSION).zip"
+PACKAGE_FILE=scratch-link-$(APP_VERSION).pkg
+ZIP_FILE=scratch-link-$(APP_VERSION).zip
 SWIFT_SOURCES=$(wildcard Sources/scratch-link/*.swift)
 
 .PHONY: all bin clean dist dist-mas dist-devid distclean lint resolve-dependencies uninstall xcodeproj zip
@@ -52,10 +52,10 @@ resolve-dependencies:
 
 zip: dist/$(ZIP_FILE)
 
-dist/$(PACKAGE_FILE): dist/tmp.devid/app/$(APP_BUNDLE)
-	pkgbuild --analyze --root dist/tmp.devid/app/ dist/tmp.devid/components.plist
+dist/$(PACKAGE_FILE): dist/tmp.devid/app.notarized/$(APP_BUNDLE)
+	pkgbuild --analyze --root dist/tmp.devid/app.notarized/ dist/tmp.devid/components.plist
 	plutil -replace "BundleIsRelocatable" -bool "NO" dist/tmp.devid/components.plist
-	pkgbuild --root dist/tmp.devid/app/ --install-location /Applications/ --component-plist dist/tmp.devid/components.plist dist/tmp.devid/ScratchLink.pkg
+	pkgbuild --root dist/tmp.devid/app.notarized/ --install-location /Applications/ --component-plist dist/tmp.devid/components.plist dist/tmp.devid/ScratchLink.pkg
 	productbuild --synthesize --package dist/tmp.devid/ScratchLink.pkg dist/tmp.devid/distribution.plist
 	# TODO: add a README and/or LICENSE to dist/tmp.devid/distribution.plist
 	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component-compression auto --distribution dist/tmp.devid/distribution.plist --package-path dist/tmp.devid/ "$@"
@@ -68,6 +68,32 @@ dist/tmp.devid/app/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	test -r "$@/Contents/Frameworks/libswiftCore.dylib" # verify swift-stdlib-tool did its job
 	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist --options runtime "$@"
 	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify --verbose
+
+dist/tmp.devid/$(APP_BUNDLE).zip: dist/tmp.devid/app/$(APP_BUNDLE)
+	ditto -c -k --keepParent "$<" "$@"
+
+dist/tmp.devid/$(APP_BUNDLE).upload.plist: dist/tmp.devid/$(APP_BUNDLE).zip
+	[ "$(AC_USERNAME)" != "" ] || { echo "Cannot notarize unless AC_USERNAME is set" && false; }
+	@echo "Uploading app for notarization..."
+	xcrun altool --notarize-app --primary-bundle-id "$(APP_ID)" -u "$(AC_USERNAME)" -p "@keychain:Application Loader: $(AC_USERNAME)" -f "$<" --output-format xml > "$@"
+	sleep 10s # status info might not be ready immediately after upload
+
+# patterned after https://nativeconnect.app/blog/mac-app-notarization-from-the-command-line/
+dist/tmp.devid/app.notarized/$(APP_BUNDLE): dist/tmp.devid/$(APP_BUNDLE).upload.plist dist/tmp.devid/app/$(APP_BUNDLE)
+	[ "$(AC_USERNAME)" != "" ] || { echo "Cannot notarize unless AC_USERNAME is set" && false; }
+	REQUEST_UUID=`/usr/libexec/PlistBuddy -c "Print :notarization-upload:RequestUUID" "$<"` && \
+	echo "Waiting for notarization task with UUID=$${REQUEST_UUID}. This can take a while..." && \
+	time while true; do \
+		xcrun altool --notarization-info "$${REQUEST_UUID}" -u "$(AC_USERNAME)" -p "@keychain:Application Loader: $(AC_USERNAME)" --output-format xml > dist/tmp.devid/$(APP_BUNDLE).progress.plist && \
+		if [ "`/usr/libexec/PlistBuddy -c "Print :notarization-info:Status" dist/tmp.devid/$(APP_BUNDLE).progress.plist`" != "in progress" ]; then \
+			break; \
+		fi; \
+		sleep 60s; \
+	done
+	[ "`/usr/libexec/PlistBuddy -c "Print :notarization-info:Status" dist/tmp.devid/$(APP_BUNDLE).progress.plist`" == "success" ]
+	mkdir -p dist/tmp.devid/app.notarized
+	cp -aR dist/tmp.devid/app/$(APP_BUNDLE) "$@"
+	xcrun stapler staple "$@"
 
 # TODO: remove "-Xswiftc -Xfrontend -Xswiftc -validate-tbd-against-ir=none"
 # once Perfect-Crypto builds in debug without it
