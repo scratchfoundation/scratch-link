@@ -10,8 +10,8 @@ BIN_PATH=$(shell swift build --configuration $(CONFIG) --show-bin-path)
 
 BIN_FILE=$(BIN_PATH)/scratch-link
 APP_DEST=dist/$(APP_BUNDLE)
-PACKAGE_FILE="scratch-link-$(APP_VERSION).pkg"
-ZIP_FILE="scratch-link-$(APP_VERSION).zip"
+PACKAGE_FILE=scratch-link-$(APP_VERSION).pkg
+ZIP_FILE=scratch-link-$(APP_VERSION).zip
 SWIFT_SOURCES=$(wildcard Sources/scratch-link/*.swift)
 
 .PHONY: all bin clean dist dist-mas dist-devid distclean lint resolve-dependencies uninstall xcodeproj zip
@@ -39,9 +39,9 @@ dist/tmp.mas/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/tmp.mas/
 	mkdir -p dist/tmp.mas/
 	cp -aR "$<" "$@"
-	xcrun swift-stdlib-tool --copy --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
+	xcrun swift-stdlib-tool --copy --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --Xcodesign --options --Xcodesign runtime --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	test -r "$@/Contents/Frameworks/libswiftCore.dylib" # verify swift-stdlib-tool did its job
-	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
+	codesign --sign "3rd Party Mac Developer Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist --options runtime "$@"
 	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify --verbose
 
 # For "Developer ID" distribution outside the Mac App Store
@@ -52,7 +52,8 @@ resolve-dependencies:
 
 zip: dist/$(ZIP_FILE)
 
-dist/$(PACKAGE_FILE): dist/tmp.devid/app/$(APP_BUNDLE)
+# build PKG (signed but not notarized)
+dist/tmp.devid/$(PACKAGE_FILE): dist/tmp.devid/app/$(APP_BUNDLE)
 	pkgbuild --analyze --root dist/tmp.devid/app/ dist/tmp.devid/components.plist
 	plutil -replace "BundleIsRelocatable" -bool "NO" dist/tmp.devid/components.plist
 	pkgbuild --root dist/tmp.devid/app/ --install-location /Applications/ --component-plist dist/tmp.devid/components.plist dist/tmp.devid/ScratchLink.pkg
@@ -60,13 +61,18 @@ dist/$(PACKAGE_FILE): dist/tmp.devid/app/$(APP_BUNDLE)
 	# TODO: add a README and/or LICENSE to dist/tmp.devid/distribution.plist
 	productbuild --sign "Developer ID Installer: $(SIGN_ID)" --component-compression auto --distribution dist/tmp.devid/distribution.plist --package-path dist/tmp.devid/ "$@"
 
+# notarize and staple final PKG
+dist/$(PACKAGE_FILE): dist/tmp.devid/$(PACKAGE_FILE)
+	cp -a "$<" "$@"
+	Packaging/notarize.sh "${APP_ID}" "$<" "$@" dist/tmp.devid
+
 dist/tmp.devid/app/$(APP_BUNDLE): dist/$(APP_BUNDLE)
 	rm -rf dist/tmp.devid/app
 	mkdir -p dist/tmp.devid/app
 	cp -aR "$<" "$@"
-	xcrun swift-stdlib-tool --copy --sign "Developer ID Application: $(SIGN_ID)" --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
+	xcrun swift-stdlib-tool --copy --sign "Developer ID Application: $(SIGN_ID)" --Xcodesign --options --Xcodesign runtime --platform macosx --scan-folder "$@/Contents/MacOS" --destination "$@/Contents/Frameworks"
 	test -r "$@/Contents/Frameworks/libswiftCore.dylib" # verify swift-stdlib-tool did its job
-	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist "$@"
+	codesign --sign "Developer ID Application: $(SIGN_ID)" --identifier "$(APP_ID)" --deep --entitlements Packaging/entitlements.plist --options runtime "$@"
 	find "$@" -type f -perm +111 -print0 | xargs -0 codesign --verify --verbose
 
 # TODO: remove "-Xswiftc -Xfrontend -Xswiftc -validate-tbd-against-ir=none"
