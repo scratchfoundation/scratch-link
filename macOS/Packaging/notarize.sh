@@ -13,7 +13,8 @@ function show_usage () {
 	echo "  tempDirectory: a directory in which to place temporary files, which could help with troubleshooting."
 	echo ""
 	echo "The environment variable AC_USERNAME must be set to an Apple ID which will be used for uploading to Apple."
-	echo "Your keychain must include a corresponding item labeled something like 'Application Loader: \$AC_USERNAME'"
+	echo "If you set the environment variable AS_PASSWORD then that will be used; otherwise your keychain must include"
+	echo "an item labeled 'Application Loader: \$AC_USERNAME'"
 	false
 }
 
@@ -26,7 +27,9 @@ function do_notarize () {
 
 	PLIST_UPLOAD="${TMP_DIR}/notarize-upload.plist"
 	PLIST_STATUS="${TMP_DIR}/notarize-status.plist"
-	AC_PASSWORD="@keychain:Application Loader: ${AC_USERNAME}"
+	if [ "${AC_PASSWORD}" == "" ]; then
+		AC_PASSWORD="@keychain:Application Loader: ${AC_USERNAME}"
+	fi
 
 	echo "Uploading ${SRC} for notarization..."
 	time xcrun altool --notarize-app --primary-bundle-id "${BUNDLE_ID}" -u "${AC_USERNAME}" -p "${AC_PASSWORD}" -f "${SRC}" --output-format xml > "${PLIST_UPLOAD}"
