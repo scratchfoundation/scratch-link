@@ -4,6 +4,7 @@
 *.der
 *.enc
 *.key
+*.p7b
 *.pem
 *.pfx
 .idea/
