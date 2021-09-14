@@ -100,6 +100,7 @@ Prerequisites:
 Optional:
 
 * [MSBuildStructuredLog](https://github.com/KirillOsenkov/MSBuildStructuredLog) is a huge help for debugging MSBuild.
+* Wix Toolset Visual Studio Extension (install through "Manage Extensions") is required for ScratchLinkSetup work.
 
 Build, run, and debug by opening the Solution (`*.sln`) file in Visual Studio.
 
