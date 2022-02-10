@@ -23,6 +23,9 @@
     <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
     <LinkerAdditionalOptions>-ext WixUIExtension -ext WixUtilExtension</LinkerAdditionalOptions>
   </PropertyGroup>
+  <PropertyGroup Label="Work around LGHT0217 errors on CircleCI" Condition="'$(CI)' != ''">
+    <SuppressValidation>true</SuppressValidation>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Product.wxs" />
   </ItemGroup>
