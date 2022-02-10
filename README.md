@@ -1,3 +1,16 @@
+# Scratch Link PRIVATE
+
+_This is the **PRIVATE** version of this repository!_
+
+Some `git` commands which might be useful:
+
+* `git remote add public git@github.com:LLK/scratch-link.git`
+* `git git branch --set-upstream-to=public/develop public`
+* `git checkout main`
+* `git merge public`
+
+Below here is the public README.md content.
+
 # Scratch Link
 
 Scratch Link is a helper application which allows Scratch 3.0 to communicate with hardware peripherals. Scratch Link
