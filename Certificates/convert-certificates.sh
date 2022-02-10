@@ -30,7 +30,7 @@ function encryptFile () {
 	# the '-p' causes OpenSSL to output the key & iv
 	# the 'sed' command reformats them for easier use in scratch-link code
 	openssl enc -nosalt -p -aes-256-cbc -K "$KEY" -iv "$IV" -in "$1" -out "$2" | \
-		sed "s/\([0-9A-Fa-f][0-9A-Fa-f]\)/0x\1,/g"
+		sed "s/\([0-9A-Fa-f][0-9A-Fa-f]\)/0x\1, /g"
 }
 
 mkdir -p temp out
@@ -51,7 +51,8 @@ openssl pkcs12 \
 	-passout pass:Scratch \
 	-export -out temp/scratch-device-manager.pfx
 
-encryptFile temp/scratch-device-manager.pfx out/scratch-device-manager.pfx.enc
+encryptFile temp/scratch-device-manager.pfx temp/scratch-device-manager.pfx.enc
+perl -0777pe '$_=reverse $_' temp/scratch-device-manager.pfx.enc > out/scratch-device-manager.pfx.enc
 
 # Perfect on Mac wants a single PEM containing the certificate and key along with the whole CA chain
 # Using grep this way enforces newlines between files
@@ -62,6 +63,7 @@ grep -h ^ \
 	| tr -d '\r' \
 	> temp/scratch-device-manager.pem
 
-encryptFile temp/scratch-device-manager.pem out/scratch-device-manager.pem.enc
+encryptFile temp/scratch-device-manager.pem temp/scratch-device-manager.pem.enc
+perl -0777pe '$_=reverse $_' temp/scratch-device-manager.pem.enc > out/scratch-device-manager.pem.enc
 
 ls -l out/

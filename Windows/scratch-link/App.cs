@@ -116,7 +116,7 @@ namespace scratch_link
                 aes.IV = EncodingParams.IV;
 
                 var decryptor = aes.CreateDecryptor();
-                using (var encryptedStream = new MemoryStream(encrypted))
+                using (var encryptedStream = new MemoryStream(encrypted.Reverse().ToArray()))
                 {
                     using (var cryptoStream = new CryptoStream(encryptedStream, decryptor, CryptoStreamMode.Read))
                     {

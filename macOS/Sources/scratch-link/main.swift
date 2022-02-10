@@ -161,6 +161,7 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         }
 
         guard let decryptedBytes = encryptedBytes
+            .reversed()
             .decrypt(Cipher.aes_256_cbc, key: EncodingParams.key, iv: EncodingParams.iv) else {
             // This probably means a key or IV problem
             return nil
