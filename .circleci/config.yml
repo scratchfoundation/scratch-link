@@ -89,7 +89,7 @@ commands:
 jobs:
   build_for_mac:
     macos:
-      xcode: "11.3.1"
+      xcode: "11.7.0"
     steps:
       - checkout
       - prepare_certificates
@@ -113,7 +113,7 @@ jobs:
                   rm Certificates/macos-certs-scratch-foundation.p12
       - restore_cache:
           name: Restore Homebrew cache
-          key: homebrew-cache-v2
+          key: homebrew-cache-v3
       - run:
           name: Install Homebrew packages
           command: brew install pngcrush
@@ -121,8 +121,8 @@ jobs:
           name: Save Homebrew cache
           paths:
             - ~/Library/Caches/Homebrew
-            - /usr/local/Homebrew
-          key: homebrew-cache-v2 # bump this version (and the one above) if you change the list of paths
+            - /Library/Caches/Homebrew
+          key: homebrew-cache-v3 # bump this version (and the one above) if you change the list of paths
       - restore_cache:
           name: Restore Swift dependency cache
           key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
