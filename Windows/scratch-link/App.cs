@@ -16,17 +16,6 @@ namespace scratch_link
     {
         public const int SDMPort = 20110;
 
-        private static class EncodingParams
-        {
-            public static readonly byte[] Key = {
-                0xFA, 0x5C, 0xF7, 0x28, 0xAE, 0x0C, 0x2C, 0xB9, 0x43, 0x15, 0x1C, 0xD5, 0x35, 0xB0, 0x03, 0xE1,
-                0x8E, 0xC2, 0x94, 0x47, 0x83, 0x3C, 0x9D, 0x51, 0xED, 0x2D, 0x99, 0x21, 0x7B, 0x96, 0x17, 0xB0
-            };
-            public static readonly byte[] IV = {
-                0x52, 0x49, 0x19, 0xA0, 0x20, 0x80, 0x51, 0xC6, 0x8A, 0x44, 0x3E, 0x4A, 0xA6, 0x81, 0xD8, 0x41
-            };
-        }
-
         private static class SDMPath
         {
             public const string BLE = "/scratch/ble";
@@ -112,8 +101,8 @@ namespace scratch_link
                 var aes = Aes.Create();
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
-                aes.Key = EncodingParams.Key;
-                aes.IV = EncodingParams.IV;
+                aes.Key = ServerConstants.Key;
+                aes.IV = ServerConstants.IV;
 
                 var decryptor = aes.CreateDecryptor();
                 using (var encryptedStream = new MemoryStream(encrypted.Reverse().ToArray()))
@@ -137,8 +126,7 @@ namespace scratch_link
 
         private X509Certificate2 GetWssCertificate()
         {
-            var encryptedBytes = scratch_link.Properties.Resources.EncryptedWssCertificate;
-            var certificateBytes = DecryptBuffer(encryptedBytes);
+            var certificateBytes = DecryptBuffer(ServerConstants.EncodedPFX);
             var certificate = new X509Certificate2(certificateBytes, "Scratch");
             return certificate;
         }

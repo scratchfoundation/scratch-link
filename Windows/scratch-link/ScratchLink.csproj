@@ -81,6 +81,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="ServerConstants.cs" />
     <Compile Include="Session.cs" />
     <Compile Include="SessionManager.cs" />
     <Compile Include="App.cs" />
