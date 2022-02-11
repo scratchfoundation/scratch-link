@@ -9,6 +9,10 @@ function display_info () {
 	echo "*****"
 }
 
+KEYFILE="device-manager.key"
+CRTFILE="device-manager_scratch_mit_edu.crt"
+CA_FILE="device-manager_scratch_mit_edu.ca-bundle"
+
 # Disable path mangling in MSYS on Windows
 export MSYS_NO_PATHCONV=1
 export MSYS2_ARG_CONV_EXCL="*"
@@ -85,11 +89,11 @@ function generate_all () {
 	openssl req -config mock/intermediate/openssl.conf -new -sha384 -key mock/intermediate/private/intermediate.key -out mock/intermediate/certs/intermediate.csr -subj "/CN=mock-intermediate"
 	openssl ca -batch -config mock/ca/openssl.conf -md sha384 -extensions req_int -notext -keyfile mock/ca/private/ca.key -cert mock/ca/certificate-authority.cer -in mock/intermediate/certs/intermediate.csr -out mock/intermediate/intermediate.cer
 
-	cat mock/intermediate/intermediate.cer mock/ca/certificate-authority.cer > mock/device-manager_scratch_mit_edu.ca-bundle
+	cat mock/intermediate/intermediate.cer mock/ca/certificate-authority.cer > "mock/${CA_FILE}"
 
 	mkdir -p mock/scratch-device-manager
-	openssl req -config mock/intermediate/openssl.conf -new -keyout mock/device-manager.scratch.mit.edu.key -newkey rsa:2048 -subj "/OU=Domain Control Validated/OU=PositiveSSL/CN=device-manager.scratch.mit.edu" -nodes -out mock/scratch-device-manager/scratch-device-manager.request
-	openssl ca -batch -config mock/intermediate/openssl.conf -md sha256 -extensions req_cert -keyfile mock/intermediate/private/intermediate.key -cert mock/intermediate/intermediate.cer -out mock/device-manager_scratch_mit_edu.crt -infiles mock/scratch-device-manager/scratch-device-manager.request
+	openssl req -config mock/intermediate/openssl.conf -new -keyout "mock/${KEYFILE}" -newkey rsa:2048 -subj "/OU=Domain Control Validated/OU=PositiveSSL/CN=device-manager.scratch.mit.edu" -nodes -out mock/scratch-device-manager/scratch-device-manager.request
+	openssl ca -batch -config mock/intermediate/openssl.conf -md sha256 -extensions req_cert -keyfile mock/intermediate/private/intermediate.key -cert mock/intermediate/intermediate.cer -out "mock/${CRTFILE}" -infiles mock/scratch-device-manager/scratch-device-manager.request
 }
 
 generate_all
