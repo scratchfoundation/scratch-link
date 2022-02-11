@@ -12,16 +12,6 @@ enum SDMRoute: String {
     case bluetooth = "/scratch/bt"
 }
 
-struct EncodingParams {
-    static let key: [UInt8] = [
-        0xFA, 0x5C, 0xF7, 0x28, 0xAE, 0x0C, 0x2C, 0xB9, 0x43, 0x15, 0x1C, 0xD5, 0x35, 0xB0, 0x03, 0xE1,
-        0x8E, 0xC2, 0x94, 0x47, 0x83, 0x3C, 0x9D, 0x51, 0xED, 0x2D, 0x99, 0x21, 0x7B, 0x96, 0x17, 0xB0
-    ]
-    static let iv: [UInt8] = [
-        0x52, 0x49, 0x19, 0xA0, 0x20, 0x80, 0x51, 0xC6, 0x8A, 0x44, 0x3E, 0x4A, 0xA6, 0x81, 0xD8, 0x41
-    ]
-}
-
 enum InitializationError: Error {
     case server(String)
     case internalError(String)
@@ -152,17 +142,9 @@ class ScratchLink: NSObject, NSApplicationDelegate {
     }
 
     func getWssCertificate() -> String? {
-        guard let encryptedCertPath = Bundle.main.path(forResource: "scratch-device-manager", ofType: "pem.enc") else {
-            // This probably means the file is missing from the bundle
-            return nil
-        }
-        guard let encryptedBytes = getFileBytes(path: encryptedCertPath) else {
-            return nil
-        }
-
-        guard let decryptedBytes = encryptedBytes
+        guard let decryptedBytes = ServerConstants.encodedPEM
             .reversed()
-            .decrypt(Cipher.aes_256_cbc, key: EncodingParams.key, iv: EncodingParams.iv) else {
+            .decrypt(Cipher.aes_256_cbc, key: ServerConstants.key, iv: ServerConstants.iv) else {
             // This probably means a key or IV problem
             return nil
         }
