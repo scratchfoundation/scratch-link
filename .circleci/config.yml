@@ -92,7 +92,6 @@ jobs:
       xcode: "11.7.0"
     steps:
       - checkout
-      - prepare_certificates
       - when:
           condition:
             *should_sign
