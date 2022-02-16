@@ -16,17 +16,6 @@ namespace scratch_link
     {
         public const int SDMPort = 20110;
 
-        private static class EncodingParams
-        {
-            public static readonly byte[] Key = {
-                0xD8, 0x97, 0xEB, 0x08, 0xE0, 0xE9, 0xDE, 0x8F, 0x0B, 0x77, 0xAD, 0x42, 0x35, 0x02, 0xAF, 0xA5,
-                0x13, 0x72, 0xF8, 0xDA, 0xB0, 0xCB, 0xBE, 0x65, 0x0C, 0x1A, 0x1C, 0xBD, 0x5B, 0x10, 0x90, 0xD9
-            };
-            public static readonly byte[] IV = {
-                0xB5, 0xE4, 0x1D, 0xCC, 0x5B, 0x4D, 0x6F, 0xCD, 0x1C, 0x1E, 0x02, 0x84, 0x30, 0xB9, 0x21, 0xE6
-            };
-        }
-
         private static class SDMPath
         {
             public const string BLE = "/scratch/ble";
@@ -72,15 +61,9 @@ namespace scratch_link
                 sessionManager.ActiveSessionCountChanged += new EventHandler(UpdateIconText);
             }
 
-            var certificate = GetWssCertificate();
-            _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}", false)
+            _server = new WebSocketServer($"ws://0.0.0.0:{SDMPort}", false)
             {
-                RestartAfterListenError = true,
-                Certificate = certificate,
-                EnabledSslProtocols =
-                    System.Security.Authentication.SslProtocols.Tls |
-                    System.Security.Authentication.SslProtocols.Tls11 |
-                    System.Security.Authentication.SslProtocols.Tls12
+                RestartAfterListenError = true
             };
             _server.ListenerSocket.NoDelay = true;
 
@@ -101,46 +84,6 @@ namespace scratch_link
             }
 
             UpdateIconText(this, null);
-        }
-
-        private byte[] DecryptBuffer(byte[] encrypted)
-        {
-            const int bufferSize = 4096;
-
-            using (MemoryStream decrypted = new MemoryStream())
-            {
-                var aes = Aes.Create();
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
-                aes.Key = EncodingParams.Key;
-                aes.IV = EncodingParams.IV;
-
-                var decryptor = aes.CreateDecryptor();
-                using (var encryptedStream = new MemoryStream(encrypted))
-                {
-                    using (var cryptoStream = new CryptoStream(encryptedStream, decryptor, CryptoStreamMode.Read))
-                    {
-                        using (var decryptedStream = new MemoryStream())
-                        {
-                            var buffer = new byte[bufferSize];
-                            int count;
-                            while ((count = cryptoStream.Read(buffer, 0, buffer.Length)) != 0)
-                            {
-                                decryptedStream.Write(buffer, 0, count);
-                            }
-                            return decryptedStream.ToArray();
-                        }
-                    }
-                }
-            }
-        }
-
-        private X509Certificate2 GetWssCertificate()
-        {
-            var encryptedBytes = scratch_link.Properties.Resources.EncryptedWssCertificate;
-            var certificateBytes = DecryptBuffer(encryptedBytes);
-            var certificate = new X509Certificate2(certificateBytes, "Scratch");
-            return certificate;
         }
 
         private void OnAddressInUse()

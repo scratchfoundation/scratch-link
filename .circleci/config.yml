@@ -165,7 +165,6 @@ jobs:
     executor: windows/default
     steps:
       - checkout
-      - prepare_certificates
       - when:
           condition:
             *should_sign
