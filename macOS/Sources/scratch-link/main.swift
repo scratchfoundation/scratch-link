@@ -1,11 +1,8 @@
 import Cocoa
-import Foundation
-import PerfectCrypto
 import PerfectHTTP
 import PerfectHTTPServer
-import PerfectWebSockets
 
-let SDMPort: Int = 20110
+let SDMPort: Int = 20111
 
 enum SDMRoute: String {
     case bluetoothLowEnergy = "/scratch/ble"

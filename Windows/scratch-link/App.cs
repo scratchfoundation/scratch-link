@@ -2,19 +2,16 @@ using Fleck;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 
 namespace scratch_link
 {
     public class App : ApplicationContext
     {
-        public const int SDMPort = 20110;
+        public const int SDMPort = 20111;
 
         private static class SDMPath
         {
