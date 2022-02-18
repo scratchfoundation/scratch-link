@@ -1,5 +1,4 @@
 import Foundation
-import PerfectHTTP
 import PerfectWebSockets
 
 // TODO: implement remaining JSON-RPC 2.0 features like batching
