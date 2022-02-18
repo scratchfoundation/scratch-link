@@ -1,25 +1,12 @@
 import Cocoa
-import Foundation
-import PerfectCrypto
 import PerfectHTTP
 import PerfectHTTPServer
-import PerfectWebSockets
 
-let SDMPort: Int = 20110
+let SDMPort: Int = 20111
 
 enum SDMRoute: String {
     case bluetoothLowEnergy = "/scratch/ble"
     case bluetooth = "/scratch/bt"
-}
-
-struct EncodingParams {
-    static let key: [UInt8] = [
-        0xD8, 0x97, 0xEB, 0x08, 0xE0, 0xE9, 0xDE, 0x8F, 0x0B, 0x77, 0xAD, 0x42, 0x35, 0x02, 0xAF, 0xA5,
-        0x13, 0x72, 0xF8, 0xDA, 0xB0, 0xCB, 0xBE, 0x65, 0x0C, 0x1A, 0x1C, 0xBD, 0x5B, 0x10, 0x90, 0xD9
-    ]
-    static let iv: [UInt8] = [
-        0xB5, 0xE4, 0x1D, 0xCC, 0x5B, 0x4D, 0x6F, 0xCD, 0x1C, 0x1E, 0x02, 0x84, 0x30, 0xB9, 0x21, 0xE6
-    ]
 }
 
 enum InitializationError: Error {
@@ -123,15 +110,11 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         sessionManagers[SDMRoute.bluetoothLowEnergy.rawValue] = SessionManager<BLESession>()
         sessionManagers[SDMRoute.bluetooth.rawValue] = SessionManager<BTSession>()
 
-        guard let certificate = getWssCertificate() else {
-            throw InitializationError.server("Failed to load certificate resource")
-        }
         var routes = Routes()
         routes.add(method: .get, uri: "/scratch/*", handler: requestHandler)
         print("Starting server...")
         do {
             try HTTPServer.launch(wait: false, HTTPServer.Server(
-                tlsConfig: TLSConfiguration(cert: certificate),
                 name: "device-manager.scratch.mit.edu",
                 port: SDMPort,
                 routes: routes
@@ -149,27 +132,6 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         var bytes = [UInt8](repeating: 0, count: data.length)
         data.getBytes(&bytes, length: data.length)
         return bytes
-    }
-
-    func getWssCertificate() -> String? {
-        guard let encryptedCertPath = Bundle.main.path(forResource: "scratch-device-manager", ofType: "pem.enc") else {
-            // This probably means the file is missing from the bundle
-            return nil
-        }
-        guard let encryptedBytes = getFileBytes(path: encryptedCertPath) else {
-            return nil
-        }
-
-        guard let decryptedBytes = encryptedBytes
-            .decrypt(Cipher.aes_256_cbc, key: EncodingParams.key, iv: EncodingParams.iv) else {
-            // This probably means a key or IV problem
-            return nil
-        }
-
-        guard let decryptedString = String(bytes: decryptedBytes, encoding: .utf8) else {
-            return nil
-        }
-        return decryptedString
     }
 
     func does(string text: String, match regex: NSRegularExpression) -> Bool {

@@ -33,15 +33,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".circleci", ".circleci", "{
 		..\.circleci\config.yml = ..\.circleci\config.yml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Certificates", "Certificates", "{5A64E725-FF21-40FD-B327-F4E23907D4F6}"
-	ProjectSection(SolutionItems) = preProject
-		..\Certificates\.gitignore = ..\Certificates\.gitignore
-		..\Certificates\convert-certificates.sh = ..\Certificates\convert-certificates.sh
-		..\Certificates\mock-certificates.sh = ..\Certificates\mock-certificates.sh
-		..\Certificates\README.md = ..\Certificates\README.md
-		..\Certificates\roll.sh = ..\Certificates\roll.sh
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Windows", "Windows", "{9D623B8E-EB4D-44BE-AD1C-17363FEABAFF}"
 	ProjectSection(SolutionItems) = preProject
 		.gitattributes = .gitattributes
@@ -76,7 +67,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3721552C-638C-48CC-A154-F995CEA87505} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
 		{2E316847-3325-4060-9560-ED29CF3D1156} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
-		{5A64E725-FF21-40FD-B327-F4E23907D4F6} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
 		{9D623B8E-EB4D-44BE-AD1C-17363FEABAFF} = {56ED428E-4406-49E4-A454-B5B8EE848E66}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

@@ -16,6 +16,14 @@
         <label for="follow">Follow</label>
     </div>
     <fieldset>
+        <legend>Host</legend>
+        <div>
+            <input id="linkSecure" type="checkbox" title="WSS" />
+            <label for="linkSecure">WSS?</label>
+            <input id="linkHost" value="127.0.0.1" type="text" placeholder="Scratch Link host" style="width: 30rem;" />
+        </div>
+    </fieldset>
+    <fieldset>
         <legend>BLE</legend>
         <div>
             <button id="initBLE">Connect to app</button>
@@ -227,9 +235,22 @@
             }
         }
 
-        class ScratchBLE extends JSONRPCWebSocket {
+        class ScratchLinkClient extends JSONRPCWebSocket {
+            constructor(path) {
+                const protocol = document.getElementById('linkSecure').checked ? 'wss' : 'ws';
+                const host = document.getElementById('linkHost').value;
+                try {
+                    const webSocket = new WebSocket(`${protocol}://${host}:20110/${path}`);
+                    super(webSocket);
+                } catch (e) {
+                    addLine(`Ctor exception: ${stringify(e)}`);
+                }
+            }
+        }
+
+        class ScratchBLE extends ScratchLinkClient {
             constructor() {
-                super(new WebSocket('wss://device-manager.scratch.mit.edu:20110/scratch/ble'));
+                super('scratch/ble');
 
                 this.discoveredPeripheralId = null;
             }
@@ -272,9 +293,9 @@
             }
         }
 
-        class ScratchBT extends JSONRPCWebSocket {
+        class ScratchBT extends ScratchLinkClient {
             constructor() {
-                super(new WebSocket('wss://device-manager.scratch.mit.edu:20110/scratch/bt'));
+                super('scratch/bt');
             }
 
             requestDevice(options) {
@@ -646,6 +667,12 @@
         }
 
         function stringify(o) {
+            if (o instanceof Event) {
+                if (o instanceof ErrorEvent) {
+                    return `${o.constructor.name} {error: ${stringify(o.error)}`;
+                }
+                return `${o.constructor.name} {type: "${o.type}"}`;
+            }
             return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
         }
 

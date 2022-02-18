@@ -33,23 +33,14 @@ thorough documentation.
 Please use [markdownlint](https://www.npmjs.com/package/markdownlint) to check documentation changes before submitting
 a pull request.
 
-### Certificates
+### Secure WebSockets
 
-**These steps are necessary regardless of platform.**
+Previous versions of Scratch Link used Secure WebSockets (`wss://`) to communicate with Scratch. This is no longer the
+case: new versions of Scratch Link use regular WebSockets (`ws://`). It is no longer necessary to prepare an SSL
+certificate for Scratch Link.
 
-Scratch Link provides Secure WebSocket (WSS) communication and uses digital certificates to do so. These certificates
-are **not** provided in this repository.
-
-To prepare certificates for Scratch Link development, run the following commands. These commands should be run from a
-`bash` prompt (or `zsh`, etc.), which on Windows means using something like [Cygwin](https://www.cygwin.com/) or
-[WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-
-1. `cd Certificates`
-2. Run `./mock-certificates.sh` to generate self-signed certificates.
-3. Run `./convert-certificates.sh` to prepare the certificates for use by Scratch Link.
-
-If you are a member of the Scratch team and need the real certificates,
-see `Certificates/convert-certificates.sh` for details.
+This change causes an incompatibility with some browsers, including Safari. An upcoming version of Scratch Link will
+resolve this incompatibility.
 
 ### macOS
 
@@ -70,7 +61,7 @@ The build is primarily controlled through `make`:
   1. Compile Scratch Link code using `swift build`
   2. Create an app bundle at `dist/Scratch Link.app`
   3. Copy all necessary frameworks and dylibs into the app bundle
-  4. Generate and/or copy other resources into the app bundle (certificates, icons, etc.)
+  4. Generate and/or copy other resources, such as icons, into the app bundle
 * Build PKG installers with `make dist`, which runs both of these:
   * Build a PKG for the Mac App Store with `make dist-mas`
   * Build a PKG for non-Store distribution ("Developer ID") with `make dist-devid`
