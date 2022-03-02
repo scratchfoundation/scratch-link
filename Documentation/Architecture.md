@@ -56,6 +56,7 @@ end
 subgraph "Scratch Link"
     WebSocket["WebSocket listener app"]
     stdio["stdio helper app"]
+    SafariHelper["Safari extension wrapper"]
     subgraph "shared"
         RPC["JSON RPC message handler"]
         SessionManager
@@ -74,7 +75,7 @@ subgraph "Scratch Link"
     end
 end
 
-Safari -- WebExtensions Native Messaging --> stdio
+Safari -- WebExtensions Native Messaging --> SafariHelper --> stdio
 Browsers -- WebExtensions Native Messaging --> stdio
 Browsers -- ws:// --> WebSocket
 App -- ws:// --> WebSocket
