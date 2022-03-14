@@ -1,3 +1,9 @@
 .idea/
+.vs/
 .vscode/
+bin/
+obj/
+
 [._]DS_Store
+
+*.csproj.user
