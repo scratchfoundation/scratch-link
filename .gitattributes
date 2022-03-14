@@ -5,13 +5,26 @@
 # People who (for example) rsync between Windows and Linux need this.
 
 # File types which we know are binary
+*.ai binary
 *.png binary
+*.ttf binary
 
 # Prefer LF for most file types
+# if we need binary plist files we'll need to switch *.plist to binary!
+*.appxmanifest text eol=lf
+*.cs text eol=lf
+*.csproj text eol=lf
 *.html text eol=lf
+*.json text eol=lf
+*.manifest text eol=lf
 *.md text eol=lf
+*.plist text eol=lf
 *.sh text eol=lf
+*.sln text eol=lf
 *.svg text eol=lf
+*.txt text eol=lf
+*.xaml text eol=lf
+*.xml text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 
