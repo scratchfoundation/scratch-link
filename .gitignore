@@ -3,6 +3,7 @@
 .vscode/
 bin/
 obj/
+xcuserdata/
 
 [._]DS_Store
 
