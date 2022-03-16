@@ -41,10 +41,16 @@ wrapper](https://developer.apple.com/documentation/safariservices/safari_web_ext
 MDN provides some documentation on [building a cross-browser
 extension](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Build_a_cross_browser_extension).
 
-The Scratch app for Mac & Windows can communicate with Scratch Link over a `ws://` connection to avoid the need to
-load WebExtension files.
+Other browsers are capable of either `ws://` or WebExtension communication. However, current versions of MAUI make it
+difficult (maybe impossible) to communicate over `stdio` as needed by WebExtension native messaging. Since Safari is
+the only browser which strictly needs this, and Safari needs a WebExtension wrapper app anyway, we can implement that
+wrapper using Swift or Objective C and use the macOS native WebSocket client. The only downside to the lack of a
+WebExtension component for other browsers is that those other browsers will not be able to auto-launch Scratch Link.
+If this limitation is lifted in a future version of MAUI, we can add that as a nice-to-have.
 
-Other browsers may choose to communicate with Scratch Link using either method.
+The Scratch app for Mac & Windows can communicate with Scratch Link over a `ws://` connection, just like other
+browsers. Because we're making a loopback connection over `ws://` we won't need to worry about DNS resolution, which
+means we will be able to use Scratch Link in a truly offline environment without needing any DNS workarounds.
 
 ```mermaid
 graph TD;
@@ -53,33 +59,33 @@ subgraph Clients
     Browsers["Other Browsers"]
     App["Scratch app"]
 end
+SafariHelper["Scratch Link Safari WebExtension Helper"]
 subgraph "Scratch Link"
-    WebSocket["WebSocket listener app"]
-    stdio["stdio helper app"]
-    SafariHelper["Safari extension wrapper"]
-    subgraph "shared"
-        RPC["JSON RPC message handler"]
-        SessionManager
-        BTSession
-        BLESession
-    end
-    subgraph "macOS"
+    WebSocket["WebSocket listener"]
+    RPC["JSON RPC message handler"]
+    SessionManager
+    BTSession
+    BLESession
+    subgraph " macOS "
         MacBT["BT"]
         MacBLE["BLE"]
-        CoreBluetooth
     end
-    subgraph "Windows"
+    subgraph " Windows "
         WinBT["BT"]
         WinBLE["BLE"]
-        Windows.Devices.Bluetooth
     end
 end
+subgraph "macOS"
+    CoreBluetooth
+end
+subgraph "Windows"
+    Windows.Devices.Bluetooth
+end
 
-Safari -- WebExtensions Native Messaging --> SafariHelper --> stdio
-Browsers -- WebExtensions Native Messaging --> stdio
-Browsers -- ws:// --> WebSocket
-App -- ws:// --> WebSocket
-stdio --> RPC
+Safari -- "WebExtensions Native Messaging (stdio)" --> SafariHelper
+SafariHelper --> WebSocket
+Browsers -- "ws://" --> WebSocket
+App -- "ws://" --> WebSocket
 WebSocket --> RPC
 RPC --> SessionManager
 SessionManager --> BTSession
@@ -111,7 +117,6 @@ subgraph "Scratch Link (Windows / C#)"
     WinSessionManager["Session manager"]
     WinBT["BT Session"]
     WinBLE["BLE Session"]
-    Windows.Devices.Bluetooth
 end
 subgraph "Scratch Link (macOS / Swift)"
     MacWebSocket["WebSocket listener"]
@@ -119,7 +124,12 @@ subgraph "Scratch Link (macOS / Swift)"
     MacSessionManager["Session manager"]
     MacBT["BT Session"]
     MacBLE["BLE Session"]
+end
+subgraph "macOS"
     CoreBluetooth
+end
+subgraph "Windows"
+    Windows.Devices.Bluetooth
 end
 
 Safari -- wss:// --> unsupported
