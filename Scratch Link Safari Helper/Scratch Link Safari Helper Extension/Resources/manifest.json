@@ -21,7 +21,10 @@
 
     "content_scripts": [{
         "js": [ "content.js" ],
-        "matches": [ "*://example.com/*" ]
+        "matches": [
+            "https://scratch.mit.edu/*",
+            "https://llk.github.io/*"
+        ]
     }],
 
     "browser_action": {
@@ -36,5 +39,5 @@
         }
     },
 
-    "permissions": [ ]
+    "permissions": [ "nativeMessaging" ]
 }
