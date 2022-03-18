@@ -30,6 +30,7 @@
 *.swift text eol=lf
 *.txt text eol=lf
 *.xaml text eol=lf
+*.xcscheme text eol=lf
 *.xcworkspacedata text eol=lf
 *.xml text eol=lf
 *.yml text eol=lf
