@@ -14,6 +14,10 @@ let SFExtensionMessageKey = "message"
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
 	func beginRequest(with context: NSExtensionContext) {
+        let myBundleIdentifier = Bundle.main.bundleIdentifier ?? "nil"
+        SFSafariApplication.dispatchMessage(withName: "native dispatchMessage", toExtensionWithIdentifier: myBundleIdentifier, userInfo: ["dispatchMessage userInfo": "here"]) {(error) -> Void in
+            os_log(.default, "Dispatching message to the extension finished")
+        }
         let item = context.inputItems[0] as! NSExtensionItem
         let message = item.userInfo?[SFExtensionMessageKey]
         os_log(.default, "Received message from browser.runtime.sendNativeMessage: %@", message as! CVarArg)
@@ -63,5 +67,8 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         let response = NSExtensionItem()
         response.userInfo = [ SFExtensionMessageKey: message ]
         context.completeRequest(returningItems: [response], completionHandler: completionHandler)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            context.completeRequest(returningItems: [response], completionHandler: completionHandler)
+        }
     }
 }
