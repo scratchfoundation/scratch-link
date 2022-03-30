@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		69C52B2D27F50239006A46F3 /* client.js in Resources */ = {isa = PBXBuildFile; fileRef = 69C52B2C27F50239006A46F3 /* client.js */; };
 		69E961B627E28B86008CF7C0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961B527E28B86008CF7C0 /* AppDelegate.swift */; };
 		69E961BA27E28B86008CF7C0 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 69E961B827E28B86008CF7C0 /* Main.html */; };
 		69E961BC27E28B86008CF7C0 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 69E961BB27E28B86008CF7C0 /* Icon.png */; };
@@ -69,6 +70,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		69C52B2527ECCB57006A46F3 /* Safari WebExtension messaging.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Safari WebExtension messaging.md"; sourceTree = "<group>"; };
+		69C52B2C27F50239006A46F3 /* client.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = client.js; sourceTree = "<group>"; };
 		69E961B227E28B86008CF7C0 /* Scratch Link Safari Helper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Scratch Link Safari Helper.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		69E961B527E28B86008CF7C0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		69E961B927E28B86008CF7C0 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = ../Base.lproj/Main.html; sourceTree = "<group>"; };
@@ -134,6 +137,7 @@
 		69E961A927E28B86008CF7C0 = {
 			isa = PBXGroup;
 			children = (
+				69C52B2527ECCB57006A46F3 /* Safari WebExtension messaging.md */,
 				69E961B427E28B86008CF7C0 /* Scratch Link Safari Helper */,
 				69E961D127E28B88008CF7C0 /* Scratch Link Safari HelperTests */,
 				69E961DB27E28B88008CF7C0 /* Scratch Link Safari HelperUITests */,
@@ -213,6 +217,7 @@
 				69E961EE27E28B88008CF7C0 /* images */,
 				69E961F027E28B88008CF7C0 /* manifest.json */,
 				69E961F227E28B88008CF7C0 /* background.js */,
+				69C52B2C27F50239006A46F3 /* client.js */,
 				69E961F427E28B88008CF7C0 /* content.js */,
 				69E961F627E28B88008CF7C0 /* popup.html */,
 				69E961F827E28B88008CF7C0 /* popup.css */,
@@ -375,6 +380,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				69C52B2D27F50239006A46F3 /* client.js in Resources */,
 				69E961F327E28B88008CF7C0 /* background.js in Resources */,
 				69E961F927E28B88008CF7C0 /* popup.css in Resources */,
 				69E961F727E28B88008CF7C0 /* popup.html in Resources */,
