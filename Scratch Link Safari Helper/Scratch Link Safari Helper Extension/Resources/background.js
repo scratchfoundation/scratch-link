@@ -6,21 +6,20 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     const {session, method, params, id} = request;
 
-    if (session && (method === 'open')) {
-        sessionTabMap.set(session, sender.tab.id);
-    }
-
     browser.runtime.sendNativeMessage('application.id', {
         session,
         method,
         params,
         id
     }, response => {
+        if (method === 'open') {
+            sessionTabMap.set(response.result, sender.tab.id);
+        }
         console.log("Sending response: ", response);
         sendResponse(response);
     });
     // asynchronous response expected?
-    return (session !== undefined && id !== undefined);
+    return (id !== undefined);
 });
 
 const port = browser.runtime.connectNative("application.id");
