@@ -29,17 +29,6 @@ self['ScratchLinkSafariSocket'] = (function () {
     }
 
     /**
-     * Add a session to the session map and return its new ID. Does NOT modify the session.
-     * @param {ScratchLinkSafariSocket} session - The session to add
-     * @returns - the ID under which the session was registered
-     */
-    const registerSession = function (session) {
-        const id = getUnusedID(sessions);
-        sessions.set(id, session);
-        return id;
-    };
-
-    /**
      * Add response handlers to the pending request map and return a new ID to use for the request.
      * @param {Object} handlers - the functions to handle the result of the request
      * @property {function} resolve - the function to handle a response
@@ -132,11 +121,12 @@ self['ScratchLinkSafariSocket'] = (function () {
          */
         open () {
             installListener();
-            this._id = registerSession(this);
             this._sendRequest('open', {
                 type: this._type
             }).then(
-                () => {
+                response => {
+                    this._id = response.result;
+                    sessions.set(this._id, this);
                     this._onOpen();
                 },
                 () => {

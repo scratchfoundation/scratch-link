@@ -13,6 +13,15 @@ let SFExtensionMessageKey = "message"
 
 var sessionMap = Dictionary<UInt32, URLSessionWebSocketTask>()
 
+func getUnusedSessionID() -> UInt32 {
+    while true {
+        let proposedID = arc4random_uniform(UInt32.max)
+        if sessionMap[proposedID] == nil {
+            return proposedID
+        }
+    }
+}
+
 // WARNING: This class is reinstantiated for each request from the browser!
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling, URLSessionWebSocketDelegate {
 
@@ -34,8 +43,10 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling, URLSessio
 	func beginRequest(with context: NSExtensionContext) {
         guard
             let message = getMessage(from: context),
-            let session = message["session"] as? UInt32,
-            let method = message["method"] as? String
+            let method = message["method"] as? String,
+            let session = (
+                method == "open" ? getUnusedSessionID() : message["session"] as? UInt32
+            )
         else {
             os_log(.error, "Ignoring malformed message")
             return
@@ -69,6 +80,9 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling, URLSessio
             switch result {
             case .success(let result):
                 response["result"] = result
+                if method == "open" {
+                    response["session"] = result
+                }
             case .failure(let error):
                 response["error"] = error
             }
@@ -99,7 +113,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling, URLSessio
         startListening(to: task, withSessionID: sessionID)
         
         // TODO: wait for didOpenWithProtocol
-        return .success()
+        return .success(sessionID)
     }
     
     func closeSession(with sessionID: UInt32, method: String, params: JSON?, id: UInt32?) -> JSONResult {
