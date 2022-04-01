@@ -30,9 +30,9 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     typealias MethodHandler = (
         _ sessionID: UInt32,
         _ method: String,
-        _ params: JSON?,
+        _ params: JSONObject?,
         _ responseID: UInt32?,
-        _ completion: @escaping (JSONResult) -> Void
+        _ completion: @escaping (JSONValueResult) -> Void
     ) -> Void
     
 	func beginRequest(with context: NSExtensionContext) {
@@ -48,7 +48,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
         
         let id = message["id"] as? UInt32
-        let params = message["params"] as? JSON
+        let params = message["params"] as? JSONObject
         
         os_log(.default, "Received message from browser.runtime.sendNativeMessage: %@", message)
 
@@ -67,7 +67,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
         handler(sessionID, method, params, id) { result in
             if let id = id {
-                var response: JSON = [
+                var response: JSONObject = [
                     "jsonrpc": "2.0",
                     "session": sessionID,
                     "id": id
@@ -86,14 +86,14 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
     }
     
-    func getMessage(from context: NSExtensionContext) -> JSON? {
+    func getMessage(from context: NSExtensionContext) -> JSONObject? {
         guard let item = context.inputItems[0] as? NSExtensionItem else {
             return nil
         }
-        return item.userInfo?[SFExtensionMessageKey] as? JSON
+        return item.userInfo?[SFExtensionMessageKey] as? JSONObject
     }
 
-    func openSession(with sessionID: UInt32, method: String, params: JSON?, id: UInt32?, completion: @escaping (JSONResult) -> Void) -> Void {
+    func openSession(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
 
         guard let sessionType = params?["type"] as? String else {
             return completion(.failure("call to 'open' with bad or missing 'type' parameter"))
@@ -102,12 +102,16 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         let session = SessionDelegate.open(sessionID: sessionID, sessionType: sessionType, completion: completion)
         sessionMap[sessionID] = session
 
-        session.setReceiver { result in
-            SFSafariApplication.dispatchMessage(withName: "native dispatchMessage", toExtensionWithIdentifier: myBundleIdentifier, userInfo: ["result": result], completionHandler: nil)
+        session.setReceiver { message in
+            let messageBundle: [String: Any] = [
+                "session": sessionID,
+                "message": message
+            ]
+            SFSafariApplication.dispatchMessage(withName: "native dispatchMessage", toExtensionWithIdentifier: myBundleIdentifier, userInfo: messageBundle, completionHandler: nil)
         }
     }
-    
-    func sendMessage(with sessionID: UInt32, method: String, params: JSON?, id: UInt32?, completion: @escaping (JSONResult) -> Void) -> Void {
+
+    func sendMessage(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
         guard let session = sessionMap[sessionID] else {
             return completion(.failure("attempt to send message on unrecognized session"))
         }
@@ -115,23 +119,28 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             return completion(.failure("attempt to send empty message"))
         }
         session.send(messageJSON: message) { result in
-            return completion(result)
+            switch result {
+            case .success(let value):
+                return completion(.success(value))
+            case .failure(let error):
+                return completion(.failure(error))
+            }
         }
     }
     
-    func closeSession(with sessionID: UInt32, method: String, params: JSON?, id: UInt32?, completion: @escaping (JSONResult) -> Void) -> Void {
+    func closeSession(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
         guard let session = sessionMap[sessionID] else {
             return completion(.failure("attempt to close unrecognized session"))
         }
         session.close(completion: completion)
     }
     
-    func unrecognizedMethod(with sessionID: UInt32, method: String, params: JSON?, id: UInt32?, completion: @escaping (JSONResult) -> Void) -> Void {
+    func unrecognizedMethod(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
         os_log(.error, "Ignoring call to unrecognized method: %@", method)
         return completion(.failure("unrecognized method"))
     }
     
-    func completeContextRequest(for context: NSExtensionContext, withMessage message: JSON?, completionHandler: ((Bool) -> Void)? = nil) {
+    func completeContextRequest(for context: NSExtensionContext, withMessage message: JSONObject?, completionHandler: ((Bool) -> Void)? = nil) {
         let response = NSExtensionItem()
         if let message = message {
             response.userInfo = [ SFExtensionMessageKey: message ]

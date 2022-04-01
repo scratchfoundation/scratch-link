@@ -6,20 +6,21 @@
 //
 
 import Foundation
+import os.log
 
 class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
     
     let sessionID: UInt32
     let sessionType: String
     var webSocket: URLSessionWebSocketTask?
-    var openCallback: ((JSONResult) -> Void)?
-    var receiveCallback: ((JSONResult) -> Void)?
-    var closeCallbacks: [(JSONResult) -> Void]
-    var pendingRequests: [Int: (JSONResult) -> Void]
+    var openCallback: ((JSONValueResult) -> Void)?
+    var receiveCallback: ((JSONObject) -> Void)?
+    var closeCallbacks: [(JSONValueResult) -> Void]
+    var pendingRequests: [Int: (JSONObjectResult) -> Void]
     
     // MARK: - Public API
     
-    static func open(sessionID: UInt32, sessionType: String, completion: @escaping (JSONResult) -> Void) -> SessionDelegate {
+    static func open(sessionID: UInt32, sessionType: String, completion: @escaping (JSONValueResult) -> Void) -> SessionDelegate {
         let session = SessionDelegate(sessionID, sessionType, completion)
         let urlSession = URLSession(configuration: .default, delegate: session, delegateQueue: OperationQueue())
         let webSocket = urlSession.webSocketTask(with: URL(string: "ws://localhost:20111/scratch/" + sessionType)!)
@@ -29,11 +30,11 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         return session
     }
     
-    func setReceiver(onReceive: @escaping (JSONResult) -> Void) {
+    func setReceiver(onReceive: @escaping (JSONObject) -> Void) {
         self.receiveCallback = onReceive
     }
     
-    func send(messageJSON: JSON, completion: @escaping (JSONResult) -> Void) {
+    func send(messageJSON: JSONObject, completion: @escaping (JSONObjectResult) -> Void) {
         guard let webSocket = webSocket else {
             return completion(.failure("session not open"))
         }
@@ -50,7 +51,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         }
     }
 
-    func close(completion: @escaping (JSONResult) -> Void) {
+    func close(completion: @escaping (JSONValueResult) -> Void) {
         guard let webSocket = webSocket else {
             return completion(.failure("session not open"))
         }
@@ -60,7 +61,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
 
     // MARK: - Internals
     
-    private init (_ sessionID: UInt32, _ sessionType: String, _ openCallback: @escaping (JSONResult) -> Void) {
+    private init (_ sessionID: UInt32, _ sessionType: String, _ openCallback: @escaping (JSONValueResult) -> Void) {
         self.sessionType = sessionType
         self.sessionID = sessionID
         self.webSocket = nil
@@ -93,46 +94,45 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
     }
 
     private func listen() {
-        let messageMalformed = "received malformed message from Scratch Link"
+        let messageMalformed: StaticString = "received malformed message from Scratch Link"
         func receiveHandler(result: Result<URLSessionWebSocketTask.Message, Error>) -> Void {
             switch result {
             case .success(let response):
                 switch response {
                 case .string(let responseText):
-                    if let responseJSON = try? JSONSerialization.jsonObject(with: responseText.data(using: .utf8)!, options: []) as? JSON {
-                        receiveWrapper(.success(responseJSON))
+                    if let responseJSON = try? JSONSerialization.jsonObject(with: responseText.data(using: .utf8)!, options: []) as? JSONObject {
+                        receiveWrapper(responseJSON)
                     } else {
-                        receiveWrapper(.failure(messageMalformed))
+                        os_log(.error, messageMalformed)
                     }
                 case .data(let responseData):
-                    if let responseJSON = try? JSONSerialization.jsonObject(with: responseData, options: []) as? JSON {
-                        receiveWrapper(.success(responseJSON))
+                    if let responseJSON = try? JSONSerialization.jsonObject(with: responseData, options: []) as? JSONObject {
+                        receiveWrapper(responseJSON)
                     } else {
-                        receiveWrapper(.failure(messageMalformed))
+                        os_log(.error, messageMalformed)
                     }
                     break // TODO: use responseData
                 @unknown default:
                     break // TODO: report error
                 }
             case .failure(let error):
-                receiveWrapper(.failure(error.localizedDescription))
+                os_log(.error, "error receiving from Scratch Link: %@", error.localizedDescription)
             }
             webSocket?.receive(completionHandler: receiveHandler)
         }
         webSocket?.receive(completionHandler: receiveHandler)
     }
     
-    private func receiveWrapper(_ result: JSONResult) {
-        if case let .success(rpcResult) = result,
-           let rpcResultJSON = rpcResult as? JSON,
-           let id = rpcResultJSON["id"] as? Int,
+    private func receiveWrapper(_ receivedJSON: JSONObject) {
+        if receivedJSON["method"] == nil,
+           let id = receivedJSON["id"] as? Int,
            let pendingRequest = pendingRequests[id] {
             // if all that is true, this is a response to a request through `send()`
             pendingRequests.removeValue(forKey: id)
-            pendingRequest(result)
+            pendingRequest(.success(receivedJSON))
         } else {
             // otherwise it's something else and we should report it out unmodified
-            receiveCallback?(result)
+            receiveCallback?(receivedJSON)
         }
     }
 }
