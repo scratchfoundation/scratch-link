@@ -120,10 +120,19 @@ self['ScratchLinkSafariSocket'] = (function () {
          * Calls the `onOpen` callback when the connection is established.
          */
         open () {
+            const openParams = {};
+            switch (this._type) {
+            case 'BLE':
+                openParams.type = 'ble';
+                break;
+            case 'BT':
+                openParams.type = 'bt';
+                break;
+            default:
+                throw new Error('Unknown session type: ' + this._type);
+            }
             installListener();
-            this._sendRequest('open', {
-                type: this._type
-            }).then(
+            this._sendRequest('open', openParams).then(
                 result => {
                     this._id = result;
                     sessions.set(this._id, this);
@@ -172,7 +181,9 @@ self['ScratchLinkSafariSocket'] = (function () {
                 if (typeof messageObject.id === 'undefined') {
                     this._sendNotify('send', messageObject);
                 } else {
-                    return this._sendRequest('send', messageObject);
+                    this._sendRequest('send', messageObject).then(result => {
+                        this._handleMessage(result);
+                    });
                 }
             }
         }

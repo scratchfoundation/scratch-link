@@ -6,11 +6,16 @@
 //
 
 import Foundation
-import Combine
 
-typealias JSON = Dictionary<String, AnyHashable?>
+typealias JSONValue = AnyHashable?
+typealias JSONObject = Dictionary<String, JSONValue>
 
-enum JSONResult {
-    case success(AnyHashable? = nil)
-    case failure(AnyHashable)
+enum JSONObjectResult {
+    case success(JSONObject? = nil)
+    case failure(JSONValue)
+}
+
+enum JSONValueResult {
+    case success(JSONValue? = nil)
+    case failure(JSONValue)
 }
