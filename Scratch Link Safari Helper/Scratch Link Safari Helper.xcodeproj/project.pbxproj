@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		69C52B2D27F50239006A46F3 /* client.js in Resources */ = {isa = PBXBuildFile; fileRef = 69C52B2C27F50239006A46F3 /* client.js */; };
+		69C52B2F27F502F2006A46F3 /* SessionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C52B2E27F502F2006A46F3 /* SessionDelegate.swift */; };
+		69C52B3127F50E57006A46F3 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C52B3027F50E57006A46F3 /* JSON.swift */; };
 		69E961B627E28B86008CF7C0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961B527E28B86008CF7C0 /* AppDelegate.swift */; };
 		69E961BA27E28B86008CF7C0 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 69E961B827E28B86008CF7C0 /* Main.html */; };
 		69E961BC27E28B86008CF7C0 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 69E961BB27E28B86008CF7C0 /* Icon.png */; };
@@ -72,6 +74,8 @@
 /* Begin PBXFileReference section */
 		69C52B2527ECCB57006A46F3 /* Safari WebExtension messaging.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Safari WebExtension messaging.md"; sourceTree = "<group>"; };
 		69C52B2C27F50239006A46F3 /* client.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = client.js; sourceTree = "<group>"; };
+		69C52B2E27F502F2006A46F3 /* SessionDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDelegate.swift; sourceTree = "<group>"; };
+		69C52B3027F50E57006A46F3 /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		69E961B227E28B86008CF7C0 /* Scratch Link Safari Helper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Scratch Link Safari Helper.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		69E961B527E28B86008CF7C0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		69E961B927E28B86008CF7C0 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = ../Base.lproj/Main.html; sourceTree = "<group>"; };
@@ -202,7 +206,9 @@
 		69E961E827E28B88008CF7C0 /* Scratch Link Safari Helper Extension */ = {
 			isa = PBXGroup;
 			children = (
+				69C52B3027F50E57006A46F3 /* JSON.swift */,
 				69E961E927E28B88008CF7C0 /* SafariWebExtensionHandler.swift */,
+				69C52B2E27F502F2006A46F3 /* SessionDelegate.swift */,
 				69E961FC27E28B88008CF7C0 /* Info.plist */,
 				69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Helper_Extension.entitlements */,
 				69E961EB27E28B88008CF7C0 /* Resources */,
@@ -426,6 +432,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				69E961EA27E28B88008CF7C0 /* SafariWebExtensionHandler.swift in Sources */,
+				69C52B3127F50E57006A46F3 /* JSON.swift in Sources */,
+				69C52B2F27F502F2006A46F3 /* SessionDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -124,12 +124,12 @@ self['ScratchLinkSafariSocket'] = (function () {
             this._sendRequest('open', {
                 type: this._type
             }).then(
-                response => {
-                    this._id = response.result;
+                result => {
+                    this._id = result;
                     sessions.set(this._id, this);
                     this._onOpen();
                 },
-                () => {
+                error => {
                     this._close();
                 }
             );
