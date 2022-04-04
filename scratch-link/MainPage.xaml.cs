@@ -1,20 +1,29 @@
-﻿namespace scratch_link;
+﻿// <copyright file="MainPage.xaml.cs" company="Scratch Foundation">
+// Copyright (c) Scratch Foundation. All rights reserved.
+// </copyright>
 
+namespace ScratchLink;
+
+/// <summary>
+/// This class holds the main UI for the application.
+/// </summary>
 public partial class MainPage : ContentPage
 {
-	int count = 0;
+    private int count = 0;
 
-	public MainPage()
-	{
-		InitializeComponent();
-	}
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MainPage"/> class.
+    /// </summary>
+    public MainPage()
+    {
+        this.InitializeComponent();
+    }
 
-	private void OnCounterClicked(object sender, EventArgs e)
-	{
-		count++;
-		CounterLabel.Text = $"Current count: {count}";
+    private void OnCounterClicked(object sender, EventArgs e)
+    {
+        this.count++;
+        this.CounterLabel.Text = $"Current count: {this.count}";
 
-		SemanticScreenReader.Announce(CounterLabel.Text);
-	}
+        SemanticScreenReader.Announce(this.CounterLabel.Text);
+    }
 }
-

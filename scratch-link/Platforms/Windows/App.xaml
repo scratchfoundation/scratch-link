@@ -1,8 +1,8 @@
 ﻿<maui:MauiWinUIApplication
-    x:Class="scratch_link.WinUI.App"
+    x:Class="ScratchLink.WinUI.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:maui="using:Microsoft.Maui"
-    xmlns:local="using:scratch_link.WinUI">
+    xmlns:local="using:ScratchLink.WinUI">
 
 </maui:MauiWinUIApplication>
