@@ -1,4 +1,4 @@
-﻿// <copyright file="App.xaml.cs" company="Scratch Foundation">
+﻿// <copyright file="ScratchLinkApp.xaml.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
@@ -10,19 +10,19 @@ using System.Net;
 using System.Net.WebSockets;
 
 /// <summary>
-/// The <see cref="App"/> class contains the cross-platform entry point for the application.
+/// The <see cref="ScratchLinkApp"/> class contains the cross-platform entry point for the application.
 /// </summary>
-public partial class App : Application
+public partial class ScratchLinkApp : Application
 {
     private const int WebSocketPort = 20111;
 
     private readonly WebSocketListener webSocketListener;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="App"/> class.
+    /// Initializes a new instance of the <see cref="ScratchLinkApp"/> class.
     /// This is the cross-platform entry point.
     /// </summary>
-    public App()
+    public ScratchLinkApp()
     {
         this.InitializeComponent();
 
@@ -38,7 +38,7 @@ public partial class App : Application
             return;
         }
 
-        this.webSocketListener = new WebSocketListener()
+        this.webSocketListener = new ()
         {
             Handlers =
             {
