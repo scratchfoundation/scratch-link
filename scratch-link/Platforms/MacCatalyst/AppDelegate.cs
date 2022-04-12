@@ -5,6 +5,7 @@
 namespace ScratchLink;
 
 using Foundation;
+using ScratchLink.Platforms.MacCatalyst;
 
 /// <summary>
 /// The AppDelegate connects UIApplication to MauiApp on MacCatalyst.
@@ -17,5 +18,10 @@ public class AppDelegate : MauiUIApplicationDelegate
     /// MacCatalyst-specific configuration can go here.
     /// </summary>
     /// <returns>A new instance of <see cref="MauiApp"/> configured for our app.</returns>
-    protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+    protected override MauiApp CreateMauiApp()
+    {
+        var builder = MauiProgram.CreateMauiAppBuilder();
+        builder.Services.Add(new ServiceDescriptor(typeof(SessionManager), typeof(MacSessionManager), ServiceLifetime.Singleton));
+        return builder.Build();
+    }
 }

@@ -6,6 +6,8 @@
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 namespace ScratchLink.WinUI;
 
+using ScratchLink.Platforms.Windows;
+
 /// <summary>
 /// Provides application-specific behavior to supplement the default Application class.
 /// </summary>
@@ -25,5 +27,10 @@ public partial class App : MauiWinUIApplication
     /// MacCatalyst-specific configuration can go here.
     /// </summary>
     /// <returns>A new instance of <see cref="MauiApp"/> configured for our app.</returns>
-    protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+    protected override MauiApp CreateMauiApp()
+    {
+        var builder = MauiProgram.CreateMauiAppBuilder();
+        builder.Services.Add(new ServiceDescriptor(typeof(SessionManager), typeof(WindowsSessionManager), ServiceLifetime.Singleton));
+        return builder.Build();
+    }
 }
