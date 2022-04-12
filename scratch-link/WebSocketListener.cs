@@ -12,9 +12,9 @@ using System.Net.WebSockets;
 /// </summary>
 internal class WebSocketListener
 {
-    private readonly HttpListener listener = new HttpListener();
+    private readonly HttpListener listener = new ();
 
-    private readonly CancellationTokenSource cts = new CancellationTokenSource();
+    private readonly CancellationTokenSource cts = new ();
 
     /// <summary>
     /// Gets a value indicating whether WebSocketListener is supported in the current environment.
@@ -24,7 +24,7 @@ internal class WebSocketListener
     /// <summary>
     /// Gets the mapping of path to handler.
     /// </summary>
-    public Dictionary<string, Action<HttpListenerWebSocketContext>> Handlers { get; } = new Dictionary<string, Action<HttpListenerWebSocketContext>>();
+    public Dictionary<string, Action<HttpListenerWebSocketContext>> Handlers { get; } = new ();
 
     /// <summary>
     /// Start listening for connections. If already listening, stop and restart with the new prefix list.
