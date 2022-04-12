@@ -10,10 +10,10 @@ namespace ScratchLink;
 public static class MauiProgram
 {
     /// <summary>
-    /// Build and return a MauiApp instance to host our app.
+    /// Create and return a MauiAppBuilder which will build an instance to host our app.
     /// </summary>
     /// <returns>A new instance of <see cref="MauiApp"/> configured for our app.</returns>
-    public static MauiApp CreateMauiApp()
+    public static MauiAppBuilder CreateMauiAppBuilder()
     {
         var builder = MauiApp.CreateBuilder();
         builder
@@ -23,6 +23,6 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             });
 
-        return builder.Build();
+        return builder;
     }
 }

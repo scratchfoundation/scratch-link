@@ -22,9 +22,14 @@ internal class WebSocketListener
     public static bool IsSupported => HttpListener.IsSupported;
 
     /// <summary>
-    /// Gets the mapping of path to handler.
+    /// Gets or sets the action which will be called when the listener receives a WebSocket connection.
     /// </summary>
-    public Dictionary<string, Action<HttpListenerWebSocketContext>> Handlers { get; } = new ();
+    public Action<WebSocketContext> OnWebSocketConnection { get; set; }
+
+    /// <summary>
+    /// Gets or sets the action which will be called when the listener receives a non-WebSocket connection.
+    /// </summary>
+    public Action<HttpListenerContext> OnOtherConnection { get; set; }
 
     /// <summary>
     /// Start listening for connections. If already listening, stop and restart with the new prefix list.
@@ -37,7 +42,7 @@ internal class WebSocketListener
     /// https://127.0.0.1/
     /// </code></example>
     /// </param>
-    public void Listen(IEnumerable<string> prefixes)
+    public void Start(IEnumerable<string> prefixes)
     {
         if (this.listener.IsListening)
         {
@@ -58,32 +63,23 @@ internal class WebSocketListener
                 var context = await this.listener.GetContextAsync();
                 if (context.Request.IsWebSocketRequest)
                 {
-                    this.HandleWebSocketRequest(context);
+                    var webSocketContext = await context.AcceptWebSocketAsync(null);
+                    this.OnWebSocketConnection(webSocketContext);
                 }
                 else
                 {
-                    this.HandleOtherRequest(context);
+                    this.OnOtherConnection(context);
                 }
             }
         });
     }
 
-    private async void HandleWebSocketRequest(HttpListenerContext context)
+    /// <summary>
+    /// Stop listening for connections and terminate processing of all ongoing requests.
+    /// </summary>
+    public void Stop()
     {
-        var webSocket = await context.AcceptWebSocketAsync(null);
-        var handler = this.Handlers[context.Request.Url.AbsolutePath];
-        if (handler != null)
-        {
-            handler(webSocket);
-        }
-        else
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    private void HandleOtherRequest(HttpListenerContext context)
-    {
-        throw new NotImplementedException();
+        this.cts.Cancel();
+        this.listener.Stop();
     }
 }

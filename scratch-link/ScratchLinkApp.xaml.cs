@@ -16,6 +16,7 @@ public partial class ScratchLinkApp : Application
 {
     private const int WebSocketPort = 20111;
 
+    private readonly SessionManager sessionManager;
     private readonly WebSocketListener webSocketListener;
 
     /// <summary>
@@ -38,22 +39,27 @@ public partial class ScratchLinkApp : Application
             return;
         }
 
+        this.sessionManager = IPlatformApplication.Current.Services.GetService<SessionManager>();
+
         this.webSocketListener = new ()
         {
-            Handlers =
+            OnWebSocketConnection = (webSocketContext) =>
             {
-                { ServicePath.BLE, this.HandleSessionDebug },
-                { ServicePath.BT, this.HandleSessionDebug },
+                this.sessionManager.ClientDidConnect(webSocketContext);
+            },
+            OnOtherConnection = (context) =>
+            {
+                throw new NotImplementedException();
             },
         };
-        this.webSocketListener.Listen(new[]
+        this.webSocketListener.Start(new[]
         {
             string.Format("http://127.0.0.1:{0}/", WebSocketPort),
             string.Format("http://localhost:{0}/", WebSocketPort),
         });
     }
 
-    private void HandleSessionDebug(HttpListenerWebSocketContext context)
+    private void HandleSessionDebug(WebSocketContext context)
     {
         var origin = context.Headers.Get("origin");
         var socket = context.WebSocket;
@@ -62,11 +68,5 @@ public partial class ScratchLinkApp : Application
             this.MainPage.DisplayAlert("New connection", string.Format("Path: {0}\nOrigin: {1}", context.RequestUri.AbsolutePath, origin), "OK");
         });
         socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
-    }
-
-    private static class ServicePath
-    {
-        public const string BLE = "/scratch/ble";
-        public const string BT = "/scratch/bt";
     }
 }
