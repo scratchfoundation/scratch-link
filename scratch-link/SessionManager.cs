@@ -11,6 +11,8 @@ using System.Net.WebSockets;
 /// </summary>
 internal abstract class SessionManager
 {
+    private readonly HashSet<Session> sessions = new ();
+
     /// <summary>
     /// Activated when the number of active sessions changes.
     /// </summary>
@@ -28,6 +30,8 @@ internal abstract class SessionManager
     public void ClientDidConnect(WebSocketContext webSocketContext)
     {
         var session = this.MakeNewSession(webSocketContext);
+        this.sessions.Add(session);
+        session.Start();
     }
 
     /// <summary>
