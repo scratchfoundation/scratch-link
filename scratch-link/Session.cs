@@ -8,10 +8,20 @@ using ScratchLink.JsonRpc;
 using System.Net.WebSockets;
 using System.Text.Json;
 
+// Helper to send the return value or error resulting from a JSON-RPC method call.
+// If the error is non-null, the result will be ignored.
+using ResponseSender = Func<
+    JsonRpc.JsonRpc2Error, // error
+    object, // result (return value) - must be null or JSON-serializable
+    Task // returns `Task` to allow `await`
+>;
+
+// Handler for a JSON-RPC method call.
 using JsonRpcMethodHandler = Func<
     string, // method name
     object, // params / args
-    Task<object> // return value - must be JSON-serializable
+    Func<JsonRpc.JsonRpc2Error, object, Task>, // response sender
+    Task // returns `Task` to allow async operations
 >;
 
 /// <summary>
@@ -30,10 +40,14 @@ internal class Session
     /// </summary>
     protected readonly Dictionary<string, JsonRpcMethodHandler> Handlers = new ();
 
+    /// <summary>
+    /// Long-running method handlers should collect a cancellation token here and check it periodically.
+    /// </summary>
+    protected readonly CancellationTokenSource cancellationTokenSource = new ();
+
     private const int MessageSizeLimit = 1024 * 1024; // 1 MiB
 
     private readonly WebSocketContext context;
-    private readonly CancellationTokenSource cancellationTokenSource = new ();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Session"/> class.
@@ -84,43 +98,47 @@ internal class Session
     /// </summary>
     /// <param name="methodName">The name of the method called (expected: "getVersion").</param>
     /// <param name="args">Any arguments passed to the method by the caller (expected: none).</param>
-    /// <returns>A string representing the protocol version.</returns>
-    protected Task<object> HandleGetVersion(string methodName, object args)
+    /// <param name="sendResponse">The method to send the method result.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    protected async Task HandleGetVersion(string methodName, object args, ResponseSender sendResponse)
     {
-        return Task.FromResult<object>(new Dictionary<string, string>
+        await sendResponse(null, new Dictionary<string, string>
         {
             { "protocol", NetworkProtocolVersion },
         });
     }
 
-    private Task<object> HandleUnrecognizedMethod(string methodName, object args)
+    private async Task HandleUnrecognizedMethod(string methodName, object args, ResponseSender sendResponse)
     {
-        throw new JsonRpc2Exception(JsonRpc2Error.MethodNotFound(methodName));
+        await sendResponse(JsonRpc2Error.MethodNotFound(methodName), null);
     }
 
     private async Task HandleRequest(JsonRpc.JsonRpc2Request request, CancellationToken cancellationToken)
     {
         var handler = this.Handlers.GetValueOrDefault(request.Method, this.HandleUnrecognizedMethod);
 
-        object result = null;
-        JsonRpc2Error error = null;
-
-        try
-        {
-            result = await handler(request.Method, request.Params);
-        }
-        catch (JsonRpc2Exception e)
-        {
-            error = e.Error;
-        }
-        catch (Exception e)
-        {
-            error = JsonRpc2Error.ApplicationError($"Unhandled error encountered during call: {e}");
-        }
+        ResponseSender sendResponse;
 
         if (request.Id is JsonElement requestId)
         {
-            await this.SendResponse(requestId, result, error, cancellationToken);
+            sendResponse = (err, res) => this.SendResponse(requestId, res, err, cancellationToken);
+        }
+        else
+        {
+            sendResponse = (err, res) => Task.CompletedTask;
+        }
+
+        try
+        {
+            await handler(request.Method, request.Params, sendResponse);
+        }
+        catch (JsonRpc2Exception e)
+        {
+            await sendResponse(e.Error, null);
+        }
+        catch (Exception e)
+        {
+            await sendResponse(JsonRpc2Error.ApplicationError($"Unhandled error encountered during call: {e}"), null);
         }
     }
 
