@@ -1,28 +1,24 @@
-﻿// <copyright file="Request.cs" company="Scratch Foundation">
+﻿// <copyright file="JsonRpc2Request.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
 namespace ScratchLink.JsonRpc;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 /// <summary>
 /// Data class representing a JSON-RPC 2.0 Request object.
+/// If the "id" property is null, this is a Notification object.
 /// </summary>
-internal class Request
+internal class JsonRpc2Request
 {
     /// <summary>
     /// Gets the JSON RPC version string (always "2.0").
     /// </summary>
     [JsonPropertyName("jsonrpc")]
-    public string JsonRPC { get; private set; }
+    [JsonPropertyOrder(-100)]
+    public string JsonRPC { get; } = "2.0";
 
     /// <summary>
     /// Gets or sets the name of the method being called.
@@ -35,7 +31,7 @@ internal class Request
     /// </summary>
     [JsonPropertyName("params")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public JsonElement? Params { get; set; }
+    public object Params { get; set; }
 
     /// <summary>
     /// Gets or sets the request ID. May be a string, integer, or absent.
@@ -43,5 +39,5 @@ internal class Request
     /// </summary>
     [JsonPropertyName("id")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public JsonElement? Id { get; set; }
+    public object Id { get; set; }
 }
