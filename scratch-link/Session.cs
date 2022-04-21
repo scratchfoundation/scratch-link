@@ -4,14 +4,14 @@
 
 namespace ScratchLink;
 
+using ScratchLink.JsonRpc;
 using System.Net.WebSockets;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 using JsonRpcMethodHandler = Func<
     string, // method name
-    System.Text.Json.JsonElement?, // method params / args
-    Task<System.Text.Json.Nodes.JsonValue> // return value
+    object, // params / args
+    Task<object> // return value - must be JSON-serializable
 >;
 
 /// <summary>
@@ -19,6 +19,12 @@ using JsonRpcMethodHandler = Func<
 /// </summary>
 internal class Session
 {
+    /// <summary>
+    /// Specifies the Scratch Link network protocol version. Note that this is not the application version.
+    /// Keep this in sync with the version number in `NetworkProtocol.md`.
+    /// </summary>
+    protected const string NetworkProtocolVersion = "1.2";
+
     /// <summary>
     /// Stores the mapping from method names to handlers.
     /// </summary>
@@ -73,9 +79,63 @@ internal class Session
         this.cancellationTokenSource.Cancel();
     }
 
-    protected Task<JsonValue> HandleGetVersion(string methodName, JsonElement? args)
+    /// <summary>
+    /// Handle a "getVersion" request.
+    /// </summary>
+    /// <param name="methodName">The name of the method called (expected: "getVersion").</param>
+    /// <param name="args">Any arguments passed to the method by the caller (expected: none).</param>
+    /// <returns>A string representing the protocol version.</returns>
+    protected Task<object> HandleGetVersion(string methodName, object args)
     {
-        return Task.FromResult(JsonValue.Create(0));
+        return Task.FromResult<object>(new Dictionary<string, string>
+        {
+            { "protocol", NetworkProtocolVersion },
+        });
+    }
+
+    private Task<object> HandleUnrecognizedMethod(string methodName, object args)
+    {
+        throw new JsonRpc2Exception(JsonRpc2Error.MethodNotFound(methodName));
+    }
+
+    private async Task HandleRequest(JsonRpc.JsonRpc2Request request, CancellationToken cancellationToken)
+    {
+        var handler = this.Handlers.GetValueOrDefault(request.Method, this.HandleUnrecognizedMethod);
+
+        object result = null;
+        JsonRpc2Error error = null;
+
+        try
+        {
+            result = await handler(request.Method, request.Params);
+        }
+        catch (JsonRpc2Exception e)
+        {
+            error = e.Error;
+        }
+        catch (Exception e)
+        {
+            error = JsonRpc2Error.ApplicationError($"Unhandled error encountered during call: {e}");
+        }
+
+        if (request.Id is JsonElement requestId)
+        {
+            await this.SendResponse(requestId, result, error, cancellationToken);
+        }
+    }
+
+    private async Task SendResponse(JsonElement id, object result, JsonRpc2Error error, CancellationToken cancellationToken)
+    {
+        var response = new JsonRpc2Response
+        {
+            Id = id,
+            Result = (error == null) ? result : null,
+            Error = error,
+        };
+        var responseBytes = JsonSerializer.SerializeToUtf8Bytes(response);
+
+        var webSocket = this.context.WebSocket;
+        await webSocket.SendAsync(responseBytes, WebSocketMessageType.Text, true, cancellationToken);
     }
 
     private async void CommLoop()
@@ -89,16 +149,15 @@ internal class Session
             {
                 messageBuffer.SetLength(0);
                 var result = await webSocket.ReceiveMessageToStream(messageBuffer, MessageSizeLimit, cancellationToken);
-                if (result.CloseStatus.HasValue)
-                {
-                    break;
-                }
 
-                messageBuffer.Position = 0;
-                var request = JsonSerializer.Deserialize<JsonRpc.Request>(messageBuffer);
-                if (request != null)
+                if (messageBuffer.Length > 0)
                 {
-                    await this.HandleRequest(request, cancellationToken);
+                    messageBuffer.Position = 0;
+                    var request = JsonSerializer.Deserialize<JsonRpc.JsonRpc2Request>(messageBuffer);
+                    if (request != null)
+                    {
+                        await this.HandleRequest(request, cancellationToken);
+                    }
                 }
             }
         }
@@ -111,27 +170,5 @@ internal class Session
 
             webSocket.Dispose();
         }
-    }
-
-    private async Task HandleRequest(JsonRpc.Request request, CancellationToken cancellationToken)
-    {
-        var handler = this.Handlers[request.Method];
-        /*
-        try
-        {
-            var = (handler != null)
-            if (handler != null)
-            {
-                var result =
-            }
-        }
-        catch (Exception)
-        {
-
-        }
-        var result = handler != null ?
-            await handler(request.Method, request.Params) :
-            await HandleUnrecognizedMethod(request.Method, request.Params);
-        */
     }
 }
