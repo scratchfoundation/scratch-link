@@ -4,22 +4,14 @@
 
 namespace ScratchLink.JsonRpc;
 
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 /// <summary>
 /// Data class representing a JSON-RPC 2.0 Response object.
 /// Either "result" or "error" should be filled, not both.
 /// </summary>
-internal class JsonRpc2Response
+internal class JsonRpc2Response : JsonRpc2Message
 {
-    /// <summary>
-    /// Gets the JSON RPC version string (always "2.0").
-    /// </summary>
-    [JsonPropertyName("jsonrpc")]
-    [JsonPropertyOrder(-100)]
-    public string JsonRPC { get; } = "2.0";
-
     /// <summary>
     /// Gets or sets the successful result of the corresponding Request.
     /// This is REQUIRED on success and MUST NOT exist if there was an error.
@@ -37,8 +29,8 @@ internal class JsonRpc2Response
     public JsonRpc2Error Error { get; set; }
 
     /// <summary>
-    /// Gets or sets the response ID, which must match the ID of the corresponding Request. May be a string or integer.
+    /// Gets a value indicating whether or not this is a valid JSON-RPC Request object.
     /// </summary>
-    [JsonPropertyName("id")]
-    public JsonElement Id { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
+    public override bool IsValid => base.IsValid && ((this.Result != null) || (this.Error != null));
 }
