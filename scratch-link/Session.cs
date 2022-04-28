@@ -21,13 +21,18 @@ using RequestId = UInt32;
 /// <summary>
 /// Base class for Scratch Link sessions. One session can search for, connect to, and interact with one peripheral device.
 /// </summary>
-internal class Session
+internal class Session : IDisposable
 {
     /// <summary>
     /// Specifies the Scratch Link network protocol version. Note that this is not the application version.
     /// Keep this in sync with the version number in `NetworkProtocol.md`.
     /// </summary>
     protected const string NetworkProtocolVersion = "1.2";
+
+    /// <summary>
+    /// Default timeout for remote requests.
+    /// </summary>
+    protected static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromMinutes(1);
 
     /// <summary>
     /// Stores the mapping from method names to handlers.
@@ -44,7 +49,7 @@ internal class Session
         Converters = { new JsonRpc2MessageConverter(), new JsonRpc2ValueConverter() },
     };
 
-    private readonly Dictionary<RequestId, TaskCompletionSource<object>> responseHandlers = new ();
+    private readonly Dictionary<RequestId, PendingRequestRecord> pendingRequests = new ();
     private RequestId nextId = 0;
 
     /// <summary>
@@ -90,6 +95,7 @@ internal class Session
     public void Dispose()
     {
         this.cancellationTokenSource.Cancel();
+        this.cancellationTokenSource.Dispose();
     }
 
     /// <summary>
@@ -117,22 +123,17 @@ internal class Session
         var cancellationToken = this.cancellationTokenSource.Token;
         Task.Run(async () =>
         {
-            var pingResult = await this.SendRequest("ping", null, cancellationToken);
-            Debug.Print($"Got result from ping: {pingResult}");
+            try
+            {
+                var pingResult = await this.SendRequest("ping", null, cancellationToken);
+                Debug.Print($"Got result from ping: {pingResult}");
+            }
+            catch (Exception e)
+            {
+                Debug.Print($"Got exception from ping: {e}");
+            }
         });
         return Task.FromResult<object>("willPing");
-    }
-
-    /// <summary>
-    /// Send a request to the client and return the result.
-    /// </summary>
-    /// <param name="method">The name of the method to call on the client.</param>
-    /// <param name="parameters">The optional parameters to pass to the client method.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
-    /// <returns>A <see cref="Task"/> resulting in the value returned by the client.</returns>
-    protected async Task<object> SendRequest(string method, object parameters, CancellationToken cancellationToken)
-    {
-        return await this.SendNotificationOrRequest(method, parameters, true, cancellationToken);
     }
 
     /// <summary>
@@ -144,7 +145,68 @@ internal class Session
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
     protected async Task SendNotification(string method, object parameters, CancellationToken cancellationToken)
     {
-        await this.SendNotificationOrRequest(method, parameters, false, cancellationToken);
+        var request = new JsonRpc2Request
+        {
+            Method = method,
+            Params = parameters,
+        };
+
+        var messageBytes = JsonSerializer.SerializeToUtf8Bytes(request);
+
+        var webSocket = this.context.WebSocket;
+        await webSocket.SendAsync(messageBytes, WebSocketMessageType.Text, true, cancellationToken);
+    }
+
+    /// <summary>
+    /// Send a request to the client and return the result.
+    /// Cancel the request if DefaultRequestTimeout passes before receiving a response.
+    /// </summary>
+    /// <param name="method">The name of the method to call on the client.</param>
+    /// <param name="parameters">The optional parameters to pass to the client method.</param>
+    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
+    /// <returns>A <see cref="Task"/> resulting in the value returned by the client.</returns>
+    protected async Task<object> SendRequest(string method, object parameters, CancellationToken cancellationToken)
+    {
+        return await this.SendRequest(method, parameters, cancellationToken, DefaultRequestTimeout);
+    }
+
+    /// <summary>
+    /// Send a request to the client and return the result.
+    /// </summary>
+    /// <param name="method">The name of the method to call on the client.</param>
+    /// <param name="parameters">The optional parameters to pass to the client method.</param>
+    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
+    /// <param name="timeout">Cancel the request if this much time passes before receiving a response.</param>
+    /// <returns>A <see cref="Task"/> resulting in the value returned by the client.</returns>
+    protected async Task<object> SendRequest(string method, object parameters, CancellationToken cancellationToken, TimeSpan timeout)
+    {
+        var requestId = this.GetNextId();
+        var request = new JsonRpc2Request
+        {
+            Method = method,
+            Params = parameters,
+            Id = requestId,
+        };
+
+        var messageBytes = JsonSerializer.SerializeToUtf8Bytes(request);
+        var webSocket = this.context.WebSocket;
+
+        using (var pendingRequest = new PendingRequestRecord(cancellationToken, timeout))
+        {
+            // register the pending request BEFORE `await webSocket.SendAsync`, just in case
+            this.pendingRequests[requestId] = pendingRequest;
+
+            try
+            {
+                await webSocket.SendAsync(messageBytes, WebSocketMessageType.Text, true, cancellationToken);
+
+                return await pendingRequest.Task;
+            }
+            finally
+            {
+                this.pendingRequests.Remove(requestId);
+            }
+        }
     }
 
     private Task<object> HandleUnrecognizedMethod(string methodName, object args)
@@ -192,21 +254,14 @@ internal class Session
             return;
         }
 
-        var responseHandler = this.responseHandlers.GetValueOrDefault(responseId, null);
-        if (responseHandler == null)
+        var requestRecord = this.pendingRequests.GetValueOrDefault(responseId, null);
+        if (requestRecord == null)
         {
-            Debug.Print($"Could not find handler for response with ID = ${response.Id}");
+            Debug.Print($"Could not find request record with ID = ${response.Id}");
             return;
         }
 
-        if (response.Error != null)
-        {
-            responseHandler.SetException(new JsonRpc2Exception(response.Error));
-        }
-        else
-        {
-            responseHandler.SetResult(response.Result);
-        }
+        requestRecord.SetResult(response.Error, response.Result);
     }
 
     private async Task SendResponse(object id, object result, JsonRpc2Error error, CancellationToken cancellationToken)
@@ -221,38 +276,6 @@ internal class Session
 
         var webSocket = this.context.WebSocket;
         await webSocket.SendAsync(responseBytes, WebSocketMessageType.Text, true, cancellationToken);
-    }
-
-    private async Task<object> SendNotificationOrRequest(string method, object parameters, bool isRequest, CancellationToken cancellationToken)
-    {
-        var request = new JsonRpc2Request
-        {
-            Method = method,
-            Params = parameters,
-        };
-
-        TaskCompletionSource<object> completionSource = null;
-
-        if (isRequest)
-        {
-            var requestId = this.GetNextId();
-            request.Id = requestId;
-
-            completionSource = new TaskCompletionSource<object>();
-            this.responseHandlers[requestId] = completionSource;
-        }
-
-        var messageBytes = JsonSerializer.SerializeToUtf8Bytes(request);
-
-        var webSocket = this.context.WebSocket;
-        await webSocket.SendAsync(messageBytes, WebSocketMessageType.Text, true, cancellationToken);
-
-        if (completionSource == null)
-        {
-            return null;
-        }
-
-        return await completionSource.Task;
     }
 
     private RequestId GetNextId()
@@ -303,6 +326,49 @@ internal class Session
             }
 
             webSocket.Dispose();
+        }
+    }
+
+    private class PendingRequestRecord : IDisposable
+    {
+        private TaskCompletionSource<object> completionSource;
+
+        private CancellationTokenSource cancellationTokenSource;
+        private CancellationTokenSource timeoutSource;
+
+        public PendingRequestRecord(CancellationToken cancellationToken, TimeSpan timeout)
+        {
+            this.completionSource = new ();
+            this.cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            this.cancellationTokenSource.Token.Register(() => this.completionSource.TrySetCanceled(), useSynchronizationContext: false);
+            if (timeout != Timeout.InfiniteTimeSpan)
+            {
+                this.timeoutSource = CancellationTokenSource.CreateLinkedTokenSource(this.cancellationTokenSource.Token);
+                this.timeoutSource.Token.Register(() => this.completionSource.TrySetException(new TimeoutException()), useSynchronizationContext: false);
+                this.timeoutSource.CancelAfter(timeout);
+            }
+        }
+
+        public Task<object> Task => this.completionSource.Task;
+
+        public void Dispose()
+        {
+            this.cancellationTokenSource.Dispose();
+            this.timeoutSource?.Dispose();
+        }
+
+        public void Cancel() => this.cancellationTokenSource.Cancel();
+
+        public void SetResult(JsonRpc2Error error, object result)
+        {
+            if (error != null)
+            {
+                this.completionSource.SetException(new JsonRpc2Exception(error));
+            }
+            else
+            {
+                this.completionSource.SetResult(result);
+            }
         }
     }
 }
