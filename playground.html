@@ -95,6 +95,7 @@
                 this._socket = useSafariSocket ?
                     new ScratchLinkSafariSocket(type) :
                     new ScratchLinkWebSocket(type);
+                addLine(`Socket created for ${type}`);
                 this._socket.setOnOpen(() => {
                     addLine(`Socket opened for ${type}`);
                 });
@@ -219,7 +220,6 @@
         function initBLE() {
             addLine('Connecting...');
             self.Scratch.BLE = new ScratchBLE();
-            addLine('Connected.');
         }
 
         function pingBLE() {
@@ -481,7 +481,6 @@
         function initBT() {
             addLine('Connecting...');
             self.Scratch.BT = new ScratchBT();
-            addLine('Connected.');
         }
 
         function discoverBT() {
