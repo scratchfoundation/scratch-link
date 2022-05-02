@@ -129,12 +129,14 @@
             }
 
             didReceiveCall(method, params) {
+                addLine(`Received call to method: ${method}`);
                 switch (method) {
                 case 'didDiscoverPeripheral':
                     addLine(`Peripheral discovered: ${stringify(params)}`);
                     this.discoveredPeripheralId = params['peripheralId'];
                     break;
                 case 'ping':
+                    addLine(`Responding to ping`);
                     return 42;
                 }
             }
