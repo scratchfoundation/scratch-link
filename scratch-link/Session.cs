@@ -87,9 +87,10 @@ internal class Session : IDisposable
     /// The session will do its work on a background thread.
     /// After calling this function, do not use the WebSocket context owned by this session.
     /// </summary>
-    public void Start()
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    public async Task Run()
     {
-        Task.Run(this.CommLoop);
+        await this.CommLoop();
     }
 
     /// <summary>
@@ -97,6 +98,7 @@ internal class Session : IDisposable
     /// </summary>
     public void Dispose()
     {
+        this.context.WebSocket.Dispose();
         this.cancellationTokenSource.Cancel();
         this.cancellationTokenSource.Dispose();
     }
@@ -309,7 +311,7 @@ internal class Session : IDisposable
         }
     }
 
-    private async void CommLoop()
+    private async Task CommLoop()
     {
         var cancellationToken = this.cancellationTokenSource.Token;
         var webSocket = this.context.WebSocket;
@@ -362,8 +364,6 @@ internal class Session : IDisposable
             {
                 await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
             }
-
-            webSocket.Dispose();
         }
     }
 
