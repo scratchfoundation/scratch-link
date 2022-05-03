@@ -36,25 +36,19 @@ internal class JsonRpc2MessageConverter : JsonConverter<JsonRpc2Message>
     /// <inheritdoc/>
     public override void Write(Utf8JsonWriter writer, JsonRpc2Message value, JsonSerializerOptions options) => JsonSerializer.Serialize(writer, value, options);
 
-    private class MessageTypeDiscriminator
+    private class MessageTypeDiscriminator : JsonRpc2Message
     {
-        [JsonPropertyName("method")]
-        public string Method { get; set; }
-
-        [JsonPropertyName("result")]
-        public object Result { get; set; }
-
         [JsonPropertyName("error")]
         public JsonRpc2Error Error { get; set; }
 
         public Type GuessMessageType()
         {
-            if (this.Result != null || this.Error != null)
+            if (this.Error != null || this.ExtraProperties.ContainsKey("result"))
             {
                 return typeof(JsonRpc2Response);
             }
 
-            if (!string.IsNullOrEmpty(this.Method))
+            if (this.ExtraProperties.ContainsKey("method"))
             {
                 return typeof(JsonRpc2Request);
             }

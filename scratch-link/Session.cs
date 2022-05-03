@@ -402,11 +402,11 @@ internal class Session : IDisposable
         {
             if (error != null)
             {
-                this.completionSource.SetException(new JsonRpc2Exception(error));
+                this.completionSource.TrySetException(new JsonRpc2Exception(error));
             }
             else
             {
-                this.completionSource.SetResult(result);
+                this.completionSource.TrySetResult(result);
             }
         }
     }
