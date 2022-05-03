@@ -4,6 +4,7 @@
 
 namespace ScratchLink;
 
+using System.Collections.Concurrent;
 using System.Net.WebSockets;
 
 /// <summary>
@@ -11,7 +12,10 @@ using System.Net.WebSockets;
 /// </summary>
 internal abstract class SessionManager
 {
-    private readonly HashSet<Session> sessions = new ();
+    /// <summary>
+    /// Stores the set of active sessions. Implemented as a dictionary because ConcurrentHashSet doesn't exist.
+    /// </summary>
+    private readonly ConcurrentDictionary<Session, bool> sessions = new ();
 
     /// <summary>
     /// Activated when the number of active sessions changes.
@@ -21,7 +25,7 @@ internal abstract class SessionManager
     /// <summary>
     /// Gets the count of active connected WebSocket sessions.
     /// </summary>
-    public int ActiveSessionCount { get; private set; } = 0;
+    public int ActiveSessionCount { get => this.sessions.Count; }
 
     /// <summary>
     /// Call this with a new connection context to ask the SessionManager to build and manage a session for it.
@@ -29,9 +33,21 @@ internal abstract class SessionManager
     /// <param name="webSocketContext">The WebSocket context which the SessionManager should adopt and connect to a session.</param>
     public void ClientDidConnect(WebSocketContext webSocketContext)
     {
-        var session = this.MakeNewSession(webSocketContext);
-        this.sessions.Add(session);
-        session.Start();
+        Task.Run(async () =>
+        {
+            using var session = this.MakeNewSession(webSocketContext);
+            this.sessions.TryAdd(session, true);
+            this.ActiveSessionCountChanged?.Invoke(this, EventArgs.Empty);
+            try
+            {
+                await session.Run();
+            }
+            finally
+            {
+                this.sessions.TryRemove(session, out _);
+                this.ActiveSessionCountChanged?.Invoke(this, EventArgs.Empty);
+            }
+        });
     }
 
     /// <summary>
