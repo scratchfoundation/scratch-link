@@ -6,6 +6,7 @@ namespace ScratchLink;
 
 using ScratchLink.JsonRpc;
 using ScratchLink.JsonRpc.Converters;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Text.Json;
@@ -49,7 +50,7 @@ internal class Session : IDisposable
         Converters = { new JsonRpc2MessageConverter(), new JsonRpc2ValueConverter() },
     };
 
-    private readonly Dictionary<RequestId, PendingRequestRecord> pendingRequests = new ();
+    private readonly ConcurrentDictionary<RequestId, PendingRequestRecord> pendingRequests = new ();
     private RequestId nextId = 1; // some clients have trouble with ID=0
 
     private SemaphoreSlim websocketSendLock = new (1);
@@ -200,7 +201,7 @@ internal class Session : IDisposable
 
         using (var pendingRequest = new PendingRequestRecord(cancellationToken, timeout))
         {
-            // register the pending request BEFORE sending the request, just in case the response comes back before we get back from `await`
+            // register the pending request BEFORE sending the request, just in case the response comes back before we get back from awaiting `SocketSend`
             this.pendingRequests[requestId] = pendingRequest;
 
             try
@@ -215,7 +216,7 @@ internal class Session : IDisposable
             }
             finally
             {
-                this.pendingRequests.Remove(requestId);
+                this.pendingRequests.TryRemove(requestId, out _);
             }
         }
     }
