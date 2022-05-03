@@ -36,11 +36,11 @@ internal class JsonRpc2Message
     public object Id { get; set; }
 
     /// <summary>
-    /// Gets a dictionary to contain additional properties not part of the static C# type.
+    /// Gets or sets a dictionary to contain additional properties not part of the static C# type.
     /// </summary>
     [JsonExtensionData]
     [JsonPropertyOrder(100)]
-    public Dictionary<string, object> ExtraProperties { get; } = new ();
+    public Dictionary<string, object> ExtraProperties { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether or not this is a valid JSON-RPC message.
