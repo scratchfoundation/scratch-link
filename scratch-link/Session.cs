@@ -13,7 +13,7 @@ using System.Text.Json;
 
 using JsonRpcMethodHandler = Func<
     string, // method name
-    object, // params / args
+    System.Text.Json.JsonElement?, // params / args
     Task<object> // return value - must be JSON-serializable
 >;
 
@@ -58,7 +58,7 @@ internal class Session : IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="Session"/> class.
     /// </summary>
-    /// <param name="context">The WebSocket context which this Session will use for communication.</param>
+    /// <param name="context">The WebSocket context which this session will use for communication.</param>
     public Session(WebSocketContext context)
     {
         this.context = context;
@@ -109,7 +109,7 @@ internal class Session : IDisposable
     /// <param name="methodName">The name of the method called (expected: "getVersion").</param>
     /// <param name="args">Any arguments passed to the method by the caller (expected: none).</param>
     /// <returns>A string representing the protocol version.</returns>
-    protected Task<object> HandleGetVersion(string methodName, object args)
+    protected Task<object> HandleGetVersion(string methodName, JsonElement? args)
     {
         return Task.FromResult<object>(new Dictionary<string, string>
         {
@@ -123,7 +123,7 @@ internal class Session : IDisposable
     /// <param name="methodName">The name of the method called (expected: "pingMe").</param>
     /// <param name="args">Any arguments passed to the method by the caller (expected: none).</param>
     /// <returns>The string "willPing".</returns>
-    protected Task<object> HandlePingMe(string methodName, object args)
+    protected Task<object> HandlePingMe(string methodName, JsonElement? args)
     {
         var cancellationToken = this.cancellationTokenSource.Token;
         Task.Run(async () =>
@@ -223,7 +223,7 @@ internal class Session : IDisposable
         }
     }
 
-    private Task<object> HandleUnrecognizedMethod(string methodName, object args)
+    private Task<object> HandleUnrecognizedMethod(string methodName, JsonElement? args)
     {
         throw new JsonRpc2Exception(JsonRpc2Error.MethodNotFound(methodName));
     }
@@ -237,7 +237,7 @@ internal class Session : IDisposable
 
         try
         {
-            result = await handler(request.Method, request.Params);
+            result = await handler(request.Method, request.Params as JsonElement?);
         }
         catch (JsonRpc2Exception e)
         {
