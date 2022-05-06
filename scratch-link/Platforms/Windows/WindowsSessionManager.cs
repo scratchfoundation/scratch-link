@@ -14,6 +14,13 @@ internal class WindowsSessionManager : SessionManager
     /// <inheritdoc/>
     protected override Session MakeNewSession(WebSocketContext webSocketContext)
     {
-        return new Session(webSocketContext);
+        var requestPath = webSocketContext.RequestUri.AbsolutePath;
+        return requestPath switch
+        {
+            "/scratch/ble" => new WinBLESession(webSocketContext),
+
+            // for unrecognized paths, return a base Session for debugging
+            _ => new Session(webSocketContext),
+        };
     }
 }
