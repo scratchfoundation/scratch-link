@@ -31,6 +31,7 @@ public partial class App : MauiWinUIApplication
     {
         var builder = MauiProgram.CreateMauiAppBuilder();
         builder.Services.Add(new ServiceDescriptor(typeof(SessionManager), typeof(WindowsSessionManager), ServiceLifetime.Singleton));
+        builder.Services.Add(new ServiceDescriptor(typeof(GattHelpers<Guid>), typeof(WinGattHelpers), ServiceLifetime.Singleton));
         return builder.Build();
     }
 }

@@ -12,15 +12,17 @@ using System.Threading.Tasks;
 /// <summary>
 /// Implements the cross-platform portions of a BLE session.
 /// </summary>
-internal abstract class BLESession : Session
+/// <typeparam name="TUUID">The platform-specific type which represents UUIDs (like Guid or CBUUID).</typeparam>
+internal abstract class BLESession<TUUID> : Session
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="BLESession"/> class.
+    /// Initializes a new instance of the <see cref="BLESession{TUUID}"/> class.
     /// </summary>
     /// <inheritdoc cref="Session.Session(WebSocketContext)"/>
     public BLESession(WebSocketContext context)
         : base(context)
     {
+        this.GattHelpers = IPlatformApplication.Current.Services.GetService<GattHelpers<TUUID>>();
         this.Handlers["discover"] = this.HandleDiscover;
         this.Handlers["connect"] = this.HandleConnect;
         this.Handlers["write"] = this.HandleWrite;
@@ -29,6 +31,11 @@ internal abstract class BLESession : Session
         this.Handlers["stopNotifications"] = this.HandleStopNotifications;
         this.Handlers["getServices"] = this.HandleGetServices;
     }
+
+    /// <summary>
+    /// Gets a GattHelpers instance configured for this platform.
+    /// </summary>
+    protected GattHelpers<TUUID> GattHelpers { get; }
 
     /// <summary>
     /// Implement the JSON-RPC "discover" request to search for peripherals which match the filter information
@@ -54,13 +61,13 @@ internal abstract class BLESession : Session
             throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("discovery request must include at least one filter"));
         }
 
-        var filters = jsonFilters.EnumerateArray().Select(jsonFilter => new BLEScanFilter(jsonFilter)).ToList();
+        var filters = jsonFilters.EnumerateArray().Select(jsonFilter => this.ParseFilter(jsonFilter)).ToList();
         if (filters.Any(filter => filter.IsEmpty))
         {
             throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("discovery request includes empty filter"));
         }
 
-        HashSet<Guid> optionalServices = null;
+        HashSet<TUUID> optionalServices = null;
         if (args?.TryGetProperty("optionalServices", out var jsonOptionalServices) == true)
         {
             if (jsonOptionalServices.ValueKind != JsonValueKind.Array)
@@ -68,7 +75,7 @@ internal abstract class BLESession : Session
                 throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("could not parse optionalServices in discovery request"));
             }
 
-            optionalServices = new (jsonOptionalServices.EnumerateArray().Select(GattHelpers.GetServiceUuid));
+            optionalServices = new (jsonOptionalServices.EnumerateArray().Select(this.GattHelpers.GetServiceUuid));
         }
 
         return await this.DoDiscover(filters, optionalServices);
@@ -80,7 +87,7 @@ internal abstract class BLESession : Session
     /// <param name="filters">The filters for device discovery. A peripheral device must match at least one filter to pass.</param>
     /// <param name="optionalServices">Additional services the client might use, in addition to those in the matching filter.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected abstract Task<object> DoDiscover(List<BLEScanFilter> filters, HashSet<Guid> optionalServices);
+    protected abstract Task<object> DoDiscover(List<BLEScanFilter> filters, HashSet<TUUID> optionalServices);
 
     /// <summary>
     /// Implement the JSON-RPC "connect" request to connect to a particular peripheral.
@@ -169,74 +176,116 @@ internal abstract class BLESession : Session
     }
 
     /// <summary>
+    /// Parse JSON to create a new instance of the <see cref="BLEScanFilter"/> class.
+    /// See <a href="https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing">here</a>.
+    /// </summary>
+    /// <param name="jsonFilter">The JSON element to parse and canonicalize to build the new filter object.</param>
+    /// <returns>A new <see cref="BLEScanFilter"/> with properties matching those specified in the provided JSON.</returns>
+    protected BLEScanFilter ParseFilter(JsonElement jsonFilter)
+    {
+        var filter = new BLEScanFilter();
+
+        if (jsonFilter.TryGetProperty("name", out var jsonName))
+        {
+            filter.Name = jsonName.GetString();
+        }
+
+        if (jsonFilter.TryGetProperty("namePrefix", out var jsonNamePrefix))
+        {
+            filter.NamePrefix = jsonNamePrefix.GetString();
+        }
+
+        if (jsonFilter.TryGetProperty("services", out var jsonServices))
+        {
+            filter.RequiredServices = new (jsonServices.EnumerateArray().Select(this.GattHelpers.GetServiceUuid));
+            if (filter.RequiredServices.Count < 1)
+            {
+                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"filter contains empty or invalid services list: {filter}"));
+            }
+        }
+
+        if (jsonFilter.TryGetProperty("manufacturerData", out var jsonManufacturerData))
+        {
+            filter.ManufacturerData = new ();
+            foreach (var property in jsonManufacturerData.EnumerateObject())
+            {
+                var manufacturerId = int.Parse(property.Name);
+                var dataFilter = this.ParseDataFilter(property.Value);
+                filter.ManufacturerData.Add(manufacturerId, dataFilter);
+            }
+        }
+
+        if (jsonFilter.TryGetProperty("serviceData", out _))
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError("filtering on serviceData is not currently supported"));
+        }
+
+        return filter;
+    }
+
+    /// <summary>
+    /// Parse JSON to create a new instance of the <see cref="BLEDataFilter"/> class.
+    /// </summary>
+    /// <param name="dataFilter">JSON representation of a data filter.</param>
+    /// <returns>A new <see cref="BLEDataFilter"/> with properties matching those specified in the provided JSON.</returns>
+    protected BLEDataFilter ParseDataFilter(JsonElement dataFilter)
+    {
+        var filter = new BLEDataFilter();
+
+        if (dataFilter.TryGetProperty("dataPrefix", out var jsonDataPrefix))
+        {
+            filter.DataPrefix = new (jsonDataPrefix.EnumerateArray().Select(element => element.GetByte()));
+        }
+        else
+        {
+            // an empty data prefix is a valid way to check that manufacturer data exists for a particular ID
+            filter.DataPrefix = new ();
+        }
+
+        if (dataFilter.TryGetProperty("mask", out var jsonMask))
+        {
+            filter.Mask = new (jsonMask.EnumerateArray().Select(element => element.GetByte()));
+        }
+        else
+        {
+            filter.Mask = Enumerable.Repeat<byte>(0xFF, filter.DataPrefix.Count).ToList();
+        }
+
+        if (filter.DataPrefix.Count != filter.Mask.Count)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams(
+                $"length of data prefix ({filter.DataPrefix.Count}) does not match length of mask ({filter.Mask.Count})"));
+        }
+
+        return filter;
+    }
+
+    /// <summary>
     /// Store information associated with one entry in the "filters" array of a "discover" request.
     /// </summary>
     protected class BLEScanFilter
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="BLEScanFilter"/> class.
-        /// See <a href="https://webbluetoothcg.github.io/web-bluetooth/#bluetoothlescanfilterinit-canonicalizing">here</a>.
+        /// Gets or sets the exact name to search for. A peripheral device will match only if this is its exact name. Ignored if null.
         /// </summary>
-        /// <param name="filter">The JSON element to parse and canonicalize to initialize this filter object.</param>
-        public BLEScanFilter(JsonElement filter)
-        {
-            if (filter.TryGetProperty("name", out var jsonName))
-            {
-                this.Name = jsonName.GetString();
-            }
-
-            if (filter.TryGetProperty("namePrefix", out var jsonNamePrefix))
-            {
-                this.NamePrefix = jsonNamePrefix.GetString();
-            }
-
-            if (filter.TryGetProperty("services", out var jsonServices))
-            {
-                this.RequiredServices = new (jsonServices.EnumerateArray().Select(GattHelpers.GetServiceUuid));
-                if (this.RequiredServices.Count < 1)
-                {
-                    throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"filter contains empty or invalid services list: {filter}"));
-                }
-            }
-
-            if (filter.TryGetProperty("manufacturerData", out var jsonManufacturerData))
-            {
-                this.ManufacturerData = new ();
-                foreach (var property in jsonManufacturerData.EnumerateObject())
-                {
-                    var manufacturerId = int.Parse(property.Name);
-                    var dataFilter = new BLEDataFilter(property.Value);
-                    this.ManufacturerData.Add(manufacturerId, dataFilter);
-                }
-            }
-
-            if (filter.TryGetProperty("serviceData", out _))
-            {
-                throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError("filtering on serviceData is not currently supported"));
-            }
-        }
+        public string Name { get; set; }
 
         /// <summary>
-        /// Gets the exact name to search for. A peripheral device will match only if this is its exact name. Ignored if null.
+        /// Gets or sets the name prefix to search for. A peripheral device will match only if its name starts with this. Ignored if null.
         /// </summary>
-        public string Name { get; }
+        public string NamePrefix { get; set; }
 
         /// <summary>
-        /// Gets the name prefix to search for. A peripheral device will match only if its name starts with this. Ignored if null.
-        /// </summary>
-        public string NamePrefix { get; }
-
-        /// <summary>
-        /// Gets the set of required UUIDs for the search. A peripheral device will match only if it offers every service in this set.
+        /// Gets or sets the set of required UUIDs for the search. A peripheral device will match only if it offers every service in this set.
         /// Ignored if null or empty.
         /// </summary>
-        public HashSet<Guid> RequiredServices { get; }
+        public HashSet<TUUID> RequiredServices { get; set; }
 
         /// <summary>
-        /// Gets a map of manufacturer data ID to manufacturer data filter. A peripheral device will match only if every manufacturer data filter matches.
+        /// Gets or sets the map of manufacturer data ID to manufacturer data filter. A peripheral device will match only if every manufacturer data filter matches.
         /// Ignored if null or empty.
         /// </summary>
-        public Dictionary<int, BLEDataFilter> ManufacturerData { get; }
+        public Dictionary<int, BLEDataFilter> ManufacturerData { get; set; }
 
         /// <summary>
         /// Gets a value indicating whether or not this filter is empty. A filter is empty if it matches every possible peripheral device.
@@ -254,44 +303,13 @@ internal abstract class BLESession : Session
     protected class BLEDataFilter
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="BLEDataFilter"/> class.
+        /// Gets or sets the list of bytes to match the candidate data against after masking.
         /// </summary>
-        /// <param name="dataFilter">JSON representation of the data filter.</param>
-        public BLEDataFilter(JsonElement dataFilter)
-        {
-            if (dataFilter.TryGetProperty("dataPrefix", out var jsonDataPrefix))
-            {
-                this.DataPrefix = new (jsonDataPrefix.EnumerateArray().Select(element => element.GetByte()));
-            }
-            else
-            {
-                this.DataPrefix = new ();
-            }
-
-            if (dataFilter.TryGetProperty("mask", out var jsonMask))
-            {
-                this.Mask = new (jsonMask.EnumerateArray().Select(element => element.GetByte()));
-            }
-            else
-            {
-                this.Mask = Enumerable.Repeat<byte>(0xFF, this.DataPrefix.Count).ToList();
-            }
-
-            if (this.DataPrefix.Count != this.Mask.Count)
-            {
-                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams(
-                    $"length of data prefix ({this.DataPrefix.Count}) does not match length of mask ({this.Mask.Count})"));
-            }
-        }
+        public List<byte> DataPrefix { get; set; }
 
         /// <summary>
-        /// Gets the list of bytes to match the candidate data against after masking.
+        /// Gets or sets the list of bytes to mask the candidate data with before testing for a match.
         /// </summary>
-        public List<byte> DataPrefix { get; }
-
-        /// <summary>
-        /// Gets the list of bytes to mask the candidate data with before testing for a match.
-        /// </summary>
-        public List<byte> Mask { get; }
+        public List<byte> Mask { get; set; }
     }
 }
