@@ -4,6 +4,7 @@
 
 namespace ScratchLink;
 
+using CoreBluetooth;
 using Foundation;
 using ScratchLink.Platforms.MacCatalyst;
 
@@ -22,6 +23,7 @@ public class AppDelegate : MauiUIApplicationDelegate
     {
         var builder = MauiProgram.CreateMauiAppBuilder();
         builder.Services.Add(new ServiceDescriptor(typeof(SessionManager), typeof(MacSessionManager), ServiceLifetime.Singleton));
+        builder.Services.Add(new ServiceDescriptor(typeof(GattHelpers<CBUUID>), typeof(MacGattHelpers), ServiceLifetime.Singleton));
         return builder.Build();
     }
 }
