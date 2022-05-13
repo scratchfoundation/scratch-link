@@ -38,6 +38,49 @@ internal abstract class BLESession<TUUID> : Session
     protected GattHelpers<TUUID> GattHelpers { get; }
 
     /// <summary>
+    /// Parse JSON to create a new instance of the <see cref="BLEDataFilter"/> class.
+    /// </summary>
+    /// <param name="dataFilter">JSON representation of a data filter.</param>
+    /// <returns>A new <see cref="BLEDataFilter"/> with properties matching those specified in the provided JSON.</returns>
+    protected static BLEDataFilter ParseDataFilter(JsonElement dataFilter)
+    {
+        var filter = new BLEDataFilter();
+
+        if (dataFilter.TryGetProperty("dataPrefix", out var jsonDataPrefix))
+        {
+            filter.DataPrefix = new (jsonDataPrefix.EnumerateArray().Select(element => element.GetByte()));
+        }
+        else
+        {
+            // an empty data prefix is a valid way to check that manufacturer data exists for a particular ID
+            filter.DataPrefix = new ();
+        }
+
+        if (dataFilter.TryGetProperty("mask", out var jsonMask))
+        {
+            filter.Mask = new (jsonMask.EnumerateArray().Select(element => element.GetByte()));
+        }
+        else
+        {
+            filter.Mask = Enumerable.Repeat<byte>(0xFF, filter.DataPrefix.Count).ToList();
+        }
+
+        if (filter.DataPrefix.Count != filter.Mask.Count)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams(
+                $"length of data prefix ({filter.DataPrefix.Count}) does not match length of mask ({filter.Mask.Count})"));
+        }
+
+        if (filter.DataPrefix.Where((dataByte, index) => dataByte != (dataByte & filter.Mask[index])).Any())
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams(
+                "invalid data filter: dataPrefix contains masked-out bits and will never match"));
+        }
+
+        return filter;
+    }
+
+    /// <summary>
     /// Implement the JSON-RPC "discover" request to search for peripherals which match the filter information
     /// provided in the parameters. Valid in the initial state; transitions to discovery state on success.
     /// </summary>
@@ -210,7 +253,7 @@ internal abstract class BLESession<TUUID> : Session
             foreach (var property in jsonManufacturerData.EnumerateObject())
             {
                 var manufacturerId = int.Parse(property.Name);
-                var dataFilter = this.ParseDataFilter(property.Value);
+                var dataFilter = ParseDataFilter(property.Value);
                 filter.ManufacturerData.Add(manufacturerId, dataFilter);
             }
         }
@@ -218,43 +261,6 @@ internal abstract class BLESession<TUUID> : Session
         if (jsonFilter.TryGetProperty("serviceData", out _))
         {
             throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError("filtering on serviceData is not currently supported"));
-        }
-
-        return filter;
-    }
-
-    /// <summary>
-    /// Parse JSON to create a new instance of the <see cref="BLEDataFilter"/> class.
-    /// </summary>
-    /// <param name="dataFilter">JSON representation of a data filter.</param>
-    /// <returns>A new <see cref="BLEDataFilter"/> with properties matching those specified in the provided JSON.</returns>
-    protected BLEDataFilter ParseDataFilter(JsonElement dataFilter)
-    {
-        var filter = new BLEDataFilter();
-
-        if (dataFilter.TryGetProperty("dataPrefix", out var jsonDataPrefix))
-        {
-            filter.DataPrefix = new (jsonDataPrefix.EnumerateArray().Select(element => element.GetByte()));
-        }
-        else
-        {
-            // an empty data prefix is a valid way to check that manufacturer data exists for a particular ID
-            filter.DataPrefix = new ();
-        }
-
-        if (dataFilter.TryGetProperty("mask", out var jsonMask))
-        {
-            filter.Mask = new (jsonMask.EnumerateArray().Select(element => element.GetByte()));
-        }
-        else
-        {
-            filter.Mask = Enumerable.Repeat<byte>(0xFF, filter.DataPrefix.Count).ToList();
-        }
-
-        if (filter.DataPrefix.Count != filter.Mask.Count)
-        {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams(
-                $"length of data prefix ({filter.DataPrefix.Count}) does not match length of mask ({filter.Mask.Count})"));
         }
 
         return filter;
@@ -295,6 +301,47 @@ internal abstract class BLESession<TUUID> : Session
             string.IsNullOrWhiteSpace(this.NamePrefix) &&
             (this.RequiredServices == null || this.RequiredServices.Count < 1) &&
             (this.ManufacturerData == null || this.ManufacturerData.Count < 1);
+
+        /// <summary>
+        /// Test if this filter matches the provided data.
+        /// </summary>
+        /// <param name="testName">The device name to test against.</param>
+        /// <param name="testServices">The list of services to test against.</param>
+        /// <param name="testManufacterData">The dictionary of manufacturer data to test against.</param>
+        /// <returns>True if all filter checks pass. False if any check fails.</returns>
+        /// See https://webbluetoothcg.github.io/web-bluetooth/#matches-a-filter
+        public bool Matches(string testName, IEnumerable<TUUID> testServices, IDictionary<int, IEnumerable<byte>> testManufacterData)
+        {
+            if (this.Name != null && this.Name != testName)
+            {
+                return false;
+            }
+
+            if (this.NamePrefix != null && testName?.StartsWith(this.NamePrefix) != true)
+            {
+                return false;
+            }
+
+            if (this.RequiredServices != null && !this.RequiredServices.IsSubsetOf(testServices))
+            {
+                return false;
+            }
+
+            foreach (var (manufacturerId, dataFilter) in this.ManufacturerData.OrEmpty())
+            {
+                if (!testManufacterData.TryGetValue(manufacturerId, out var testBytes))
+                {
+                    return false;
+                }
+
+                if (!dataFilter.Matches(testBytes))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 
     /// <summary>
@@ -311,5 +358,22 @@ internal abstract class BLESession<TUUID> : Session
         /// Gets or sets the list of bytes to mask the candidate data with before testing for a match.
         /// </summary>
         public List<byte> Mask { get; set; }
+
+        /// <summary>
+        /// Test if this data filter matches a sequence of bytes.
+        /// </summary>
+        /// <param name="testData">The data to test against.</param>
+        /// <returns>True if the filter matches, false otherwise.</returns>
+        public bool Matches(IEnumerable<byte> testData)
+        {
+            var testPrefix = testData.Take(this.DataPrefix.Count);
+
+            // mask each advertised byte with the corresponding mask byte from the filter
+            var maskedPrefix = testPrefix
+                .Select((testByte, index) => (byte)(testByte & this.Mask[index]));
+
+            // check if the masked bytes from the advertised data matches the filter's prefix bytes
+            return maskedPrefix.SequenceEqual(this.DataPrefix);
+        }
     }
 }
