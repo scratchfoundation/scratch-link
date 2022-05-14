@@ -109,6 +109,93 @@ internal class Session : IDisposable
     }
 
     /// <summary>
+    /// In DEBUG builds, wrap an event handler with a try/catch which reports the exception using SendErrorNotifiation.
+    /// Otherwise, return the original event handler without modification.
+    /// </summary>
+    /// <remarks>
+    /// This could theoretically leak sensitive information. Use only for debugging.
+    /// </remarks>
+    /// <param name="original">The original event handler, to be wrapped.</param>
+    /// <returns>The wrapped event handler.</returns>
+    protected EventHandler WrapEventHandler(EventHandler original)
+    {
+#if DEBUG
+        return (object sender, EventArgs args) =>
+        {
+            try
+            {
+                original(sender, args);
+            }
+            catch (Exception e)
+            {
+                this.SendEventExceptionNotification(e);
+            }
+        };
+#else
+        return original;
+#endif
+    }
+
+    /// <summary>
+    /// In DEBUG builds, wrap an event handler with a try/catch which reports the exception using SendErrorNotifiation.
+    /// Otherwise, return the original event handler without modification.
+    /// </summary>
+    /// <remarks>
+    /// This could theoretically leak sensitive information. Use only for debugging.
+    /// </remarks>
+    /// <typeparam name="T">The type of event args associated with the event handler.</typeparam>
+    /// <param name="original">The original event handler, to be wrapped.</param>
+    /// <returns>The wrapped event handler.</returns>
+    protected EventHandler<T> WrapEventHandler<T>(EventHandler<T> original)
+    {
+#if DEBUG
+        return (object sender, T args) =>
+        {
+            try
+            {
+                original(sender, args);
+            }
+            catch (Exception e)
+            {
+                this.SendEventExceptionNotification(e);
+            }
+        };
+#else
+        return original;
+#endif
+    }
+
+    /// <summary>
+    /// In DEBUG builds, wrap an event handler with a try/catch which reports the exception using SendErrorNotifiation.
+    /// Otherwise, return the original event handler without modification.
+    /// This version wraps an async handler. Make sure any async handler returns <see cref="Task"/>.
+    /// </summary>
+    /// <remarks>
+    /// This could theoretically leak sensitive information. Use only for debugging.
+    /// </remarks>
+    /// <typeparam name="T">The type of event args associated with the event handler.</typeparam>
+    /// <param name="original">The original event handler, to be wrapped.</param>
+    /// <returns>The wrapped event handler.</returns>
+    protected EventHandler<T> WrapEventHandler<T>(Func<object, T, Task> original)
+    {
+#if DEBUG
+        return async (object sender, T args) =>
+        {
+            try
+            {
+                await original(sender, args);
+            }
+            catch (Exception e)
+            {
+                this.SendEventExceptionNotification(e);
+            }
+        };
+#else
+        return (object sender, T args) => { original(sender, args); };
+#endif
+    }
+
+    /// <summary>
     /// Handle a "getVersion" request.
     /// </summary>
     /// <param name="methodName">The name of the method called (expected: "getVersion").</param>
@@ -234,6 +321,13 @@ internal class Session : IDisposable
             this.pendingRequests.TryRemove(requestId, out _);
         }
     }
+
+#if DEBUG
+    private void SendEventExceptionNotification(Exception e)
+    {
+        _ = this.SendErrorNotification(JsonRpc2Error.InternalError(e.ToString()), this.CancellationToken);
+    }
+#endif
 
     private Task<object> HandleUnrecognizedMethod(string methodName, JsonElement? args)
     {
