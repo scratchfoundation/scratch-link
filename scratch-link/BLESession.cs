@@ -7,6 +7,7 @@ namespace ScratchLink;
 using ScratchLink.JsonRpc;
 using System.Net.WebSockets;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 /// <summary>
@@ -375,5 +376,29 @@ internal abstract class BLESession<TUUID> : Session
             // check if the masked bytes from the advertised data matches the filter's prefix bytes
             return maskedPrefix.SequenceEqual(this.DataPrefix);
         }
+    }
+
+    /// <summary>
+    /// JSON-ready class to use when reporting that a peripheral was discovered.
+    /// </summary>
+    protected class BLEPeripheralDiscovered
+    {
+        /// <summary>
+        /// Gets or sets the advertised name of the peripheral.
+        /// </summary>
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ID which can be used for connecting to this peripheral.
+        /// </summary>
+        [JsonPropertyName("peripheralId")]
+        public string PeripheralId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the relative signal strength of the advertisement.
+        /// </summary>
+        [JsonPropertyName("rssi")]
+        public int RSSI { get; set; }
     }
 }

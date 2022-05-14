@@ -30,6 +30,8 @@ internal class MacBLESession : BLESession<CBUUID>
 
     private readonly CBCentralManager cbManager;
 
+    private readonly Dictionary<NSUuid, CBPeripheral> discoveredPeripherals = new ();
+
     private readonly SemaphoreSlim filterLock = new (1);
     private List<BLEScanFilter> filters;
     private HashSet<CBUUID> allowedServices;
@@ -45,9 +47,8 @@ internal class MacBLESession : BLESession<CBUUID>
         : base(context)
     {
         this.cbManager = new ();
-        this.cbManager.UpdatedState += this.CbManager_UpdatedState;
-        this.cbManager.DiscoveredPeripheral += this.CbManager_DiscoveredPeripheral;
-        this.cbManager.ConnectionEventDidOccur += this.CbManager_ConnectionEventDidOccur;
+        this.cbManager.UpdatedState += this.WrapEventHandler(this.CbManager_UpdatedState);
+        this.cbManager.DiscoveredPeripheral += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
 
         this.CancellationToken.Register(() =>
         {
@@ -86,7 +87,7 @@ internal class MacBLESession : BLESession<CBUUID>
     protected override async Task<object> DoDiscover(List<BLEScanFilter> filters, HashSet<CBUUID> optionalServices)
     {
         var allowedServices = filters.Aggregate(
-            optionalServices.ToHashSet(), // start with a clone of the optional services list
+            optionalServices.OrEmpty().ToHashSet(), // start with a clone of the optional services list
             (result, filter) =>
             {
                 result.UnionWith(filter.RequiredServices);
@@ -215,7 +216,7 @@ internal class MacBLESession : BLESession<CBUUID>
         }
     }
 
-    private async void CbManager_DiscoveredPeripheral(object sender, CBDiscoveredPeripheralEventArgs e)
+    private async Task CbManager_DiscoveredPeripheral(object sender, CBDiscoveredPeripheralEventArgs e)
     {
         var rssi = e.RSSI;
         if (rssi.CompareTo(MinimumSignalStrength) < 0)
@@ -233,9 +234,14 @@ internal class MacBLESession : BLESession<CBUUID>
 
         var advertisementData = e.AdvertisementData;
 
-        var advertisedServices = advertisementData["kCBAdvDataServiceUUIDs"] as NSArray<CBUUID>;
-        var peripheralServices = peripheral.Services.Select(service => service.UUID);
-        var allServices = advertisedServices.Union(peripheralServices);
+        var allServices = new HashSet<CBUUID>();
+
+        allServices.UnionWith(peripheral.Services.OrEmpty().Select(service => service.UUID));
+
+        if (advertisementData.TryGetValue<NSArray>(CBAdvertisement.DataServiceUUIDsKey, out var advertisedServices))
+        {
+            allServices.UnionWith(advertisedServices.EnumerateAs<CBUUID>());
+        }
 
         var manufacturerData = new Dictionary<int, IEnumerable<byte>>();
         if (advertisementData[CBAdvertisement.DataManufacturerDataKey] is NSData advertisedManufacturerData)
@@ -261,10 +267,17 @@ internal class MacBLESession : BLESession<CBUUID>
         {
             this.filterLock.Release();
         }
-    }
 
-    private void CbManager_ConnectionEventDidOccur(object sender, CBPeripheralConnectionEventEventArgs e)
-    {
-        throw new NotImplementedException();
+        // the device must have passed the filter!
+        this.discoveredPeripherals[peripheral.Identifier] = peripheral;
+        await this.SendNotification(
+            "didDiscoverPeripheral",
+            new BLEPeripheralDiscovered()
+            {
+                Name = peripheral.Name,
+                PeripheralId = peripheral.Identifier.ToString(),
+                RSSI = rssi.Int32Value,
+            },
+            this.CancellationToken);
     }
 }
