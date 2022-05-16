@@ -28,20 +28,4 @@ public static class NSExtensions
         value = (T)baseValue;
         return returnValue;
     }
-
-    /// <summary>
-    /// Enumerate the array, assuming that each item is of the specified type.
-    /// Items will be retrieved using <see cref="NSArray.GetItem{T}(nuint)"/>.
-    /// </summary>
-    /// <typeparam name="T">The type of the items in the array.</typeparam>
-    /// <param name="array">The array to enumerate.</param>
-    /// <returns>An enumerable for the items in the array.</returns>
-    public static IEnumerable<T> EnumerateAs<T>(this NSArray array)
-        where T : class, INativeObject
-    {
-        for (nuint i = 0; i < array.Count; ++i)
-        {
-            yield return array.GetItem<T>(i);
-        }
-    }
 }
