@@ -240,7 +240,8 @@ internal class MacBLESession : BLESession<CBUUID>
 
         if (advertisementData.TryGetValue<NSArray>(CBAdvertisement.DataServiceUUIDsKey, out var advertisedServices))
         {
-            allServices.UnionWith(advertisedServices.EnumerateAs<CBUUID>());
+            // Note: `NSArray.FromArray<T>(myArray)` means "convert NSArray myArray to T[]"
+            allServices.UnionWith(NSArray.FromArray<CBUUID>(advertisedServices));
         }
 
         var manufacturerData = new Dictionary<int, IEnumerable<byte>>();
