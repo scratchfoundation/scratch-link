@@ -2,10 +2,9 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Platforms.MacCatalyst;
+namespace ScratchLink.Platforms.MacCatalyst.Extensions;
 
 using Foundation;
-using ObjCRuntime;
 
 /// <summary>
 /// Extensions for NS data types.

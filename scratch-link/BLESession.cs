@@ -4,6 +4,7 @@
 
 namespace ScratchLink;
 
+using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using System.Net.WebSockets;
 using System.Text.Json;
