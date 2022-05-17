@@ -140,26 +140,7 @@ internal class MacBLESession : BLESession<CBUUID>
             return Task.FromResult(initialState);
         }
 
-        // TODO: tie the task to this.CancellationToken too
-        var completionSource = new TaskCompletionSource<BluetoothState>();
-        EventHandler<BluetoothState> listener = null;
-
-        var delayTimer = Task.Delay(BluetoothSettleTimeout);
-
-        listener = (object sender, BluetoothState newState) =>
-        {
-            this.BluetoothStateSettled -= listener;
-            completionSource.TrySetResult(newState);
-        };
-        this.BluetoothStateSettled += listener;
-
-        Task.Delay(BluetoothSettleTimeout).ContinueWith(_ =>
-        {
-            this.BluetoothStateSettled -= listener;
-            completionSource.TrySetException(new TimeoutException("Bluetooth state unknown"));
-        });
-
-        return completionSource.Task;
+        return EventAwaiter.MakeTask(this.BluetoothStateSettled, BluetoothSettleTimeout, this.CancellationToken);
     }
 
     private async void CbManager_UpdatedState(object sender, EventArgs e)
