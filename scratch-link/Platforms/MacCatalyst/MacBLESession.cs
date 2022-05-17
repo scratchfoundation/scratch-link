@@ -11,7 +11,9 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using CoreBluetooth;
 using Foundation;
+using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
+using ScratchLink.Platforms.MacCatalyst.Extensions;
 
 /// <summary>
 /// Implements a BLE session on MacOS.

@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace ScratchLink.Extensions;
 
 /// <summary>
 /// Extensions for use with containers or other enumerables.

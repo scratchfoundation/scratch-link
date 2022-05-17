@@ -4,6 +4,7 @@
 
 namespace ScratchLink;
 
+using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.JsonRpc.Converters;
 using System.Collections.Concurrent;
