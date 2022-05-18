@@ -21,11 +21,6 @@ using ScratchLink.Platforms.MacCatalyst.Extensions;
 internal class MacBLESession : BLESession<CBUUID>
 {
     /// <summary>
-    /// Maximum time to wait for Bluetooth to settle to a known state.
-    /// </summary>
-    protected static readonly TimeSpan BluetoothSettleTimeout = TimeSpan.FromSeconds(3);
-
-    /// <summary>
     /// The minimum value for RSSI during discovery: peripherals with a weaker signal will be ignored.
     /// </summary>
     protected static readonly NSNumber MinimumSignalStrength = -70;
@@ -108,6 +103,7 @@ internal class MacBLESession : BLESession<CBUUID>
             this.filters = filters;
             this.allowedServices = allowedServices;
             this.optionalServices = optionalServices;
+            this.discoveredPeripherals.Clear();
             this.cbManager.ScanForPeripherals(null, new PeripheralScanningOptions()
             {
                 AllowDuplicatesKey = true,
@@ -122,9 +118,83 @@ internal class MacBLESession : BLESession<CBUUID>
     }
 
     /// <inheritdoc/>
-    protected override Task<object> DoConnect(JsonElement jsonPeripheralId)
+    protected override async Task<object> DoConnect(JsonElement jsonPeripheralId)
     {
-        throw new NotImplementedException();
+        NSUuid peripheralId = null;
+
+        try
+        {
+            var peripheralIdString = jsonPeripheralId.GetString();
+            peripheralId = new NSUuid(peripheralIdString);
+        }
+        catch
+        {
+            // ignore any exceptions: just check below for a valid peripheralId
+        }
+
+        if (peripheralId == null)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("malformed peripheralId"));
+        }
+
+        await this.filterLock.WaitAsync(this.CancellationToken);
+        try
+        {
+            if (this.connectedPeripheral != null)
+            {
+                throw new JsonRpc2Exception(JsonRpc2Error.InvalidRequest("already connected or connecting"));
+            }
+
+            if (!this.discoveredPeripherals.TryGetValue(peripheralId, out var discoveredPeripheral))
+            {
+                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("invalid peripheralId: " + peripheralId));
+            }
+
+            this.cbManager.StopScan();
+            this.connectedPeripheral = discoveredPeripheral;
+        }
+        finally
+        {
+            this.filterLock.Release();
+        }
+
+        this.cbManager.ConnectPeripheral(this.connectedPeripheral);
+
+        // wait for the connection to complete
+        var connectArgs = await EventAwaiter.MakeTask<CBPeripheralEventArgs>(
+            h => this.cbManager.ConnectedPeripheral += h,
+            h => this.cbManager.ConnectedPeripheral -= h,
+            BluetoothTimeouts.Connection,
+            this.CancellationToken);
+
+        if (this.connectedPeripheral != connectArgs.Peripheral)
+        {
+            this.connectedPeripheral = null;
+            throw new JsonRpc2Exception(JsonRpc2Error.InternalError("did not connect to correct peripheral"));
+        }
+
+        // We must register at least one event handler before calling DiscoverServices(), otherwise DiscoveredService doesn't trigger.
+        // I suspect internally it's registering peripheral.delegate the first time an event handler is attached.
+        // We're likely to want this event later anyway, so it's a convenient candidate.
+        this.connectedPeripheral.UpdatedCharacterteristicValue += this.ConnectedPeripheral_UpdatedCharacterteristicValue;
+
+        // discover services before we report that we're connected
+        // TODO: the documentation says "setting the parameter to nil is considerably slower and is not recommended"
+        // but if I provide `allowedServices` then `peripheral.services` doesn't get populated...
+        this.connectedPeripheral.DiscoverServices(null);
+
+        // Wait for the services to actually be discovered
+        // Note that while the C# name for this event is "DiscoveredService" (singular),
+        // the Obj-C / Swift name is "peripheral:didDiscoverServices:" (plural).
+        // In practice, this event actually means that `peripheral.services` is now populated.
+        await EventAwaiter.MakeTask<NSErrorEventArgs>(
+            h => this.connectedPeripheral.DiscoveredService += h,
+            h => this.connectedPeripheral.DiscoveredService -= h,
+            BluetoothTimeouts.ServiceDiscovery,
+            this.CancellationToken);
+
+        // the "connect" request is now complete!
+        return null;
     }
 
     /// <summary>
@@ -140,7 +210,7 @@ internal class MacBLESession : BLESession<CBUUID>
             return Task.FromResult(initialState);
         }
 
-        return EventAwaiter.MakeTask(this.BluetoothStateSettled, BluetoothSettleTimeout, this.CancellationToken);
+        return EventAwaiter.MakeTask(this.BluetoothStateSettled, BluetoothTimeouts.SettleManagerState, this.CancellationToken);
     }
 
     private async void CbManager_UpdatedState(object sender, EventArgs e)
@@ -263,5 +333,31 @@ internal class MacBLESession : BLESession<CBUUID>
                 RSSI = rssi.Int32Value,
             },
             this.CancellationToken);
+    }
+
+    private void ConnectedPeripheral_UpdatedCharacterteristicValue(object sender, CBCharacteristicEventArgs e)
+    {
+        // TODO
+    }
+
+    /// <summary>
+    /// Timeouts for Bluetooth operations.
+    /// </summary>
+    protected static class BluetoothTimeouts
+    {
+        /// <summary>
+        /// Maximum time to wait for the Bluetooth manager to settle to a known state.
+        /// </summary>
+        public static readonly TimeSpan SettleManagerState = TimeSpan.FromSeconds(3);
+
+        /// <summary>
+        /// Maximum time to allow for connecting to a Bluetooth peripheral.
+        /// </summary>
+        public static readonly TimeSpan Connection = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        /// Maximum time to allow for discovering services on a connected peripheral.
+        /// </summary>
+        public static readonly TimeSpan ServiceDiscovery = TimeSpan.FromSeconds(30);
     }
 }
