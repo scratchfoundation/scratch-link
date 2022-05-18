@@ -45,13 +45,24 @@ public static class EventAwaiter
     {
         var completionSource = new TaskCompletionSource<T>();
 
+        // localCancellationSource is canceled on cleanup and should not affect the task results.
+        // If cancellationToken is cancelled it happed externally and should mark the task as canceled.
+        var localCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var localCancellationToken = localCancellationSource.Token;
+
         EventHandler<T> handler = null;
         CancellationTokenRegistration? tokenRegistration = null;
-        var delayTimer = Task.Delay(timeout, cancellationToken);
+        var delayTimer = Task.Delay(timeout, localCancellationToken);
 
         // make this safe to call multiple times in case (for example) a timeout goes into the event queue before a success finishes processing
         var cleanup = () =>
         {
+            if (localCancellationSource?.IsCancellationRequested == false)
+            {
+                localCancellationSource.Cancel();
+                localCancellationSource = null;
+            }
+
             if (handler != null)
             {
                 removeHandler(handler);
@@ -86,7 +97,7 @@ public static class EventAwaiter
                 cleanup();
                 completionSource.TrySetException(new TimeoutException());
             },
-            cancellationToken);
+            localCancellationToken);
 
         // cancel
         tokenRegistration = cancellationToken.Register(() =>
