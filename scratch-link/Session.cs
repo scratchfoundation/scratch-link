@@ -387,12 +387,22 @@ internal class Session : IDisposable
 
     private async Task SendResponse(object id, object result, JsonRpc2Error error, CancellationToken cancellationToken)
     {
-        var response = new JsonRpc2Response
+        var response = new JsonRpc2Message
         {
             Id = id,
-            Result = (error == null) ? result : null,
-            Error = error,
+            ExtraProperties = new (),
         };
+
+        // handling "result" this way, instead of using JsonRpc2Response, means we can send "result: null" iff both result and error are null
+        if (error == null)
+        {
+            response.ExtraProperties["result"] = result;
+        }
+        else
+        {
+            response.ExtraProperties["error"] = error;
+        }
+
         var responseBytes = JsonSerializer.SerializeToUtf8Bytes(response);
 
         await this.SocketSend(responseBytes, cancellationToken);
