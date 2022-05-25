@@ -2,9 +2,10 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace ScratchLink.BLE;
 
 using ScratchLink.JsonRpc;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json;
@@ -83,6 +84,13 @@ internal abstract class GattHelpers<TUUID>
     public TUUID GetServiceUuid(JsonElement nameToken) => this.ResolveUuidName(nameToken, this.AssignedServices);
 
     /// <summary>
+    /// Resolve a Web Bluetooth GATT characteristic name to a canonical UUID.
+    /// </summary>
+    /// <param name="nameToken">A short UUID in integer form, a full UUID, or an assigned number's name.</param>
+    /// <returns>The UUID associated with the name.</returns>
+    public TUUID GetCharacteristicUuid(JsonElement nameToken) => this.ResolveUuidName(nameToken, this.AssignedCharacteristics);
+
+    /// <summary>
     /// Resolve a Web Bluetooth GATT "name" to a canonical UUID, using an assigned numbers table if necessary.
     /// See <a href="https://webbluetoothcg.github.io/web-bluetooth/#resolveuuidname">here</a> for more info.
     /// </summary>
@@ -99,7 +107,7 @@ internal abstract class GattHelpers<TUUID>
 
         var name = nameToken.GetString();
 
-        // Web Bluetooth demands an exact match to this regex but the .NET Guid constructor is more permissive.
+        // Web Bluetooth demands an exact match to this regex
         // See https://webbluetoothcg.github.io/web-bluetooth/#valid-uuid
         var validGuidRegex = new Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
         if (validGuidRegex.IsMatch(name))
@@ -107,13 +115,28 @@ internal abstract class GattHelpers<TUUID>
             return this.MakeUUID(name);
         }
 
-        // TODO: does Windows / .NET really have no built-in call for this?
         if (assignedNumbersTable.TryGetValue(name, out var id))
         {
             return this.CanonicalUuid(id);
         }
 
         throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"unknown or invalid GATT name: {nameToken}"));
+    }
+
+    /// <summary>
+    /// Check if a UUID is blocked in any way.
+    /// </summary>
+    /// <param name="uuid">The service or characteristic ID to check.</param>
+    /// <returns>True if reads OR writes are blocked for this ID.</returns>
+    public bool IsBlocked(TUUID uuid)
+    {
+        if (!this.BlockList.TryGetValue(uuid, out var blockStatus))
+        {
+            // not present on the block list
+            return false;
+        }
+
+        return blockStatus == BlockListStatus.Include;
     }
 
     /// <summary>

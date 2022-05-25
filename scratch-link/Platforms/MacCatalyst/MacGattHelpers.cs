@@ -4,8 +4,8 @@
 
 namespace ScratchLink.Platforms.MacCatalyst;
 
-using System;
 using CoreBluetooth;
+using ScratchLink.BLE;
 
 /// <summary>
 /// Implement the MacOS-specific GATT helpers.

@@ -6,6 +6,7 @@ namespace ScratchLink;
 
 using CoreBluetooth;
 using Foundation;
+using ScratchLink.BLE;
 using ScratchLink.Platforms.MacCatalyst;
 
 /// <summary>

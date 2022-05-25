@@ -9,7 +9,7 @@ using System.Net.WebSockets;
 /// <summary>
 /// Implements a BLE session on Windows.
 /// </summary>
-internal class WinBLESession : BLESession
+internal class WinBLESession : BLESession<Guid?>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="WinBLESession"/> class.

@@ -11,6 +11,7 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using CoreBluetooth;
 using Foundation;
+using ScratchLink.BLE;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.Platforms.MacCatalyst.Extensions;
@@ -31,8 +32,6 @@ internal class MacBLESession : BLESession<CBUUID>
 
     private readonly SemaphoreSlim filterLock = new (1);
     private List<BLEScanFilter> filters;
-    private HashSet<CBUUID> allowedServices;
-    private IEnumerable<CBUUID> optionalServices;
 
     private CBPeripheral connectedPeripheral;
 
@@ -63,6 +62,15 @@ internal class MacBLESession : BLESession<CBUUID>
         Unknown,
     }
 
+    /// <inheritdoc/>
+    protected override bool IsConnected
+    {
+        get
+        {
+            return this.connectedPeripheral != null;
+        }
+    }
+
     private BluetoothState CurrentBluetoothState
     {
         get => this.cbManager.State switch
@@ -81,16 +89,8 @@ internal class MacBLESession : BLESession<CBUUID>
     }
 
     /// <inheritdoc/>
-    protected override async Task<object> DoDiscover(List<BLEScanFilter> filters, HashSet<CBUUID> optionalServices)
+    protected override async Task<object> DoDiscover(List<BLEScanFilter> filters)
     {
-        var allowedServices = filters.Aggregate(
-            optionalServices.OrEmpty().ToHashSet(), // start with a clone of the optional services list
-            (result, filter) =>
-            {
-                result.UnionWith(filter.RequiredServices);
-                return result;
-            });
-
         var currentState = await this.GetSettledBluetoothState();
         if (currentState != BluetoothState.Available)
         {
@@ -101,8 +101,6 @@ internal class MacBLESession : BLESession<CBUUID>
         try
         {
             this.filters = filters;
-            this.allowedServices = allowedServices;
-            this.optionalServices = optionalServices;
             this.discoveredPeripherals.Clear();
             this.cbManager.ScanForPeripherals(null, new PeripheralScanningOptions()
             {
@@ -158,11 +156,13 @@ internal class MacBLESession : BLESession<CBUUID>
             this.filterLock.Release();
         }
 
-        this.cbManager.ConnectPeripheral(this.connectedPeripheral);
-
         // wait for the connection to complete
         var connectArgs = await EventAwaiter.MakeTask<CBPeripheralEventArgs>(
-            h => this.cbManager.ConnectedPeripheral += h,
+            h =>
+            {
+                this.cbManager.ConnectedPeripheral += h;
+                this.cbManager.ConnectPeripheral(this.connectedPeripheral);
+            },
             h => this.cbManager.ConnectedPeripheral -= h,
             BluetoothTimeouts.Connection,
             this.CancellationToken);
@@ -195,6 +195,68 @@ internal class MacBLESession : BLESession<CBUUID>
 
         // the "connect" request is now complete!
         return null;
+    }
+
+    /// <inheritdoc/>
+    protected override CBUUID GetDefaultServiceId()
+    {
+        var services = this.connectedPeripheral?.Services.OrEmpty();
+
+        // find the first service that isn't blocked in any way
+        return services
+            .Select(service => service.UUID)
+            .FirstOrDefault(serviceId =>
+                this.AllowedServices.Contains(serviceId) &&
+                !this.GattHelpers.IsBlocked(serviceId));
+    }
+
+    /// <inheritdoc/>
+    protected override CBUUID GetDefaultCharacteristicId(CBUUID serviceId)
+    {
+        var service = this.connectedPeripheral?
+            .Services.OrEmpty()
+            .FirstOrDefault(service => service.UUID == serviceId);
+
+        var characteristics = service?.Characteristics.OrEmpty();
+
+        // find the specified service
+        // then find its first characteristic that isn't blocked in any way
+        return characteristics
+            .Select(characteristic => characteristic.UUID)
+            .FirstOrDefault(characteristicId =>
+                !this.GattHelpers.IsBlocked(characteristicId));
+    }
+
+    /// <inheritdoc/>
+    protected override async Task<IBLEEndpoint> DoGetEndpoint(CBUUID serviceId, CBUUID characteristicId)
+    {
+        var service = this.connectedPeripheral?
+            .Services.OrEmpty()
+            .FirstOrDefault(service => serviceId.Equals(service.UUID));
+
+        if (service.Characteristics == null)
+        {
+            await EventAwaiter.MakeTask<CBServiceEventArgs>(
+                h =>
+                {
+                    service.Peripheral.DiscoveredCharacteristics += h;
+                    service.Peripheral.DiscoverCharacteristics(service);
+                },
+                h => service.Peripheral.DiscoveredCharacteristics -= h,
+                BluetoothTimeouts.ServiceDiscovery,
+                this.CancellationToken);
+        }
+
+        var characteristic = service?
+            .Characteristics.OrEmpty()
+            .FirstOrDefault(characteristic => characteristicId.Equals(characteristic.UUID));
+
+        if (characteristic == null)
+        {
+            return null;
+        }
+
+        return new MacBLEEndpoint(characteristic);
     }
 
     /// <summary>
@@ -246,8 +308,7 @@ internal class MacBLESession : BLESession<CBUUID>
             return;
         }
 
-        // ping GetSettledBluetoothState()
-        this.BluetoothStateSettled(this, currentState);
+        this.BluetoothStateSettled?.Invoke(this, currentState);
 
         // drop the peripheral & session if necessary
         if (currentState != BluetoothState.Available && this.connectedPeripheral != null)
