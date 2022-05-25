@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace ScratchLink.BLE;
 
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 /// </summary>
 /// <typeparam name="TUUID">The platform-specific type which represents UUIDs (like Guid or CBUUID).</typeparam>
 internal abstract class BLESession<TUUID> : Session
+    where TUUID : IEquatable<TUUID>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="BLESession{TUUID}"/> class.
@@ -25,6 +26,7 @@ internal abstract class BLESession<TUUID> : Session
         : base(context)
     {
         this.GattHelpers = IPlatformApplication.Current.Services.GetService<GattHelpers<TUUID>>();
+        this.AllowedServices = new ();
         this.Handlers["discover"] = this.HandleDiscover;
         this.Handlers["connect"] = this.HandleConnect;
         this.Handlers["write"] = this.HandleWrite;
@@ -35,9 +37,20 @@ internal abstract class BLESession<TUUID> : Session
     }
 
     /// <summary>
+    /// Gets a value indicating whether or not a peripheral is currently connected and available.
+    /// </summary>
+    protected abstract bool IsConnected { get; }
+
+    /// <summary>
     /// Gets a GattHelpers instance configured for this platform.
     /// </summary>
     protected GattHelpers<TUUID> GattHelpers { get; }
+
+    /// <summary>
+    /// Gets the set of services which are allowed based on discovery filters.
+    /// See Scratch Link protocol documentation.
+    /// </summary>
+    protected HashSet<TUUID> AllowedServices { get; }
 
     /// <summary>
     /// Parse JSON to create a new instance of the <see cref="BLEDataFilter"/> class.
@@ -112,7 +125,8 @@ internal abstract class BLESession<TUUID> : Session
             throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("discovery request includes empty filter"));
         }
 
-        HashSet<TUUID> optionalServices = null;
+        this.AllowedServices.Clear();
+
         if (args?.TryGetProperty("optionalServices", out var jsonOptionalServices) == true)
         {
             if (jsonOptionalServices.ValueKind != JsonValueKind.Array)
@@ -120,19 +134,24 @@ internal abstract class BLESession<TUUID> : Session
                 throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("could not parse optionalServices in discovery request"));
             }
 
-            optionalServices = new (jsonOptionalServices.EnumerateArray().Select(this.GattHelpers.GetServiceUuid));
+            var optionalServices = jsonOptionalServices.EnumerateArray().Select(this.GattHelpers.GetServiceUuid);
+            this.AllowedServices.UnionWith(optionalServices);
         }
 
-        return await this.DoDiscover(filters, optionalServices);
+        foreach (var filter in filters)
+        {
+            this.AllowedServices.UnionWith(filter.RequiredServices.OrEmpty());
+        }
+
+        return await this.DoDiscover(filters);
     }
 
     /// <summary>
     /// Platform-specific implementation for peripheral device discovery.
     /// </summary>
     /// <param name="filters">The filters for device discovery. A peripheral device must match at least one filter to pass.</param>
-    /// <param name="optionalServices">Additional services the client might use, in addition to those in the matching filter.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected abstract Task<object> DoDiscover(List<BLEScanFilter> filters, HashSet<TUUID> optionalServices);
+    protected abstract Task<object> DoDiscover(List<BLEScanFilter> filters);
 
     /// <summary>
     /// Implement the JSON-RPC "connect" request to connect to a particular peripheral.
@@ -168,9 +187,20 @@ internal abstract class BLESession<TUUID> : Session
     /// The IDs of the service and characteristic along with the message and optionally the message encoding.
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected Task<object> HandleWrite(string methodName, JsonElement? args)
+    protected async Task<object> HandleWrite(string methodName, JsonElement? args)
     {
-        return Task.FromResult<object>(null);
+        if (args == null)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+        }
+
+        var endpoint = await this.GetEndpoint("write", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeWrites);
+        var buffer = EncodingHelpers.DecodeBuffer((JsonElement)args);
+        var withResponse = args?.TryGetProperty("withResponse", out var jsonWithResponse) == true ? jsonWithResponse.IsTruthy() : (bool?)null;
+
+        var bytesWritten = endpoint.Write(buffer, withResponse);
+
+        return bytesWritten;
     }
 
     /// <summary>
@@ -184,7 +214,7 @@ internal abstract class BLESession<TUUID> : Session
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected Task<object> HandleRead(string methodName, JsonElement? args)
     {
-        return Task.FromResult<object>(null);
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -195,7 +225,7 @@ internal abstract class BLESession<TUUID> : Session
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected Task<object> HandleStartNotifications(string methodName, JsonElement? args)
     {
-        return Task.FromResult<object>(null);
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -206,7 +236,7 @@ internal abstract class BLESession<TUUID> : Session
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected Task<object> HandleStopNotifications(string methodName, JsonElement? args)
     {
-        return Task.FromResult<object>(null);
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -217,7 +247,7 @@ internal abstract class BLESession<TUUID> : Session
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected Task<object> HandleGetServices(string methodName, JsonElement? args)
     {
-        return Task.FromResult<object>(null);
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -267,6 +297,83 @@ internal abstract class BLESession<TUUID> : Session
 
         return filter;
     }
+
+    /// <summary>
+    /// Fetch the characteristic referred to in the <paramref name="endpointInfo"/> and perform access verification.
+    /// </summary>
+    /// <param name="errorContext">A string to include when reporting an error to the client, if an error is encountered.</param>
+    /// <param name="endpointInfo">A JSON object which may contain a 'serviceId' property and a 'characteristicId' property.</param>
+    /// <param name="checkFlag">Check if this flag is set for this service or characteristic in the block list. If so, throw.</param>
+    /// <returns>The specified GATT service characteristic, if it can be resolved and all checks pass.</returns>
+    /// <exception cref="JsonRpc2Exception">Thrown if the endpoint is blocked or could not be resolved.</exception>
+    protected Task<IBLEEndpoint> GetEndpoint(string errorContext, JsonElement endpointInfo, GattHelpers<TUUID>.BlockListStatus checkFlag)
+    {
+        if (!this.IsConnected)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError($"Peripheral is not connected for {errorContext}"));
+        }
+
+        var serviceId = endpointInfo.TryGetProperty("serviceId", out var jsonServiceId)
+            ? this.GattHelpers.GetServiceUuid(jsonServiceId)
+            : this.GetDefaultServiceId();
+
+        if (EqualityComparer<TUUID>.Default.Equals(serviceId, default))
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"could not determine GATT service for {errorContext}"));
+        }
+
+        var characteristicId = endpointInfo.TryGetProperty("characteristicId", out var jsonCharacteristicId)
+            ? this.GattHelpers.GetCharacteristicUuid(jsonCharacteristicId)
+            : this.GetDefaultCharacteristicId(serviceId);
+
+        if (EqualityComparer<TUUID>.Default.Equals(characteristicId, default))
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"could not determine GATT characteristic for {errorContext}"));
+        }
+
+        if (this.GattHelpers.BlockList.TryGetValue(serviceId, out var serviceBlockStatus) && serviceBlockStatus.HasFlag(checkFlag))
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"service is blocked with {serviceBlockStatus}: {serviceId}"));
+        }
+
+        if (this.GattHelpers.BlockList.TryGetValue(characteristicId, out var characteristicBlockStatus) && characteristicBlockStatus.HasFlag(checkFlag))
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"characteristic is blocked with {serviceBlockStatus}: {serviceId}"));
+        }
+
+        if (this.AllowedServices?.Any(allowedServiceId => serviceId.Equals(allowedServiceId)) != true)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"attempt to access unexpected service: {serviceId}"));
+        }
+
+        return this.DoGetEndpoint(serviceId, characteristicId);
+    }
+
+    /// <summary>
+    /// Retrieve the ID of the default service on the connected peripheral.
+    /// The definition of "default" service may be platform-specific but should exclude blocked services.
+    /// Returns <c>default(TUUID)</c> on failure.
+    /// </summary>
+    /// <returns>The ID of the default service on the connected peripheral, or <c>default(TUUID)</c> on failure.</returns>
+    protected abstract TUUID GetDefaultServiceId();
+
+    /// <summary>
+    /// Retrieve the ID of the default characteristic on the specified service.
+    /// The definition of "default" characteristic may be platform-specific but should exclude blocked characteristics.
+    /// Returns <c>default(TUUID)</c> on failure.
+    /// </summary>
+    /// <param name="serviceId">The service for which to find the default characteristic.</param>
+    /// <returns>The ID of the default service on the connected peripheral, or <c>default(TUUID)</c> on failure.</returns>
+    protected abstract TUUID GetDefaultCharacteristicId(TUUID serviceId);
+
+    /// <summary>
+    /// Platform-specific implementation for GetEndpoint.
+    /// Returns <c>default(TUUID)</c> on failure.
+    /// </summary>
+    /// <param name="serviceId">The ID of the service to look up.</param>
+    /// <param name="characteristicId">The ID of the characteristic to look up.</param>
+    /// <returns>The specified GATT service characteristic, if found.</returns>
+    protected abstract Task<IBLEEndpoint> DoGetEndpoint(TUUID serviceId, TUUID characteristicId);
 
     /// <summary>
     /// Store information associated with one entry in the "filters" array of a "discover" request.
