@@ -157,20 +157,19 @@ internal class MacBLESession : BLESession<CBUUID>
         }
 
         // wait for the connection to complete
-        var connectArgs = await EventAwaiter.MakeTask<CBPeripheralEventArgs>(
-            h =>
-            {
-                this.cbManager.ConnectedPeripheral += h;
-                this.cbManager.ConnectPeripheral(this.connectedPeripheral);
-            },
-            h => this.cbManager.ConnectedPeripheral -= h,
-            BluetoothTimeouts.Connection,
-            this.CancellationToken);
-
-        if (this.connectedPeripheral != connectArgs.Peripheral)
+        using (var connectAwaiter = new EventAwaiter<CBPeripheralEventArgs>(
+            h => this.cbManager.ConnectedPeripheral += h,
+            h => this.cbManager.ConnectedPeripheral -= h))
         {
-            this.connectedPeripheral = null;
-            throw new JsonRpc2Exception(JsonRpc2Error.InternalError("did not connect to correct peripheral"));
+            this.cbManager.ConnectPeripheral(this.connectedPeripheral);
+
+            var connectArgs = await connectAwaiter.MakeTask(BluetoothTimeouts.Connection, this.CancellationToken);
+
+            if (this.connectedPeripheral != connectArgs.Peripheral)
+            {
+                this.connectedPeripheral = null;
+                throw new JsonRpc2Exception(JsonRpc2Error.InternalError("did not connect to correct peripheral"));
+            }
         }
 
         // We must register at least one event handler before calling DiscoverServices(), otherwise DiscoveredService doesn't trigger.
@@ -178,20 +177,21 @@ internal class MacBLESession : BLESession<CBUUID>
         // We're likely to want this event later anyway, so it's a convenient candidate.
         this.connectedPeripheral.UpdatedCharacterteristicValue += this.ConnectedPeripheral_UpdatedCharacterteristicValue;
 
-        // discover services before we report that we're connected
-        // TODO: the documentation says "setting the parameter to nil is considerably slower and is not recommended"
-        // but if I provide `allowedServices` then `peripheral.services` doesn't get populated...
-        this.connectedPeripheral.DiscoverServices(null);
-
         // Wait for the services to actually be discovered
         // Note that while the C# name for this event is "DiscoveredService" (singular),
         // the Obj-C / Swift name is "peripheral:didDiscoverServices:" (plural).
         // In practice, this event actually means that `peripheral.services` is now populated.
-        await EventAwaiter.MakeTask<NSErrorEventArgs>(
+        using (var servieDiscoveryAwaiter = new EventAwaiter<NSErrorEventArgs>(
             h => this.connectedPeripheral.DiscoveredService += h,
-            h => this.connectedPeripheral.DiscoveredService -= h,
-            BluetoothTimeouts.ServiceDiscovery,
-            this.CancellationToken);
+            h => this.connectedPeripheral.DiscoveredService -= h))
+        {
+            // discover services before we report that we're connected
+            // TODO: the documentation says "setting the parameter to nil is considerably slower and is not recommended"
+            // but if I provide `allowedServices` then `peripheral.services` doesn't get populated...
+            this.connectedPeripheral.DiscoverServices(null);
+
+            await servieDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, this.CancellationToken);
+        }
 
         // the "connect" request is now complete!
         return null;
@@ -236,15 +236,15 @@ internal class MacBLESession : BLESession<CBUUID>
 
         if (service.Characteristics == null)
         {
-            await EventAwaiter.MakeTask<CBServiceEventArgs>(
-                h =>
-                {
-                    service.Peripheral.DiscoveredCharacteristics += h;
-                    service.Peripheral.DiscoverCharacteristics(service);
-                },
-                h => service.Peripheral.DiscoveredCharacteristics -= h,
-                BluetoothTimeouts.ServiceDiscovery,
-                this.CancellationToken);
+            using var characteristicDiscoveryAwaiter = new EventAwaiter<CBServiceEventArgs>(
+                h => service.Peripheral.DiscoveredCharacteristics += h,
+                h => service.Peripheral.DiscoveredCharacteristics -= h);
+
+            while (service.Characteristics == null)
+            {
+                service.Peripheral.DiscoverCharacteristics(service);
+                await characteristicDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, this.CancellationToken);
+            }
         }
 
         var characteristic = service?
@@ -264,15 +264,19 @@ internal class MacBLESession : BLESession<CBUUID>
     /// </summary>
     /// <returns>A task for the settled Bluetooth state.</returns>
     /// <exception cref="TimeoutException">Thrown if the Bluetooth state doesn't settle.</exception>
-    private Task<BluetoothState> GetSettledBluetoothState()
+    private async ValueTask<BluetoothState> GetSettledBluetoothState()
     {
-        var initialState = this.CurrentBluetoothState;
-        if (initialState != BluetoothState.Unknown)
+        var bluetoothState = this.CurrentBluetoothState;
+
+        if (bluetoothState == BluetoothState.Unknown)
         {
-            return Task.FromResult(initialState);
+            using var settledAwaiter = new EventAwaiter<BluetoothState>(this.BluetoothStateSettled);
+
+            // we need to await HERE to ensure that we get the result before the awaiter is disposed
+            bluetoothState = await settledAwaiter.MakeTask(BluetoothTimeouts.SettleManagerState, this.CancellationToken);
         }
 
-        return EventAwaiter.MakeTask(this.BluetoothStateSettled, BluetoothTimeouts.SettleManagerState, this.CancellationToken);
+        return bluetoothState;
     }
 
     private async void CbManager_UpdatedState(object sender, EventArgs e)
