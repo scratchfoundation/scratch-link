@@ -89,6 +89,21 @@ internal class MacBLESession : BLESession<CBUUID>
     }
 
     /// <inheritdoc/>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && !this.DisposedValue)
+        {
+            if (this.connectedPeripheral != null)
+            {
+                this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
+                this.connectedPeripheral = null;
+            }
+        }
+
+        base.Dispose(disposing);
+    }
+
+    /// <inheritdoc/>
     protected override async Task<object> DoDiscover(List<BLEScanFilter> filters)
     {
         var currentState = await this.GetSettledBluetoothState();
@@ -172,15 +187,6 @@ internal class MacBLESession : BLESession<CBUUID>
             }
         }
 
-        // We must register at least one event handler before calling DiscoverServices(), otherwise DiscoveredService doesn't trigger.
-        // I suspect internally it's registering peripheral.delegate the first time an event handler is attached.
-        // We're likely to want this event later anyway, so it's a convenient candidate.
-        this.connectedPeripheral.UpdatedCharacterteristicValue += this.ConnectedPeripheral_UpdatedCharacterteristicValue;
-
-        // Wait for the services to actually be discovered
-        // Note that while the C# name for this event is "DiscoveredService" (singular),
-        // the Obj-C / Swift name is "peripheral:didDiscoverServices:" (plural).
-        // In practice, this event actually means that `peripheral.services` is now populated.
         using (var servieDiscoveryAwaiter = new EventAwaiter<NSErrorEventArgs>(
             h => this.connectedPeripheral.DiscoveredService += h,
             h => this.connectedPeripheral.DiscoveredService -= h))
@@ -190,6 +196,10 @@ internal class MacBLESession : BLESession<CBUUID>
             // but if I provide `allowedServices` then `peripheral.services` doesn't get populated...
             this.connectedPeripheral.DiscoverServices(null);
 
+            // Wait for the services to actually be discovered
+            // Note that while the C# name for this event is "DiscoveredService" (singular),
+            // the Obj-C / Swift name is "peripheral:didDiscoverServices:" (plural).
+            // In practice, this event actually means that `peripheral.services` is now populated.
             await servieDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, this.CancellationToken);
         }
 

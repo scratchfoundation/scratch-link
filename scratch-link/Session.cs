@@ -79,6 +79,11 @@ internal class Session : IDisposable
     };
 
     /// <summary>
+    /// Gets a value indicating whether <see cref="Dispose(true)"/> has already been called and completed on this session.
+    /// </summary>
+    protected bool DisposedValue { get; private set; }
+
+    /// <summary>
     /// Gets the cancellation token for this session. Use this for long-running operations anywhere in the session.
     /// </summary>
     protected CancellationToken CancellationToken => this.cancellationTokenSource.Token;
@@ -104,9 +109,30 @@ internal class Session : IDisposable
     /// </summary>
     public void Dispose()
     {
-        this.context.WebSocket.Dispose();
-        this.cancellationTokenSource.Cancel();
-        this.cancellationTokenSource.Dispose();
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        this.Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Implement the Disposable pattern for this session.
+    /// If <paramref name="disposing"/> is true and <see cref="DisposedValue"/> is false, free any managed resources.
+    /// In all cases, call <see cref="base.Dispose(disposing)"/> as the last step.
+    /// </summary>
+    /// <param name="disposing">True if called from <see cref="Dispose()"/>.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!this.DisposedValue)
+        {
+            if (disposing)
+            {
+                this.context.WebSocket.Dispose();
+                this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
+            }
+
+            this.DisposedValue = true;
+        }
     }
 
     /// <summary>
@@ -403,9 +429,23 @@ internal class Session : IDisposable
             response.ExtraProperties["error"] = error;
         }
 
-        var responseBytes = JsonSerializer.SerializeToUtf8Bytes(response);
+        try
+        {
+            var responseBytes = JsonSerializer.SerializeToUtf8Bytes(response);
 
-        await this.SocketSend(responseBytes, cancellationToken);
+            try
+            {
+                await this.SocketSend(responseBytes, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                Debug.Print($"Failed to send serialized response due to {e}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.Print($"Failed to serialize response: {response} due to {e}");
+        }
     }
 
     private RequestId GetNextId()
@@ -474,6 +514,10 @@ internal class Session : IDisposable
                     Debug.Print("Received a message which was not recognized as a Request or Response");
                 }
             }
+        }
+        catch (Exception e)
+        {
+            Debug.Print($"Session ended due to exception: {e}");
         }
         finally
         {
