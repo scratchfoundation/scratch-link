@@ -376,9 +376,21 @@ internal class Session : IDisposable
         {
             error = e.Error;
         }
+        catch (OperationCanceledException)
+        {
+            error = JsonRpc2Error.ApplicationError("operation canceled");
+        }
+        catch (TimeoutException)
+        {
+            error = JsonRpc2Error.ApplicationError("timeout");
+        }
         catch (Exception e)
         {
-            error = JsonRpc2Error.ApplicationError($"Unhandled error encountered during call: {e}");
+#if DEBUG
+            error = JsonRpc2Error.ApplicationError($"unhandled error encountered during call: {e}");
+#else
+            error = JsonRpc2Error.ApplicationError($"unhandled error encountered during call");
+#endif
         }
 
         if (request.Id is object requestId)

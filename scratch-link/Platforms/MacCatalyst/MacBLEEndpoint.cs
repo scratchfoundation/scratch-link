@@ -25,15 +25,37 @@ internal class MacBLEEndpoint : IBLEEndpoint
     }
 
     /// <inheritdoc/>
-    public int Write(byte[] buffer, bool? withResponse)
+    public Task<int> Write(byte[] buffer, bool? withResponse, CancellationToken cancellationToken)
     {
         var peripheral = this.characteristic.Service.Peripheral;
         var writeType = (withResponse ?? !this.characteristic.Properties.HasFlag(CBCharacteristicProperties.WriteWithoutResponse))
             ? CBCharacteristicWriteType.WithResponse
             : CBCharacteristicWriteType.WithoutResponse;
 
+        cancellationToken.ThrowIfCancellationRequested();
         peripheral.WriteValue(NSData.FromArray(buffer), this.characteristic, writeType);
 
-        return buffer.Length;
+        return Task.FromResult(buffer.Length);
+    }
+
+    /// <inheritdoc/>
+    public async Task<byte[]> Read(CancellationToken cancellationToken)
+    {
+        var peripheral = this.characteristic.Service.Peripheral;
+
+        using (var updatedValueAwaiter = new EventAwaiter<CBCharacteristicEventArgs>(
+            h => peripheral.UpdatedCharacterteristicValue += h,
+            h => peripheral.UpdatedCharacterteristicValue -= h))
+        {
+            while (true)
+            {
+                peripheral.ReadValue(this.characteristic);
+                var characteristicValueUpdated = await updatedValueAwaiter.MakeTask(TimeSpan.FromSeconds(5), cancellationToken);
+                if (characteristicValueUpdated.Characteristic.UUID.Equals(this.characteristic.UUID))
+                {
+                    return characteristicValueUpdated.Characteristic.Value.ToArray();
+                }
+            }
+        }
     }
 }

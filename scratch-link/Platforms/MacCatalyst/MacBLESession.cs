@@ -171,6 +171,24 @@ internal class MacBLESession : BLESession<CBUUID>
             this.filterLock.Release();
         }
 
+#if DEBUG
+        this.connectedPeripheral.DidOpenL2CapChannel += (o, e) => Debug.Print("DidOpenL2CapChannel");
+        this.connectedPeripheral.DiscoveredCharacteristics += (o, e) => Debug.Print("DiscoveredCharacteristics");
+        this.connectedPeripheral.DiscoveredDescriptor += (o, e) => Debug.Print("DiscoveredDescriptor");
+        this.connectedPeripheral.DiscoveredIncludedService += (o, e) => Debug.Print("DiscoveredIncludedService");
+        this.connectedPeripheral.DiscoveredService += (o, e) => Debug.Print("DiscoveredService");
+        this.connectedPeripheral.IsReadyToSendWriteWithoutResponse += (o, e) => Debug.Print("IsReadyToSendWriteWithoutResponse");
+        this.connectedPeripheral.ModifiedServices += (o, e) => Debug.Print("ModifiedServices");
+        this.connectedPeripheral.RssiRead += (o, e) => Debug.Print("RssiRead");
+        this.connectedPeripheral.RssiUpdated += (o, e) => Debug.Print("RssiUpdated");
+        this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Debug.Print("UpdatedCharacterteristicValue");
+        this.connectedPeripheral.UpdatedName += (o, e) => Debug.Print("UpdatedName");
+        this.connectedPeripheral.UpdatedNotificationState += (o, e) => Debug.Print("UpdatedNotificationState");
+        this.connectedPeripheral.UpdatedValue += (o, e) => Debug.Print("UpdatedValue");
+        this.connectedPeripheral.WroteCharacteristicValue += (o, e) => Debug.Print("WroteCharacteristicValue");
+        this.connectedPeripheral.WroteDescriptorValue += (o, e) => Debug.Print("WroteDescriptorValue");
+#endif
+
         // wait for the connection to complete
         using (var connectAwaiter = new EventAwaiter<CBPeripheralEventArgs>(
             h => this.cbManager.ConnectedPeripheral += h,
