@@ -198,7 +198,7 @@ internal abstract class BLESession<TUUID> : Session
         var buffer = EncodingHelpers.DecodeBuffer((JsonElement)args);
         var withResponse = args?.TryGetProperty("withResponse", out var jsonWithResponse) == true ? jsonWithResponse.IsTruthy() : (bool?)null;
 
-        var bytesWritten = endpoint.Write(buffer, withResponse);
+        var bytesWritten = await endpoint.Write(buffer, withResponse, this.CancellationToken);
 
         return bytesWritten;
     }
@@ -212,9 +212,21 @@ internal abstract class BLESession<TUUID> : Session
     /// flag to request notification of future changes to this characteristic's value.
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected Task<object> HandleRead(string methodName, JsonElement? args)
+    protected async Task<object> HandleRead(string methodName, JsonElement? args)
     {
-        throw new NotImplementedException();
+        if (args == null)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+        }
+
+        var endpoint = await this.GetEndpoint("read", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
+
+        // TODO: add a way for the client to ask for plaintext instead of base64
+        var encoding = args?.TryGetProperty("encoding", out var jsonEncoding) == true ? jsonEncoding.GetString() : "base64";
+
+        var bytes = await endpoint.Read(this.CancellationToken);
+
+        return EncodingHelpers.EncodeBuffer(bytes, encoding);
     }
 
     /// <summary>

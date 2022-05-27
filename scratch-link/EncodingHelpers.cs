@@ -51,4 +51,24 @@ public static class EncodingHelpers
 
         throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}"));
     }
+
+    /// <summary>
+    /// Encode <paramref name="data"/> using <paramref name="encoding"/> and return the result as a string.
+    /// </summary>
+    /// <param name="data">The bytes to encode.</param>
+    /// <param name="encoding">The encoding format, or <see cref="null"/> to "encode" UTF-8 data as a Unicode string.</param>
+    /// <returns>A string containing the encoded data.</returns>
+    /// <exception cref="JsonRpc2Exception">Thrown if the data could not be encoded, including if the encoding is not supported.</exception>
+    public static string EncodeBuffer(byte[] data, string encoding)
+    {
+        switch (encoding)
+        {
+            case "base64":
+                return Convert.ToBase64String(data);
+            case null:
+                return Encoding.UTF8.GetString(data);
+            default:
+                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}"));
+        }
+    }
 }
