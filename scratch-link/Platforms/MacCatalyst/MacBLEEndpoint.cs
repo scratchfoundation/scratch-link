@@ -14,6 +14,7 @@ using ScratchLink.BLE;
 internal class MacBLEEndpoint : IBLEEndpoint
 {
     private readonly CBCharacteristic characteristic;
+    private EventHandler<CBCharacteristicEventArgs> notifier;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MacBLEEndpoint"/> class.
@@ -25,7 +26,13 @@ internal class MacBLEEndpoint : IBLEEndpoint
     }
 
     /// <inheritdoc/>
-    public Task<int> Write(byte[] buffer, bool? withResponse, CancellationToken cancellationToken)
+    string IBLEEndpoint.ServiceId => this.characteristic.Service.UUID.ToString();
+
+    /// <inheritdoc/>
+    string IBLEEndpoint.CharacteristicId => this.characteristic.UUID.ToString();
+
+    /// <inheritdoc/>
+    Task<int> IBLEEndpoint.Write(byte[] buffer, bool? withResponse, CancellationToken cancellationToken)
     {
         var peripheral = this.characteristic.Service.Peripheral;
         var writeType = (withResponse ?? !this.characteristic.Properties.HasFlag(CBCharacteristicProperties.WriteWithoutResponse))
@@ -39,16 +46,18 @@ internal class MacBLEEndpoint : IBLEEndpoint
     }
 
     /// <inheritdoc/>
-    public async Task<byte[]> Read(CancellationToken cancellationToken)
+    async Task<byte[]> IBLEEndpoint.Read(CancellationToken cancellationToken)
     {
         var peripheral = this.characteristic.Service.Peripheral;
 
+        // Note: the typo in `UpdatedCharacterteristicValue` is in the SDK
         using (var updatedValueAwaiter = new EventAwaiter<CBCharacteristicEventArgs>(
             h => peripheral.UpdatedCharacterteristicValue += h,
             h => peripheral.UpdatedCharacterteristicValue -= h))
         {
             while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 peripheral.ReadValue(this.characteristic);
                 var characteristicValueUpdated = await updatedValueAwaiter.MakeTask(TimeSpan.FromSeconds(5), cancellationToken);
                 if (characteristicValueUpdated.Characteristic.UUID.Equals(this.characteristic.UUID))
@@ -57,5 +66,46 @@ internal class MacBLEEndpoint : IBLEEndpoint
                 }
             }
         }
+    }
+
+    /// <inheritdoc/>
+    Task IBLEEndpoint.StartNotifications(Action<byte[]> notifier)
+    {
+        var peripheral = this.characteristic.Service.Peripheral;
+
+        if (this.notifier != null)
+        {
+            // Note: the typo in `UpdatedCharacterteristicValue` is in the SDK
+            peripheral.UpdatedCharacterteristicValue -= this.notifier;
+        }
+
+        this.notifier = (o, e) =>
+        {
+            if (e.Characteristic.UUID.Equals(this.characteristic.UUID))
+            {
+                notifier(e.Characteristic.Value.ToArray());
+            }
+        };
+
+        peripheral.UpdatedCharacterteristicValue += this.notifier;
+
+        peripheral.SetNotifyValue(true, this.characteristic);
+
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    Task IBLEEndpoint.StopNotifications()
+    {
+        if (this.notifier != null)
+        {
+            // Note: the typo in `UpdatedCharacterteristicValue` is in the SDK
+            var peripheral = this.characteristic.Service.Peripheral;
+            peripheral.SetNotifyValue(false, this.characteristic);
+            peripheral.UpdatedCharacterteristicValue -= this.notifier;
+            this.notifier = null;
+        }
+
+        return Task.CompletedTask;
     }
 }

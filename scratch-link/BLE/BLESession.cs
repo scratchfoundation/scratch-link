@@ -219,12 +219,18 @@ internal abstract class BLESession<TUUID> : Session
             throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
         }
 
+        var startNotifications = args?.TryGetProperty("startNotifications", out var jsonStartNotifications) == true && jsonStartNotifications.GetBoolean();
         var endpoint = await this.GetEndpoint("read", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
 
         // TODO: add a way for the client to ask for plaintext instead of base64
         var encoding = args?.TryGetProperty("encoding", out var jsonEncoding) == true ? jsonEncoding.GetString() : "base64";
 
         var bytes = await endpoint.Read(this.CancellationToken);
+
+        if (startNotifications)
+        {
+            await endpoint.StartNotifications(async bytes => await this.SendChangeNotification(endpoint, bytes, encoding));
+        }
 
         return EncodingHelpers.EncodeBuffer(bytes, encoding);
     }
@@ -235,9 +241,45 @@ internal abstract class BLESession<TUUID> : Session
     /// <param name="methodName">The name of the method being called ("startNotifications").</param>
     /// <param name="args">The service and characteristic for which to start notifications.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected Task<object> HandleStartNotifications(string methodName, JsonElement? args)
+    protected async Task<object> HandleStartNotifications(string methodName, JsonElement? args)
     {
-        throw new NotImplementedException();
+        if (args == null)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+        }
+
+        var endpoint = await this.GetEndpoint("startNotifications", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
+
+        // TODO: add a way for the client to ask for plaintext instead of base64
+        var encoding = args?.TryGetProperty("encoding", out var jsonEncoding) == true ? jsonEncoding.GetString() : "base64";
+
+        // check that the encoding is valid (and throw if not) before setting up the notification
+        _ = EncodingHelpers.EncodeBuffer(Array.Empty<byte>(), encoding);
+
+        await endpoint.StartNotifications(async bytes => await this.SendChangeNotification(endpoint, bytes, encoding));
+
+        return null;
+    }
+
+    /// <summary>
+    /// Notify the client that a characteristic's value has changed.
+    /// </summary>
+    /// <param name="endpoint">The endpoint for which the value has changed.</param>
+    /// <param name="bytes">The new value.</param>
+    /// <param name="encoding">The encoding to use when sending the new value.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    protected async Task SendChangeNotification(IBLEEndpoint endpoint, byte[] bytes, string encoding)
+    {
+        string encodedBytes = EncodingHelpers.EncodeBuffer(bytes, encoding);
+
+        var parameters = new Dictionary<string, string>
+            {
+                { "serviceId", endpoint.ServiceId },
+                { "characteristicId", endpoint.CharacteristicId },
+                { "message", encodedBytes },
+            };
+
+        await this.SendNotification("characteristicDidChange", parameters, this.CancellationToken);
     }
 
     /// <summary>
@@ -246,9 +288,18 @@ internal abstract class BLESession<TUUID> : Session
     /// <param name="methodName">The name of the method being called ("stopNotifications").</param>
     /// <param name="args">The service and characteristic for which to stop notifications.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected Task<object> HandleStopNotifications(string methodName, JsonElement? args)
+    protected async Task<object> HandleStopNotifications(string methodName, JsonElement? args)
     {
-        throw new NotImplementedException();
+        if (args == null)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+        }
+
+        var endpoint = await this.GetEndpoint("stopNotifications", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
+
+        await endpoint.StopNotifications();
+
+        return null;
     }
 
     /// <summary>
@@ -259,7 +310,7 @@ internal abstract class BLESession<TUUID> : Session
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected Task<object> HandleGetServices(string methodName, JsonElement? args)
     {
-        throw new NotImplementedException();
+        return Task.FromResult<object>(this.AllowedServices.Select(x => x.ToString()));
     }
 
     /// <summary>
