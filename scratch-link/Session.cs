@@ -79,7 +79,7 @@ internal class Session : IDisposable
     };
 
     /// <summary>
-    /// Gets a value indicating whether <see cref="Dispose(true)"/> has already been called and completed on this session.
+    /// Gets a value indicating whether <see cref="Dispose(bool)"/> has already been called and completed on this session.
     /// </summary>
     protected bool DisposedValue { get; private set; }
 
@@ -117,7 +117,7 @@ internal class Session : IDisposable
     /// <summary>
     /// Implement the Disposable pattern for this session.
     /// If <paramref name="disposing"/> is true and <see cref="DisposedValue"/> is false, free any managed resources.
-    /// In all cases, call <see cref="base.Dispose(disposing)"/> as the last step.
+    /// In all cases, call <see cref="Dispose(bool)"/> on <c>base</c> as the last step.
     /// </summary>
     /// <param name="disposing">True if called from <see cref="Dispose()"/>.</param>
     protected virtual void Dispose(bool disposing)
