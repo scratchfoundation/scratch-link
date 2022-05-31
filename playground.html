@@ -554,7 +554,7 @@
                 }
                 return `${o.constructor.name} {type: "${o.type}"}`;
             }
-            return JSON.stringify(o, o && Object.getOwnPropertyNames(o));
+            return JSON.stringify(o);//, o && Object.getOwnPropertyNames(o));
         }
 
         const follow = document.getElementById('follow');

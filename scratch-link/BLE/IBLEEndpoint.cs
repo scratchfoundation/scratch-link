@@ -10,6 +10,16 @@ namespace ScratchLink.BLE;
 public interface IBLEEndpoint
 {
     /// <summary>
+    /// Gets a string representing the UUID of the service.
+    /// </summary>
+    string ServiceId { get; }
+
+    /// <summary>
+    /// Gets a string representing the UUID of the characteristic.
+    /// </summary>
+    string CharacteristicId { get; }
+
+    /// <summary>
     /// Write a buffer to this service characteristic.
     /// </summary>
     /// <param name="buffer">A buffer of bytes to write to the characteristic.</param>
@@ -24,4 +34,17 @@ public interface IBLEEndpoint
     /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>The bytes read from the characteristic's value.</returns>
     Task<byte[]> Read(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Start reporting changes in the value of this characteristic.
+    /// </summary>
+    /// <param name="notifier">An action to execute when the value changes.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task StartNotifications(Action<byte[]> notifier);
+
+    /// <summary>
+    /// Stop reporting changes in the value of this characteristic.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    Task StopNotifications();
 }
