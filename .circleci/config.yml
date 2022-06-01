@@ -1,0 +1,43 @@
+version: 2.1
+
+jobs:
+  build-mac:
+    macos:
+      xcode: 13.4
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - homebrew-v1-
+      - run: brew install dotnet-sdk
+      - save_cache:
+          key: homebrew-v1-default
+          paths:
+            - /Users/distiller/Library/Caches/Homebrew
+            - /usr/local/Homebrew
+      - run:
+          name: Install .NET workloads
+          command: sudo dotnet workload restore
+          # working_directory should be unnecessary but there's currently a bug with solution items
+          working_directory: scratch-link
+      - run:
+          name: Restore NuGet dependencies
+          command: dotnet restore
+      - run:
+          name: Build for MacCatalyst
+          # TODO: switch from Debug to Release before actual release
+          command: dotnet build -c Debug -f net6.0-maccatalyst
+      - run:
+          name: Zip the app
+          command: |
+            mkdir -p Artifacts
+            cd scratch-link/bin/Debug/net6.0-maccatalyst/*/*.app/..
+            ditto -v -c -k --sequesterRsrc --keepParent --zlibCompressionLevel 9 \
+              scratch-link.app ../../../../../Artifacts/scratch-link-mac.zip
+      - store_artifacts:
+          path: Artifacts/
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-mac
