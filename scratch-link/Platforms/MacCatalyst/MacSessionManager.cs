@@ -5,6 +5,7 @@
 namespace ScratchLink.Platforms.MacCatalyst;
 
 using System.Net.WebSockets;
+using ScratchLink.Platforms.MacCatalyst.BLE;
 
 /// <summary>
 /// Implements the Mac-specific functionality of the SessionManager.

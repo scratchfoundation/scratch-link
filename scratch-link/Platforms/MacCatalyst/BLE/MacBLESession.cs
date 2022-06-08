@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Platforms.MacCatalyst;
+namespace ScratchLink.Platforms.MacCatalyst.BLE;
 
 using System;
 using System.Collections.Generic;
