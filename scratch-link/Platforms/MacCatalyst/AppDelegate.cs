@@ -8,6 +8,7 @@ using CoreBluetooth;
 using Foundation;
 using ScratchLink.BLE;
 using ScratchLink.Platforms.MacCatalyst;
+using ScratchLink.Platforms.MacCatalyst.BLE;
 
 /// <summary>
 /// The AppDelegate connects UIApplication to MauiApp on MacCatalyst.
