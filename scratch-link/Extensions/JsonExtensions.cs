@@ -25,4 +25,20 @@ public static class JsonExtensions
             JsonValueKind.Number => element.GetDouble() != 0,
             _ => false,
         };
+
+    /// <summary>
+    /// Return a <see cref="JsonElement"/> if the property is found, or <c>null</c> otherwise.
+    /// </summary>
+    /// <param name="element">The JSON element to check for the named property.</param>
+    /// <param name="propertyName">The name of the property to look for.</param>
+    /// <returns>A <see cref="JsonElement"/> representing the property's value, if present.</returns>
+    public static JsonElement? TryGetProperty(this JsonElement element, string propertyName)
+    {
+        if (element.TryGetProperty(propertyName, out var propertyValue))
+        {
+            return propertyValue;
+        }
+
+        return null;
+    }
 }
