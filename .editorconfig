@@ -11,11 +11,16 @@ trim_trailing_whitespace = true
 charset = utf-8-bom
 end_of_line = crlf
 
+[*.cs]
 csharp_using_directive_placement = inside_namespace
 dotnet_style_qualification_for_event = true
 dotnet_style_qualification_for_field = true
 dotnet_style_qualification_for_method = true
 dotnet_style_qualification_for_property = true
+
+[*.csproj]
+indent_size = 2
+indent_style = space
 
 [*.{html,md}]
 indent_style = space
