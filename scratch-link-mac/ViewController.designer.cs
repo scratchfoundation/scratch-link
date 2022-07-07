@@ -6,7 +6,7 @@
 //
 using Foundation;
 
-namespace scratchlinkmac
+namespace ScratchLink.Mac
 {
 	[Register ("ViewController")]
 	partial class ViewController
