@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31611.283
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "scratch-link", "scratch-link\scratch-link.csproj", "{07DE4665-97E1-400F-99CD-84E819CA9EF6}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{76FB6BC3-4F2E-46D1-97C2-60345B053C9C}"
 	ProjectSection(SolutionItems) = preProject
 		Documentation\Architecture.md = Documentation\Architecture.md
@@ -28,6 +26,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.circleci\config.yml = .circleci\config.yml
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "scratch-link", "scratch-link\scratch-link.csproj", "{07DE4665-97E1-400F-99CD-84E819CA9EF6}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "scratch-link-common", "scratch-link-common\scratch-link-common.shproj", "{06B5D2A3-AD0A-4704-B00D-BCFF634E7709}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "scratch-link-mac", "scratch-link-mac\scratch-link-mac.csproj", "{87030C6E-C6BE-46E8-AF79-368A9A58DAB8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,6 +44,10 @@ Global
 		{07DE4665-97E1-400F-99CD-84E819CA9EF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{07DE4665-97E1-400F-99CD-84E819CA9EF6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{07DE4665-97E1-400F-99CD-84E819CA9EF6}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{87030C6E-C6BE-46E8-AF79-368A9A58DAB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87030C6E-C6BE-46E8-AF79-368A9A58DAB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87030C6E-C6BE-46E8-AF79-368A9A58DAB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87030C6E-C6BE-46E8-AF79-368A9A58DAB8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
