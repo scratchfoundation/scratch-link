@@ -11,6 +11,7 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 
@@ -28,7 +29,7 @@ internal abstract class BLESession<TUUID> : Session
     public BLESession(WebSocketContext context)
         : base(context)
     {
-        this.GattHelpers = IPlatformApplication.Current.Services.GetService<GattHelpers<TUUID>>();
+        this.GattHelpers = ScratchLinkApp.Current.Services.GetService<GattHelpers<TUUID>>();
         this.AllowedServices = new ();
         this.Handlers["discover"] = this.HandleDiscover;
         this.Handlers["connect"] = this.HandleConnect;
