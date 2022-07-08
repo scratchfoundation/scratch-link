@@ -2,19 +2,22 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Platforms.MacCatalyst.BLE;
+namespace ScratchLink.Mac.BLE;
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using CoreBluetooth;
 using Foundation;
 using ScratchLink.BLE;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
-using ScratchLink.Platforms.MacCatalyst.Extensions;
+using ScratchLink.Mac.Extensions;
 
 /// <summary>
 /// Implements a BLE session on MacOS.
@@ -75,15 +78,15 @@ internal class MacBLESession : BLESession<CBUUID>
     {
         get => this.cbManager.State switch
         {
-            CBManagerState.Unsupported => BluetoothState.Unavailable,
-            CBManagerState.Unauthorized => BluetoothState.Unavailable,
-            CBManagerState.PoweredOff => BluetoothState.Unavailable,
+            CBCentralManagerState.Unsupported => BluetoothState.Unavailable,
+            CBCentralManagerState.Unauthorized => BluetoothState.Unavailable,
+            CBCentralManagerState.PoweredOff => BluetoothState.Unavailable,
 
-            CBManagerState.PoweredOn => BluetoothState.Available,
+            CBCentralManagerState.PoweredOn => BluetoothState.Available,
 
             // Resetting probably means the OS Bluetooth stack crashed and will "power on" again soon
-            CBManagerState.Resetting => BluetoothState.Unknown,
-            CBManagerState.Unknown => BluetoothState.Unknown,
+            CBCentralManagerState.Resetting => BluetoothState.Unknown,
+            CBCentralManagerState.Unknown => BluetoothState.Unknown,
             _ => BluetoothState.Unknown
         };
     }
@@ -173,7 +176,7 @@ internal class MacBLESession : BLESession<CBUUID>
 
 #if DEBUG
         this.connectedPeripheral.DidOpenL2CapChannel += (o, e) => Debug.Print("DidOpenL2CapChannel");
-        this.connectedPeripheral.DiscoveredCharacteristics += (o, e) => Debug.Print("DiscoveredCharacteristics");
+        this.connectedPeripheral.DiscoveredCharacteristic += (o, e) => Debug.Print("DiscoveredCharacteristic");
         this.connectedPeripheral.DiscoveredDescriptor += (o, e) => Debug.Print("DiscoveredDescriptor");
         this.connectedPeripheral.DiscoveredIncludedService += (o, e) => Debug.Print("DiscoveredIncludedService");
         this.connectedPeripheral.DiscoveredService += (o, e) => Debug.Print("DiscoveredService");
@@ -265,8 +268,8 @@ internal class MacBLESession : BLESession<CBUUID>
         if (service.Characteristics == null)
         {
             using var characteristicDiscoveryAwaiter = new EventAwaiter<CBServiceEventArgs>(
-                h => service.Peripheral.DiscoveredCharacteristics += h,
-                h => service.Peripheral.DiscoveredCharacteristics -= h);
+                h => service.Peripheral.DiscoveredCharacteristic += h,
+                h => service.Peripheral.DiscoveredCharacteristic -= h);
 
             while (service.Characteristics == null)
             {
@@ -311,22 +314,22 @@ internal class MacBLESession : BLESession<CBUUID>
     {
         switch (this.cbManager.State)
         {
-            case CBManagerState.Resetting:
+            case CBCentralManagerState.Resetting:
                 Debug.Print("Bluetooth is resetting");
                 break;
-            case CBManagerState.Unsupported:
+            case CBCentralManagerState.Unsupported:
                 Debug.Print("Bluetooth is unsupported");
                 break;
-            case CBManagerState.Unauthorized:
+            case CBCentralManagerState.Unauthorized:
                 Debug.Print("Bluetooth is unauthorized");
                 break;
-            case CBManagerState.PoweredOff:
+            case CBCentralManagerState.PoweredOff:
                 Debug.Print("Bluetooth is now powered off");
                 break;
-            case CBManagerState.PoweredOn:
+            case CBCentralManagerState.PoweredOn:
                 Debug.Print("Bluetooth is now powered on");
                 break;
-            case CBManagerState.Unknown:
+            case CBCentralManagerState.Unknown:
             default:
                 Debug.Print($"Bluetooth transitioned to unknown state: {this.cbManager.State}");
                 break;

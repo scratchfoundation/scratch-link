@@ -4,12 +4,12 @@
 
 namespace ScratchLink.BLE;
 
-using ScratchLink.JsonRpc;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using ScratchLink.JsonRpc;
 
 /// <summary>
 /// Helper methods to deal with GATT names and UUID values.

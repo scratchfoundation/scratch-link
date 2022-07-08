@@ -4,8 +4,10 @@
 
 namespace ScratchLink;
 
+using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
+using System.Threading.Tasks;
 
 /// <summary>
 /// This class connects a WebSocket to the appropriate session type and tracks the collection of active sessions.

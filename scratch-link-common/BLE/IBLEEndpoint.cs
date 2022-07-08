@@ -4,6 +4,10 @@
 
 namespace ScratchLink.BLE;
 
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
 /// <summary>
 /// Interface representing a GATT "endpoint" -- a characteristic on a service.
 /// </summary>

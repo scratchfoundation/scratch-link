@@ -4,12 +4,15 @@
 
 namespace ScratchLink.BLE;
 
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using ScratchLink.Extensions;
+using ScratchLink.JsonRpc;
 
 /// <summary>
 /// Implements the cross-platform portions of a BLE session.

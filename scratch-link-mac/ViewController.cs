@@ -5,7 +5,6 @@
 namespace ScratchLink.Mac;
 
 using System;
-
 using AppKit;
 using Foundation;
 
