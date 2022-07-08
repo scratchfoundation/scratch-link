@@ -27,5 +27,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Session.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SessionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebSocketListener.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ScratchLinkApp.cs" />
   </ItemGroup>
 </Project>

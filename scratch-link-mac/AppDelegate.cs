@@ -5,7 +5,9 @@
 namespace ScratchLink.Mac;
 
 using AppKit;
+using CoreBluetooth;
 using Foundation;
+using ScratchLink.Mac.BLE;
 
 /// <summary>
 /// Scratch Link's implementation of the NSApplicationDelegate protocol.
@@ -19,7 +21,14 @@ public class AppDelegate : NSApplicationDelegate
     /// <param name="notification">A notification named <c>didFinishLaunchingNotification</c>.</param>
     public override void DidFinishLaunching(NSNotification notification)
     {
-        // Insert code here to initialize your application
+        var appBuilder = new ScratchLinkApp.Builder();
+        appBuilder.SetArguments(new NSProcessInfo().Arguments);
+        appBuilder.SetSessionManager<MacSessionManager>();
+        appBuilder.SetGattHelpers<MacGattHelpers, CBUUID>();
+
+        var app = appBuilder.Build();
+
+        app.Run();
     }
 
     /// <summary>
