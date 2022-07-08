@@ -21,7 +21,7 @@ internal class JsonRpc2Exception : Exception
     }
 
     /// <summary>
-    /// Gets the <see cref="JsonRpc2Error"/> object associated with the thrown error.
+    /// Gets or sets the <see cref="JsonRpc2Error"/> object associated with the thrown error.
     /// </summary>
-    public JsonRpc2Error Error { get; init; }
+    public JsonRpc2Error Error { get; set; }
 }

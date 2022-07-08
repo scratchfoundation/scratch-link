@@ -4,6 +4,7 @@
 
 namespace ScratchLink;
 
+using System;
 using System.Text;
 using System.Text.Json;
 using ScratchLink.JsonRpc;

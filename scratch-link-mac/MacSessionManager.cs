@@ -2,10 +2,10 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Platforms.MacCatalyst;
+namespace ScratchLink.Mac;
 
 using System.Net.WebSockets;
-using ScratchLink.Platforms.MacCatalyst.BLE;
+using ScratchLink.Mac.BLE;
 
 /// <summary>
 /// Implements the Mac-specific functionality of the SessionManager.

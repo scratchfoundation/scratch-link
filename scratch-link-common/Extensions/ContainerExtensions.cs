@@ -4,6 +4,9 @@
 
 namespace ScratchLink.Extensions;
 
+using System.Collections.Generic;
+using System.Linq;
+
 /// <summary>
 /// Extensions for use with containers or other enumerables.
 /// </summary>

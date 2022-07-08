@@ -4,21 +4,26 @@
 
 namespace ScratchLink;
 
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net.WebSockets;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.JsonRpc.Converters;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Net.WebSockets;
-using System.Text.Json;
 
-using JsonRpcMethodHandler = Func<
+using JsonRpcMethodHandler = System.Func<
     string, // method name
     System.Text.Json.JsonElement?, // params / args
-    Task<object> // return value - must be JSON-serializable
+    System.Threading.Tasks.Task<object> // return value - must be JSON-serializable
 >;
 
-using RequestId = UInt32;
+using RequestId = System.UInt32;
 
 /// <summary>
 /// Base class for Scratch Link sessions. One session can search for, connect to, and interact with one peripheral device.

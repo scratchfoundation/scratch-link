@@ -4,6 +4,7 @@
 
 namespace ScratchLink.JsonRpc;
 
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -20,11 +21,11 @@ internal class JsonRpc2Message
     public const string JsonRpcVersion = "2.0";
 
     /// <summary>
-    /// Gets the JSON RPC version string.
+    /// Gets or sets the JSON RPC version string.
     /// </summary>
     [JsonPropertyName("jsonrpc")]
     [JsonPropertyOrder(-100)]
-    public string JsonRPC { get; init; } = JsonRpcVersion;
+    public string JsonRPC { get; set; } = JsonRpcVersion;
 
     /// <summary>
     /// Gets or sets the request / response ID.
