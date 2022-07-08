@@ -9,5 +9,23 @@
     <Import_RootNamespace>ScratchLink</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)BLE\IBLEEndpoint.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BLE\BLESession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BLE\GattHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\ContainerExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\WebSocketExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\JsonExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Request.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Message.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Response.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Exception.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Error.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\Converters\JsonRpc2MessageConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\Converters\JsonRpc2ValueConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EncodingHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EventAwaiter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Session.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SessionManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebSocketListener.cs" />
   </ItemGroup>
 </Project>
