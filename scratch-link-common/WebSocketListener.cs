@@ -6,75 +6,55 @@ namespace ScratchLink;
 
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.WebSockets;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Fleck;
 
 /// <summary>
 /// Listen for WebSocket connections and direct them to service handlers.
 /// </summary>
 internal class WebSocketListener
 {
-    private readonly HttpListener listener = new ();
-
     private readonly CancellationTokenSource cts = new ();
 
-    /// <summary>
-    /// Gets a value indicating whether WebSocketListener is supported in the current environment.
-    /// </summary>
-    public static bool IsSupported => HttpListener.IsSupported;
+    private WebSocketServer server;
 
     /// <summary>
     /// Gets or sets the action which will be called when the listener receives a WebSocket connection.
     /// </summary>
-    public Action<WebSocketContext> OnWebSocketConnection { get; set; }
-
-    /// <summary>
-    /// Gets or sets the action which will be called when the listener receives a non-WebSocket connection.
-    /// </summary>
-    public Action<HttpListenerContext> OnOtherConnection { get; set; }
+    public Action<IWebSocketConnection> OnWebSocketConnection { get; set; }
 
     /// <summary>
     /// Start listening for connections. If already listening, stop and restart with the new prefix list.
     /// </summary>
-    /// <param name="prefixes">
-    /// The list of HTTP(S) URL prefixes to listen on.
-    /// Use "http" instead of "ws" or "https" instead of "wss".
+    /// <param name="location">
+    /// The list of WS URL to listen on.
     /// <example><code>
-    /// http://locahost:1234/
-    /// https://127.0.0.1/
+    /// ws://0.0.0.0:1234/
+    /// ws://127.0.0.1/
     /// </code></example>
     /// </param>
-    public void Start(IEnumerable<string> prefixes)
+    public void Start(string location)
     {
-        if (this.listener.IsListening)
+        if (this.server != null)
         {
-            throw new InvalidOperationException();
+            this.server.ListenerSocket.Close();
+            this.server.Dispose();
         }
 
-        foreach (var prefix in prefixes)
-        {
-            this.listener.Prefixes.Add(prefix);
-        }
+        this.server = new WebSocketServer(location);
+        this.server.ListenerSocket.NoDelay = true; // disable Nagle's algorithm
 
-        this.listener.Start();
-        Task.Run(async () =>
+        this.server.Start(socket =>
         {
-            CancellationToken token = this.cts.Token;
-            while (!token.IsCancellationRequested)
+            if (this.cts.IsCancellationRequested)
             {
-                var context = await this.listener.GetContextAsync();
-                if (context.Request.IsWebSocketRequest)
-                {
-                    var webSocketContext = await context.AcceptWebSocketAsync(null);
-                    this.OnWebSocketConnection(webSocketContext);
-                }
-                else
-                {
-                    this.OnOtherConnection(context);
-                }
+                socket.Close(503); // Service Unavailable: the server is stopping
+                return;
             }
+
+            socket.OnOpen = () => this.OnWebSocketConnection(socket);
         });
     }
 
@@ -84,6 +64,8 @@ internal class WebSocketListener
     public void Stop()
     {
         this.cts.Cancel();
-        this.listener.Stop();
+        this.server.RestartAfterListenError = false; // work around statianzo/Fleck#325
+        this.server.ListenerSocket.Close();
+        this.server.Dispose();
     }
 }

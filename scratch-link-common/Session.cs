@@ -9,10 +9,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Fleck;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.JsonRpc.Converters;
@@ -43,7 +43,7 @@ internal class Session : IDisposable
 
     private const int MessageSizeLimit = 1024 * 1024; // 1 MiB
 
-    private readonly WebSocketContext context;
+    private readonly IWebSocketConnection webSocket;
     private readonly CancellationTokenSource cancellationTokenSource = new ();
 
     private readonly JsonSerializerOptions deserializerOptions = new ()
@@ -59,29 +59,19 @@ internal class Session : IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="Session"/> class.
     /// </summary>
-    /// <param name="context">The WebSocket context which this session will use for communication.</param>
-    public Session(WebSocketContext context)
+    /// <param name="webSocket">The WebSocket which this session will use for communication.</param>
+    public Session(IWebSocketConnection webSocket)
     {
-        this.context = context;
+        this.webSocket = webSocket;
         this.Handlers["getVersion"] = this.HandleGetVersion;
         this.Handlers["pingMe"] = this.HandlePingMe;
     }
 
     /// <summary>
-    /// Gets a value indicating whether returns true if the backing WebSocket is open for communication or is expected to be in the future.
+    /// Gets a value indicating whether returns true if the backing WebSocket is open for communication.
     /// Returns false if the backing WebSocket is closed or closing, or is in an unknown state.
     /// </summary>
-    public bool IsOpen => this.context.WebSocket.State switch
-    {
-        WebSocketState.Connecting => true,
-        WebSocketState.Open => true,
-        WebSocketState.CloseSent => false,
-        WebSocketState.CloseReceived => false,
-        WebSocketState.Closed => false,
-        WebSocketState.Aborted => false,
-        WebSocketState.None => false,
-        _ => false,
-    };
+    public bool IsOpen => this.webSocket.IsAvailable;
 
     /// <summary>
     /// Gets a value indicating whether <see cref="Dispose(bool)"/> has already been called and completed on this session.
@@ -104,9 +94,20 @@ internal class Session : IDisposable
     /// After calling this function, do not use the WebSocket context owned by this session.
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task Run()
+    public Task Run()
     {
-        await this.CommLoop();
+        var runCompletion = new TaskCompletionSource<bool>();
+        this.webSocket.OnClose = () =>
+        {
+            runCompletion.TrySetResult(true);
+        };
+        this.webSocket.OnMessage = async message =>
+        {
+            var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(message, this.deserializerOptions);
+            await this.HandleMessage(jsonMessage, this.CancellationToken);
+        };
+
+        return runCompletion.Task;
     }
 
     /// <summary>
@@ -131,7 +132,7 @@ internal class Session : IDisposable
         {
             if (disposing)
             {
-                this.context.WebSocket.Dispose();
+                this.webSocket.Close();
                 this.cancellationTokenSource.Cancel();
                 this.cancellationTokenSource.Dispose();
             }
@@ -284,9 +285,9 @@ internal class Session : IDisposable
             Params = parameters,
         };
 
-        var messageBytes = JsonSerializer.SerializeToUtf8Bytes(request);
+        var message = JsonSerializer.Serialize(request);
 
-        await this.SocketSend(messageBytes, cancellationToken);
+        await this.SocketSend(message, cancellationToken);
     }
 
     /// <summary>
@@ -331,7 +332,7 @@ internal class Session : IDisposable
             Id = requestId,
         };
 
-        var messageBytes = JsonSerializer.SerializeToUtf8Bytes(request);
+        var message = JsonSerializer.Serialize(request);
 
         using var pendingRequest = new PendingRequestRecord(timeout, cancellationToken);
 
@@ -340,7 +341,7 @@ internal class Session : IDisposable
 
         try
         {
-            await this.SocketSend(messageBytes, cancellationToken);
+            await this.SocketSend(message, cancellationToken);
             return await pendingRequest.Task;
         }
         catch (Exception e)
@@ -448,11 +449,11 @@ internal class Session : IDisposable
 
         try
         {
-            var responseBytes = JsonSerializer.SerializeToUtf8Bytes(response);
+            var responseString = JsonSerializer.Serialize(response);
 
             try
             {
-                await this.SocketSend(responseBytes, cancellationToken);
+                await this.SocketSend(responseString, cancellationToken);
             }
             catch (Exception e)
             {
@@ -470,14 +471,12 @@ internal class Session : IDisposable
         return this.nextId++;
     }
 
-    private async Task SocketSend(byte[] messageBytes, CancellationToken cancellationToken)
+    private async Task SocketSend(string message, CancellationToken cancellationToken)
     {
-        var webSocket = this.context.WebSocket;
-
         await this.websocketSendLock.WaitAsync(cancellationToken);
         try
         {
-            await webSocket.SendAsync(messageBytes, WebSocketMessageType.Text, true, cancellationToken);
+            await this.webSocket.Send(message);
         }
         finally
         {
@@ -485,63 +484,19 @@ internal class Session : IDisposable
         }
     }
 
-    private async Task CommLoop()
+    private async Task HandleMessage(JsonRpc2Message message, CancellationToken cancellationToken)
     {
-        var cancellationToken = this.CancellationToken;
-        var webSocket = this.context.WebSocket;
-        try
+        if (message is JsonRpc2Request request)
         {
-            var messageReadLock = new SemaphoreSlim(1);
-            var messageBuffer = new MemoryStream();
-            while (this.IsOpen)
-            {
-                JsonRpc2Message message;
-                await messageReadLock.WaitAsync(cancellationToken);
-                try
-                {
-                    messageBuffer.SetLength(0);
-                    var result = await webSocket.ReceiveMessageToStream(messageBuffer, MessageSizeLimit, cancellationToken);
-
-                    if (messageBuffer.Length > 0)
-                    {
-                        messageBuffer.Position = 0;
-                        message = JsonSerializer.Deserialize<JsonRpc2Message>(messageBuffer, this.deserializerOptions);
-                    }
-                    else
-                    {
-                        Debug.Print("Received an empty message");
-                        continue;
-                    }
-                }
-                finally
-                {
-                    messageReadLock.Release();
-                }
-
-                if (message is JsonRpc2Request request)
-                {
-                    await this.HandleRequest(request, cancellationToken);
-                }
-                else if (message is JsonRpc2Response response)
-                {
-                    this.HandleResponse(response);
-                }
-                else
-                {
-                    Debug.Print("Received a message which was not recognized as a Request or Response");
-                }
-            }
+            await this.HandleRequest(request, cancellationToken);
         }
-        catch (Exception e)
+        else if (message is JsonRpc2Response response)
         {
-            Debug.Print($"Session ended due to exception: {e}");
+            this.HandleResponse(response);
         }
-        finally
+        else
         {
-            if (this.IsOpen)
-            {
-                await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
-            }
+            Debug.Print("Received a message which was not recognized as a Request or Response");
         }
     }
 

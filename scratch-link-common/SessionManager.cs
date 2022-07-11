@@ -6,8 +6,8 @@ namespace ScratchLink;
 
 using System;
 using System.Collections.Concurrent;
-using System.Net.WebSockets;
 using System.Threading.Tasks;
+using Fleck;
 
 /// <summary>
 /// This class connects a WebSocket to the appropriate session type and tracks the collection of active sessions.
@@ -32,12 +32,12 @@ internal abstract class SessionManager
     /// <summary>
     /// Call this with a new connection context to ask the SessionManager to build and manage a session for it.
     /// </summary>
-    /// <param name="webSocketContext">The WebSocket context which the SessionManager should adopt and connect to a session.</param>
-    public void ClientDidConnect(WebSocketContext webSocketContext)
+    /// <param name="webSocket">The WebSocket which the SessionManager should adopt and connect to a session.</param>
+    public void ClientDidConnect(IWebSocketConnection webSocket)
     {
         Task.Run(async () =>
         {
-            using var session = this.MakeNewSession(webSocketContext);
+            using var session = this.MakeNewSession(webSocket);
             this.sessions.TryAdd(session, true);
             this.ActiveSessionCountChanged?.Invoke(this, EventArgs.Empty);
             try
@@ -55,7 +55,7 @@ internal abstract class SessionManager
     /// <summary>
     /// Create a new Session object to handle a new WebSocket connection.
     /// </summary>
-    /// <param name="webSocketContext">Create a Session to handle this connection.</param>
+    /// <param name="webSocket">Create a Session to handle this connection.</param>
     /// <returns>A new Session object connected to the provided context.</returns>
-    protected abstract Session MakeNewSession(WebSocketContext webSocketContext);
+    protected abstract Session MakeNewSession(IWebSocketConnection webSocket);
 }

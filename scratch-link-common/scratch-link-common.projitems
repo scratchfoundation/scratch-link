@@ -13,7 +13,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)BLE\BLESession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BLE\GattHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\ContainerExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Extensions\WebSocketExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\JsonExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Request.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Message.cs" />

@@ -7,10 +7,10 @@ namespace ScratchLink.BLE;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Fleck;
 using Microsoft.Extensions.DependencyInjection;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
@@ -25,9 +25,9 @@ internal abstract class BLESession<TUUID> : Session
     /// <summary>
     /// Initializes a new instance of the <see cref="BLESession{TUUID}"/> class.
     /// </summary>
-    /// <inheritdoc cref="Session.Session(WebSocketContext)"/>
-    public BLESession(WebSocketContext context)
-        : base(context)
+    /// <inheritdoc cref="Session.Session(IWebSocketConnection)"/>
+    public BLESession(IWebSocketConnection webSocket)
+        : base(webSocket)
     {
         this.GattHelpers = ScratchLinkApp.Current.Services.GetService<GattHelpers<TUUID>>();
         this.AllowedServices = new ();

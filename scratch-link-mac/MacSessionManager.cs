@@ -4,7 +4,7 @@
 
 namespace ScratchLink.Mac;
 
-using System.Net.WebSockets;
+using Fleck;
 using ScratchLink.Mac.BLE;
 
 /// <summary>
@@ -13,15 +13,15 @@ using ScratchLink.Mac.BLE;
 internal class MacSessionManager : SessionManager
 {
     /// <inheritdoc/>
-    protected override Session MakeNewSession(WebSocketContext webSocketContext)
+    protected override Session MakeNewSession(IWebSocketConnection webSocket)
     {
-        var requestPath = webSocketContext.RequestUri.AbsolutePath;
+        var requestPath = webSocket.ConnectionInfo.Path;
         return requestPath switch
         {
-            "/scratch/ble" => new MacBLESession(webSocketContext),
+            "/scratch/ble" => new MacBLESession(webSocket),
 
             // for unrecognized paths, return a base Session for debugging
-            _ => new Session(webSocketContext),
+            _ => new Session(webSocket),
         };
     }
 }
