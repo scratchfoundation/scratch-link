@@ -5,11 +5,6 @@
 namespace ScratchLink;
 
 using System;
-using System.Diagnostics;
-using System.Net;
-using System.Net.WebSockets;
-using System.Text;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using ScratchLink.BLE;
 
@@ -36,18 +31,7 @@ public class ScratchLinkApp
         this.sessionManager = this.Services.GetService<SessionManager>();
         this.webSocketListener = new ()
         {
-            OnWebSocketConnection = (webSocketContext) =>
-            {
-                this.sessionManager.ClientDidConnect(webSocketContext);
-            },
-            OnOtherConnection = (context) =>
-            {
-                context.Response.Headers.Clear();
-                context.Response.SendChunked = false;
-                context.Response.StatusCode = 426; // Upgrade Required
-                context.Response.OutputStream.Write(Encoding.UTF8.GetBytes("WebSockets required"));
-                context.Response.OutputStream.Close();
-            },
+            OnWebSocketConnection = this.sessionManager.ClientDidConnect,
         };
     }
 
@@ -67,25 +51,7 @@ public class ScratchLinkApp
     /// </summary>
     public void Run()
     {
-        if (!HttpListener.IsSupported)
-        {
-            // TODO: pop up an error message
-            return;
-        }
-
-        this.webSocketListener.Start(new[]
-        {
-            string.Format("http://127.0.0.1:{0}/", WebSocketPort),
-            string.Format("http://localhost:{0}/", WebSocketPort),
-        });
-    }
-
-    private void HandleSessionDebug(WebSocketContext context)
-    {
-        var origin = context.Headers.Get("origin");
-        var socket = context.WebSocket;
-        Debug.Print("New connection");
-        socket.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
+        this.webSocketListener.Start(string.Format("http://0.0.0.0:{0}/", WebSocketPort));
     }
 
     /// <summary>

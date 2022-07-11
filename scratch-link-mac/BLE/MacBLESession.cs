@@ -8,11 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using CoreBluetooth;
+using Fleck;
 using Foundation;
 using ScratchLink.BLE;
 using ScratchLink.Extensions;
@@ -41,9 +41,9 @@ internal class MacBLESession : BLESession<CBUUID>
     /// <summary>
     /// Initializes a new instance of the <see cref="MacBLESession"/> class.
     /// </summary>
-    /// <param name="context">The web socket context.</param>
-    public MacBLESession(WebSocketContext context)
-        : base(context)
+    /// <param name="webSocket">The web socket.</param>
+    public MacBLESession(IWebSocketConnection webSocket)
+        : base(webSocket)
     {
         this.cbManager = new ();
         this.cbManager.UpdatedState += this.WrapEventHandler(this.CbManager_UpdatedState);
