@@ -46,6 +46,18 @@ internal class MacBLESession : BLESession<CBUUID>
         : base(webSocket)
     {
         this.cbManager = new ();
+
+#if DEBUG
+        this.cbManager.ConnectedPeripheral += (o, e) => Debug.Print("ConnectedPeripheral");
+        this.cbManager.DisconnectedPeripheral += (o, e) => Debug.Print("DisconnectedPeripheral");
+        this.cbManager.DiscoveredPeripheral += (o, e) => Debug.Print("DiscoveredPeripheral");
+        this.cbManager.FailedToConnectPeripheral += (o, e) => Debug.Print("FailedToConnectPeripheral");
+        this.cbManager.RetrievedConnectedPeripherals += (o, e) => Debug.Print("RetrievedConnectedPeripherals");
+        this.cbManager.RetrievedPeripherals += (o, e) => Debug.Print("RetrievedPeripherals");
+        this.cbManager.UpdatedState += (o, e) => Debug.Print("UpdatedState {0}", this.cbManager.State);
+        this.cbManager.WillRestoreState += (o, e) => Debug.Print("WillRestoreState");
+#endif
+
         this.cbManager.UpdatedState += this.WrapEventHandler(this.CbManager_UpdatedState);
         this.cbManager.DiscoveredPeripheral += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
 
