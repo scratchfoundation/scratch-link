@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>scratch link</string>
+	<string>Scratch Link</string>
 	<key>CFBundleIdentifier</key>
 	<string>edu.mit.scratch.scratch-link</string>
 	<key>CFBundleShortVersionString</key>
@@ -28,7 +28,10 @@
 	<string>Main</string>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/AppIcon.appiconset</string>
-	
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>TODO: Info.plist NSBluetoothPeripheralUsageDescription</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>TODO: Info.plist NSBluetoothAlwaysUsageDescription</string>
 </dict>
 </plist>
 
