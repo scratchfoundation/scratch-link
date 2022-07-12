@@ -121,6 +121,14 @@ internal class Session : IDisposable
     }
 
     /// <summary>
+    /// End this session. This will cause Run() to finish, and Run()'s caller should then Dispose() of this instance.
+    /// </summary>
+    protected void EndSession()
+    {
+        this.webSocket.Close();
+    }
+
+    /// <summary>
     /// Implement the Disposable pattern for this session.
     /// If <paramref name="disposing"/> is true and <see cref="DisposedValue"/> is false, free any managed resources.
     /// In all cases, call <see cref="Dispose(bool)"/> on <c>base</c> as the last step.

@@ -60,6 +60,7 @@ internal class MacBLESession : BLESession<CBUUID>
 
         this.cbManager.UpdatedState += this.WrapEventHandler(this.CbManager_UpdatedState);
         this.cbManager.DiscoveredPeripheral += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
+        this.cbManager.DisconnectedPeripheral += this.WrapEventHandler<CBPeripheralErrorEventArgs>(this.CbManager_DisconnectedPeripheral);
 
         this.CancellationToken.Register(() =>
         {
@@ -373,7 +374,7 @@ internal class MacBLESession : BLESession<CBUUID>
                 Debug.Print("Failed to report error to client due to: ", sendErrorException);
             }
 
-            this.Dispose();
+            this.EndSession();
         }
     }
 
@@ -443,9 +444,14 @@ internal class MacBLESession : BLESession<CBUUID>
             this.CancellationToken);
     }
 
-    private void ConnectedPeripheral_UpdatedCharacterteristicValue(object sender, CBCharacteristicEventArgs e)
+    private void CbManager_DisconnectedPeripheral(object sender, CBPeripheralErrorEventArgs e)
     {
-        // TODO
+        if (this.connectedPeripheral != e.Peripheral)
+        {
+            return;
+        }
+
+        this.EndSession();
     }
 
     /// <summary>
