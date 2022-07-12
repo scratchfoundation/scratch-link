@@ -87,6 +87,7 @@
     <Compile Include="BLE\MacGattHelpers.cs" />
     <Compile Include="BLE\MacBLESession.cs" />
     <Compile Include="BLE\MacBLEEndpoint.cs" />
+    <Compile Include="BT\MacBTSession.cs" />
     <Compile Include="Extensions\NSExtensions.cs" />
     <Compile Include="MacSessionManager.cs" />
   </ItemGroup>
