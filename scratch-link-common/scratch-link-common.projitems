@@ -12,6 +12,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)BLE\IBLEEndpoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BLE\BLESession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BLE\GattHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BT\BTSession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\ContainerExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\JsonExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Request.cs" />
@@ -23,9 +24,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\Converters\JsonRpc2ValueConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EncodingHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EventAwaiter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ScratchLinkApp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Session.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SessionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebSocketListener.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ScratchLinkApp.cs" />
   </ItemGroup>
 </Project>

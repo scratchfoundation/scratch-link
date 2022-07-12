@@ -6,6 +6,7 @@ namespace ScratchLink.Mac;
 
 using Fleck;
 using ScratchLink.Mac.BLE;
+using ScratchLink.Mac.BT;
 
 /// <summary>
 /// Implements the Mac-specific functionality of the SessionManager.
@@ -19,6 +20,7 @@ internal class MacSessionManager : SessionManager
         return requestPath switch
         {
             "/scratch/ble" => new MacBLESession(webSocket),
+            "/scratch/bt" => new MacBTSession(webSocket),
 
             // for unrecognized paths, return a base Session for debugging
             _ => new Session(webSocket),
