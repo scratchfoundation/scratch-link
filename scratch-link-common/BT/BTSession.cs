@@ -18,15 +18,20 @@ using ScratchLink.JsonRpc;
 /// <summary>
 /// Implements the cross-platform portions of a Bluetooth Classic (RFCOMM) session.
 /// </summary>
-internal abstract class BTSession : Session
+/// <typeparam name="TDevice">Platform-specific device reference. Used to make a device connection.</typeparam>
+/// <typeparam name="TDeviceId">Platform-specific device address. Used for tracking device discovery records.</typeparam>
+internal abstract class BTSession<TDevice, TDeviceId> : Session
 {
     /// <summary>
     /// PIN code for auto-pairing.
     /// </summary>
     protected const string AutoPairingCode = "0000";
 
+    private readonly Dictionary<TDeviceId, string> deviceIdToString = new ();
+    private readonly Dictionary<string, TDevice> availableDevices = new ();
+
     /// <summary>
-    /// Initializes a new instance of the <see cref="BTSession"/> class.
+    /// Initializes a new instance of the <see cref="BTSession{TDevice, TDeviceId}"/> class.
     /// </summary>
     /// <inheritdoc cref="Session.Session(IWebSocketConnection)"/>
     public BTSession(IWebSocketConnection webSocket)
@@ -59,6 +64,7 @@ internal abstract class BTSession : Session
         // TODO: parse ouiPrefixString to bytes
         var ouiPrefixString = args?.TryGetProperty("ouiPrefix")?.GetString();
 
+        this.availableDevices.Clear();
         return this.DoDiscover((byte)majorDeviceClass, (byte)minorDeviceClass, null);
     }
 
@@ -88,9 +94,9 @@ internal abstract class BTSession : Session
     /// <summary>
     /// Platform-specific implementation for connecting to a peripheral device.
     /// </summary>
-    /// <param name="jsonPeripheralId">A JSON element representing a platform-specific peripheral ID.</param>
+    /// <param name="device">The requested device.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected abstract Task<object> DoConnect(JsonElement jsonPeripheralId);
+    protected abstract Task<object> DoConnect(TDevice device);
 
     /// <summary>
     /// Implement the JSON-RPC "send" request to send data to the connected peripheral.
@@ -103,6 +109,39 @@ internal abstract class BTSession : Session
     protected Task<object> HandleSend(string methodName, JsonElement? args)
     {
         throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// Track a discovered device and report it to the client.
+    /// </summary>
+    /// <param name="device">The platform-specific device reference or record.</param>
+    /// <param name="deviceId">The internal system address of this device.</param>
+    /// <param name="displayName">A user-friendly name, if possible.</param>
+    /// <param name="rssi">A relative signal strength indicator.</param>
+    /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
+    protected async Task OnDeviceFound(TDevice device, TDeviceId deviceId, string displayName, int rssi)
+    {
+        var peripheralId = this.GetPeripheralId(deviceId);
+        this.availableDevices[peripheralId] = device;
+
+        var message = new BTPeripheralDiscovered
+        {
+            PeripheralId = peripheralId,
+            Name = displayName,
+            RSSI = rssi,
+        };
+        await this.SendRequest("didDiscoverPeripheral", message, this.CancellationToken);
+    }
+
+    private string GetPeripheralId(TDeviceId deviceId)
+    {
+        if (!this.deviceIdToString.TryGetValue(deviceId, out var peripheralId))
+        {
+            peripheralId = Guid.NewGuid().ToString();
+            this.deviceIdToString[deviceId] = peripheralId;
+        }
+
+        return peripheralId;
     }
 
     /// <summary>

@@ -4,6 +4,7 @@
 
 namespace ScratchLink.Mac.BT;
 
+using System;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -15,11 +16,11 @@ using ScratchLink.JsonRpc;
 /// <summary>
 /// Implements a BT session on MacOS.
 /// </summary>
-internal class MacBTSession : BTSession
+internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 {
     private const int KIOReturnSuccess = 0;
 
-    private readonly DeviceInquiry inquiry;
+    private DeviceInquiry inquiry;
 
     private DeviceClassMajor searchClassMajor;
     private DeviceClassMinor searchClassMinor;
@@ -50,10 +51,11 @@ internal class MacBTSession : BTSession
     /// <inheritdoc/>
     protected override Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass, byte[] ouiPrefix)
     {
-        // don't use inquiry.SetSearchCriteria to filter for device class
-        // see the DeviceFound handler for details
+        this.inquiry.Stop();
+        this.inquiry.ClearFoundDevices();
         this.searchClassMajor = (DeviceClassMajor)majorDeviceClass;
         this.searchClassMinor = (DeviceClassMinor)minorDeviceClass;
+        this.inquiry.SetSearchCriteria(ServiceClassMajor.Any, this.searchClassMajor, DeviceClassMinor.Any);
         this.inquiry.SearchType = DeviceSearchType.Classic;
         this.inquiry.InquiryLength = 20;
         this.inquiry.UpdateNewDeviceNames = true;
@@ -67,7 +69,7 @@ internal class MacBTSession : BTSession
     }
 
     /// <inheritdoc/>
-    protected override Task<object> DoConnect(JsonElement jsonPeripheralId)
+    protected override Task<object> DoConnect(BluetoothDevice device)
     {
         throw new System.NotImplementedException();
     }
@@ -98,12 +100,6 @@ internal class MacBTSession : BTSession
             }
         }
 
-        var message = new BTPeripheralDiscovered
-        {
-            Name = e.Device.NameOrAddress,
-            PeripheralId = e.Device.AddressString,
-            RSSI = e.Device.Rssi,
-        };
-        await this.SendRequest("didDiscoverPeripheral", message, this.CancellationToken);
+        await this.OnDeviceFound(e.Device, e.Device.Address, e.Device.NameOrAddress, e.Device.Rssi);
     }
 }
