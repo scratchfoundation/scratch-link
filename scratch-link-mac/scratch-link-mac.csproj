@@ -88,7 +88,13 @@
     <Compile Include="BLE\MacBLESession.cs" />
     <Compile Include="BLE\MacBLEEndpoint.cs" />
     <Compile Include="BT\MacBTSession.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelDataEventArgs.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelEventDelegate.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelEventArgs.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelOpenCompleteEventArgs.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelWriteCompleteEventArgs.cs" />
     <Compile Include="Extensions\NSExtensions.cs" />
+    <Compile Include="IOReturn.cs" />
     <Compile Include="MacSessionManager.cs" />
   </ItemGroup>
   <ItemGroup>
