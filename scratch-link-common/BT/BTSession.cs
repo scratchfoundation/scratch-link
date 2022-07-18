@@ -61,11 +61,8 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
             throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("majorDeviceClass and minorDeviceClass required"));
         }
 
-        // TODO: parse ouiPrefixString to bytes
-        var ouiPrefixString = args?.TryGetProperty("ouiPrefix")?.GetString();
-
         this.availableDevices.Clear();
-        return this.DoDiscover((byte)majorDeviceClass, (byte)minorDeviceClass, null);
+        return this.DoDiscover((byte)majorDeviceClass, (byte)minorDeviceClass);
     }
 
     /// <summary>
@@ -73,9 +70,8 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
     /// </summary>
     /// <param name="majorDeviceClass">Discover peripherals with this major device class.</param>
     /// <param name="minorDeviceClass">Discover peripherals with this minor device class.</param>
-    /// <param name="ouiPrefix">If set, discover peripherals matching this 3-byte OUI prefix.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected abstract Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass, byte[] ouiPrefix);
+    protected abstract Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass);
 
     /// <summary>
     /// Implement the JSON-RPC "connect" request to connect to a particular peripheral.
@@ -88,7 +84,19 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected Task<object> HandleConnect(string methodName, JsonElement? args)
     {
-        throw new NotImplementedException();
+        var peripheralId = args?.TryGetProperty("peripheralId")?.GetString();
+
+        if (peripheralId == null)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("peripheralId required"));
+        }
+
+        if (!this.availableDevices.TryGetValue(peripheralId, out var device))
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidRequest(string.Format("Device {0} not available for connection", peripheralId)));
+        }
+
+        return this.DoConnect(device);
     }
 
     /// <summary>

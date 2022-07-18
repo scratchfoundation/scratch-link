@@ -6,25 +6,26 @@ namespace ScratchLink.Mac.BT;
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CoreBluetooth;
 using Fleck;
+using Foundation;
 using IOBluetooth;
 using ScratchLink.BT;
 using ScratchLink.JsonRpc;
+using ScratchLink.Mac.BT.Rfcomm;
 
 /// <summary>
 /// Implements a BT session on MacOS.
 /// </summary>
 internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 {
-    private const int KIOReturnSuccess = 0;
-
-    private DeviceInquiry inquiry;
+    private readonly DeviceInquiry inquiry;
 
     private DeviceClassMajor searchClassMajor;
     private DeviceClassMinor searchClassMinor;
-    private byte[] ouiPrefix;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MacBTSession"/> class.
@@ -49,7 +50,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     }
 
     /// <inheritdoc/>
-    protected override Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass, byte[] ouiPrefix)
+    protected override Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass)
     {
         this.inquiry.Stop();
         this.inquiry.ClearFoundDevices();
@@ -59,9 +60,10 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         this.inquiry.SearchType = DeviceSearchType.Classic;
         this.inquiry.InquiryLength = 20;
         this.inquiry.UpdateNewDeviceNames = true;
-        var inquiryStatus = this.inquiry.Start();
-        if (inquiryStatus != KIOReturnSuccess)
+        var inquiryStatus = (IOReturn)this.inquiry.Start();
+        if (inquiryStatus != IOReturn.Success)
         {
+            Debug.Print("Failed to start inquiry: {0}", inquiryStatus.ToDebugString());
             throw new JsonRpc2Exception(JsonRpc2Error.ServerError(-32500, "Device inquiry failed to start"));
         }
 
@@ -69,9 +71,54 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     }
 
     /// <inheritdoc/>
-    protected override Task<object> DoConnect(BluetoothDevice device)
+    protected override async Task<object> DoConnect(BluetoothDevice device)
     {
-        throw new System.NotImplementedException();
+        this.inquiry.Stop();
+
+        var rfcommDelegate = new RfcommChannelEventDelegate();
+        rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
+
+        var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
+            h => rfcommDelegate.RfcommChannelOpenCompleteEvent += h,
+            h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
+            TimeSpan.FromSeconds(15),
+            this.CancellationToken,
+            () =>
+            {
+                // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
+                // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
+                device.OpenRfcommChannelSync(out var connectedChannel, 1, rfcommDelegate);
+            });
+
+        if (openChannelResult.Error != IOReturn.Success)
+        {
+            Debug.Print("Opening RFCOMM channel failed: {0}", openChannelResult.Error.ToDebugString());
+            throw new JsonRpc2Exception(JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel."));
+        }
+
+        var connectedChannel = openChannelResult.Channel;
+
+        // Connect is done already; don't wait for this run loop / session to complete.
+        _ = Task.Run(async () =>
+        {
+            // run loop specifically for this device: necessary to get delegate callbacks
+            // TODO: is it actually necessary with this new implementation?
+            while (connectedChannel?.IsOpen ?? false)
+            {
+                await Task.Delay(500);
+            }
+
+            await this.SendErrorNotification(JsonRpc2Error.ApplicationError("RFCOMM run loop exited"), this.CancellationToken);
+
+            this.EndSession();
+        });
+
+        return null;
+    }
+
+    private void RfcommDelegate_RfcommChannelData(object sender, RfcommChannelDataEventArgs e)
+    {
+        Debug.Print("Received {0} bytes", e.Data.Length);
     }
 
     private async void Inquiry_DeviceFoundAsync(object sender, DeviceFoundEventArgs e)
@@ -88,16 +135,6 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         {
             // minor class doesn't match
             return;
-        }
-
-        if (this.ouiPrefix != null)
-        {
-            if ((this.ouiPrefix[0] != e.Device.Address.Data[0]) ||
-                (this.ouiPrefix[1] != e.Device.Address.Data[1]) ||
-                (this.ouiPrefix[2] != e.Device.Address.Data[2]))
-            {
-                return;
-            }
         }
 
         await this.OnDeviceFound(e.Device, e.Device.Address, e.Device.NameOrAddress, e.Device.Rssi);
