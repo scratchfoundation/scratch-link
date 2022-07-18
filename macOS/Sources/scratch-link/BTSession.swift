@@ -4,6 +4,8 @@ import PerfectWebSockets
 
 class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInquiryDelegate {
     private var inquiry: IOBluetoothDeviceInquiry
+    private var searchMajorClass: BluetoothDeviceClassMajor
+    private var searchMinorClass: BluetoothDeviceClassMinor
     private var connectedChannel: IOBluetoothRFCOMMChannel?
     private let rfcommQueue = DispatchQueue(label: "ScratchLink.BTSession.rfcommQueue")
     private var state: SessionState = .initial
@@ -17,6 +19,8 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
 
     required init(withSocket webSocket: WebSocket) throws {
         ouiPrefix = ""
+        searchMajorClass = BluetoothDeviceClassMajor(kBluetoothDeviceClassMajorAny)
+        searchMinorClass = BluetoothDeviceClassMinor(kBluetoothDeviceClassMinorAny)
         inquiry = IOBluetoothDeviceInquiry(delegate: nil)
         try super.init(withSocket: webSocket)
         inquiry.delegate = self
@@ -70,11 +74,8 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
 
     func discover(inMajorDeviceClass major: UInt, inMinorDeviceClass minor: UInt,
                   completion: @escaping JSONRPCCompletionHandler) {
-        // see https://www.bluetooth.com/specifications/assigned-numbers/baseband for available device classes
-        // LEGO EV3 is major class toy (8), minor class robot (1)
-        inquiry.setSearchCriteria(BluetoothServiceClassMajor(kBluetoothServiceClassMajorAny),
-                                   majorDeviceClass: BluetoothDeviceClassMajor(major),
-                                   minorDeviceClass: BluetoothDeviceClassMinor(minor))
+        searchMajorClass = BluetoothDeviceClassMajor(major)
+        searchMinorClass = BluetoothDeviceClassMinor(minor)
         inquiry.inquiryLength = 20
         inquiry.updateNewDeviceNames = true
         let inquiryStatus = inquiry.start()
@@ -169,16 +170,26 @@ class BTSession: Session, IOBluetoothRFCOMMChannelDelegate, IOBluetoothDeviceInq
      */
 
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry!, device: IOBluetoothDevice!) {
-        if(device.addressString.hasPrefix(self.ouiPrefix)) {
-            let peripheralData: [String: Any] = [
-                "peripheralId": device.addressString as Any,
-                "name": device.name as Any,
-
-                // BT on Mac can't get a real RSSI without connecting (device.rawRSSI() is +127 unless connected)
-                "rssi": RSSI.unsupported.rawValue as Any
-            ]
-            sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
+        if device.deviceClassMajor != searchMajorClass {
+            return;
         }
+        // sometimes the minor class is incorrectly reported as zero
+        if device.deviceClassMinor != searchMinorClass &&
+            device.deviceClassMinor != 0 {
+            return;
+        }
+        if !device.addressString.hasPrefix(self.ouiPrefix) {
+            return;
+        }
+
+        let peripheralData: [String: Any] = [
+            "peripheralId": device.addressString as Any,
+            "name": device.name as Any,
+
+            // BT on Mac can't get a real RSSI without connecting (device.rawRSSI() is +127 unless connected)
+            "rssi": RSSI.unsupported.rawValue as Any
+        ]
+        sendRemoteRequest("didDiscoverPeripheral", withParams: peripheralData)
     }
 
     func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
