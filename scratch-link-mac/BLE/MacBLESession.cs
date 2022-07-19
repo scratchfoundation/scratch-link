@@ -128,8 +128,7 @@ internal class MacBLESession : BLESession<CBUUID>
             throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError("Bluetooth is not available"));
         }
 
-        await this.filterLock.WaitAsync(this.CancellationToken);
-        try
+        using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
         {
             this.filters = filters;
             this.discoveredPeripherals.Clear();
@@ -137,10 +136,6 @@ internal class MacBLESession : BLESession<CBUUID>
             {
                 AllowDuplicatesKey = true,
             });
-        }
-        finally
-        {
-            this.filterLock.Release();
         }
 
         return null;
@@ -166,8 +161,7 @@ internal class MacBLESession : BLESession<CBUUID>
             throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("malformed peripheralId"));
         }
 
-        await this.filterLock.WaitAsync(this.CancellationToken);
-        try
+        using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
         {
             if (this.connectedPeripheral != null)
             {
@@ -181,10 +175,6 @@ internal class MacBLESession : BLESession<CBUUID>
 
             this.cbManager.StopScan();
             this.connectedPeripheral = discoveredPeripheral;
-        }
-        finally
-        {
-            this.filterLock.Release();
         }
 
 #if DEBUG
@@ -417,18 +407,13 @@ internal class MacBLESession : BLESession<CBUUID>
             manufacturerData[advertisedId] = advertisedManufacturerData.Skip(2);
         }
 
-        await this.filterLock.WaitAsync(this.CancellationToken);
-        try
+        using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
         {
             if (!this.filters.Any(filter => filter.Matches(peripheral.Name, allServices, manufacturerData)))
             {
                 // no matching filters
                 return;
             }
-        }
-        finally
-        {
-            this.filterLock.Release();
         }
 
         // the device must have passed the filter!

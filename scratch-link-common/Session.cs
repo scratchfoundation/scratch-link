@@ -481,14 +481,9 @@ internal class Session : IDisposable
 
     private async Task SocketSend(string message, CancellationToken cancellationToken)
     {
-        await this.websocketSendLock.WaitAsync(cancellationToken);
-        try
+        using (await this.websocketSendLock.WaitDisposableAsync(cancellationToken))
         {
             await this.webSocket.Send(message);
-        }
-        finally
-        {
-            this.websocketSendLock.Release();
         }
     }
 
