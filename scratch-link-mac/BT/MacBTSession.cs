@@ -15,6 +15,7 @@ using Fleck;
 using Foundation;
 using IOBluetooth;
 using ScratchLink.BT;
+using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.Mac.BT.Rfcomm;
 
@@ -89,14 +90,9 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             {
                 // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
                 // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
-                await this.channelLock.WaitAsync();
-                try
+                using (await this.channelLock.WaitDisposableAsync())
                 {
                     device.OpenRfcommChannelSync(out this.connectedChannel, 1, rfcommDelegate);
-                }
-                finally
-                {
-                    this.channelLock.Release();
                 }
             });
 
@@ -141,14 +137,9 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         try
         {
             pinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            await this.channelLock.WaitAsync();
-            try
+            using (await this.channelLock.WaitDisposableAsync())
             {
                 writeResult = (IOReturn)this.connectedChannel.WriteSync(pinnedBuffer.AddrOfPinnedObject(), shortLength);
-            }
-            finally
-            {
-                this.channelLock.Release();
             }
         }
         finally
