@@ -120,7 +120,7 @@ internal abstract class GattHelpers<TUUID>
             return this.CanonicalUuid(id);
         }
 
-        throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"unknown or invalid GATT name: {nameToken}"));
+        throw JsonRpc2Error.InvalidParams($"unknown or invalid GATT name: {nameToken}").ToException();
     }
 
     /// <summary>

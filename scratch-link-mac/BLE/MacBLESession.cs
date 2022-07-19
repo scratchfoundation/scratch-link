@@ -125,7 +125,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         var currentState = await this.GetSettledBluetoothState();
         if (currentState != BluetoothState.Available)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError("Bluetooth is not available"));
+            throw JsonRpc2Error.ApplicationError("Bluetooth is not available").ToException();
         }
 
         using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
@@ -148,7 +148,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         {
             if (this.connectedPeripheral != null)
             {
-                throw new JsonRpc2Exception(JsonRpc2Error.InvalidRequest("already connected or connecting"));
+                throw JsonRpc2Error.InvalidRequest("already connected or connecting").ToException();
             }
 
             this.cbManager.StopScan();
@@ -185,7 +185,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             if (this.connectedPeripheral != connectArgs.Peripheral)
             {
                 this.connectedPeripheral = null;
-                throw new JsonRpc2Exception(JsonRpc2Error.InternalError("did not connect to correct peripheral"));
+                throw JsonRpc2Error.InternalError("did not connect to correct peripheral").ToException();
             }
         }
 

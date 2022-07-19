@@ -372,7 +372,7 @@ public class Session : IDisposable
 
     private Task<object> HandleUnrecognizedMethod(string methodName, JsonElement? args)
     {
-        throw new JsonRpc2Exception(JsonRpc2Error.MethodNotFound(methodName));
+        throw JsonRpc2Error.MethodNotFound(methodName).ToException();
     }
 
     private async Task HandleRequest(JsonRpc2Request request, CancellationToken cancellationToken)

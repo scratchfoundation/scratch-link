@@ -9,7 +9,7 @@ using System;
 /// <summary>
 /// Exception class to hold a JSON-RPC 2.0 error.
 /// </summary>
-internal class JsonRpc2Exception : Exception
+public class JsonRpc2Exception : Exception
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="JsonRpc2Exception"/> class to report a <see cref="JsonRpc2Error"/>.

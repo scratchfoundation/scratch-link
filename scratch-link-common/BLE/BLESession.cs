@@ -90,14 +90,14 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
 
         if (filter.DataPrefix.Count != filter.Mask.Count)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams(
-                $"length of data prefix ({filter.DataPrefix.Count}) does not match length of mask ({filter.Mask.Count})"));
+            throw JsonRpc2Error.InvalidParams(
+                $"length of data prefix ({filter.DataPrefix.Count}) does not match length of mask ({filter.Mask.Count})").ToException();
         }
 
         if (filter.DataPrefix.Where((dataByte, index) => dataByte != (dataByte & filter.Mask[index])).Any())
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams(
-                "invalid data filter: dataPrefix contains masked-out bits and will never match"));
+            throw JsonRpc2Error.InvalidParams(
+                "invalid data filter: dataPrefix contains masked-out bits and will never match").ToException();
         }
 
         return filter;
@@ -119,18 +119,18 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
         if (args?.TryGetProperty("filters", out var jsonFilters) != true ||
             jsonFilters.ValueKind != JsonValueKind.Array)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("could not parse filters in discovery request"));
+            throw JsonRpc2Error.InvalidParams("could not parse filters in discovery request").ToException();
         }
 
         if (jsonFilters.GetArrayLength() < 1)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("discovery request must include at least one filter"));
+            throw JsonRpc2Error.InvalidParams("discovery request must include at least one filter").ToException();
         }
 
         var filters = jsonFilters.EnumerateArray().Select(jsonFilter => this.ParseFilter(jsonFilter)).ToList();
         if (filters.Any(filter => filter.IsEmpty))
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("discovery request includes empty filter"));
+            throw JsonRpc2Error.InvalidParams("discovery request includes empty filter").ToException();
         }
 
         this.AllowedServices.Clear();
@@ -139,7 +139,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
         {
             if (jsonOptionalServices.ValueKind != JsonValueKind.Array)
             {
-                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("could not parse optionalServices in discovery request"));
+                throw JsonRpc2Error.InvalidParams("could not parse optionalServices in discovery request").ToException();
             }
 
             var optionalServices = jsonOptionalServices.EnumerateArray().Select(this.GattHelpers.GetServiceUuid);
@@ -195,7 +195,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     {
         if (args == null)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+            throw JsonRpc2Error.InvalidParams("required parameter missing").ToException();
         }
 
         var endpoint = await this.GetEndpoint("write", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeWrites);
@@ -220,7 +220,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     {
         if (args == null)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+            throw JsonRpc2Error.InvalidParams("required parameter missing").ToException();
         }
 
         var startNotifications = args?.TryGetProperty("startNotifications", out var jsonStartNotifications) == true && jsonStartNotifications.GetBoolean();
@@ -249,7 +249,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     {
         if (args == null)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+            throw JsonRpc2Error.InvalidParams("required parameter missing").ToException();
         }
 
         var endpoint = await this.GetEndpoint("startNotifications", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
@@ -296,7 +296,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     {
         if (args == null)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("required parameter missing"));
+            throw JsonRpc2Error.InvalidParams("required parameter missing").ToException();
         }
 
         var endpoint = await this.GetEndpoint("stopNotifications", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
@@ -342,7 +342,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
             filter.RequiredServices = new (jsonServices.EnumerateArray().Select(this.GattHelpers.GetServiceUuid));
             if (filter.RequiredServices.Count < 1)
             {
-                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"filter contains empty or invalid services list: {filter}"));
+                throw JsonRpc2Error.InvalidParams($"filter contains empty or invalid services list: {filter}").ToException();
             }
         }
 
@@ -359,7 +359,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
 
         if (jsonFilter.TryGetProperty("serviceData", out _))
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError("filtering on serviceData is not currently supported"));
+            throw JsonRpc2Error.ApplicationError("filtering on serviceData is not currently supported").ToException();
         }
 
         return filter;
@@ -377,7 +377,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     {
         if (!this.IsConnected)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.ApplicationError($"Peripheral is not connected for {errorContext}"));
+            throw JsonRpc2Error.ApplicationError($"Peripheral is not connected for {errorContext}").ToException();
         }
 
         var serviceId = endpointInfo.TryGetProperty("serviceId", out var jsonServiceId)
@@ -386,7 +386,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
 
         if (EqualityComparer<TUUID>.Default.Equals(serviceId, default))
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"could not determine GATT service for {errorContext}"));
+            throw JsonRpc2Error.InvalidParams($"could not determine GATT service for {errorContext}").ToException();
         }
 
         var characteristicId = endpointInfo.TryGetProperty("characteristicId", out var jsonCharacteristicId)
@@ -395,22 +395,22 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
 
         if (EqualityComparer<TUUID>.Default.Equals(characteristicId, default))
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"could not determine GATT characteristic for {errorContext}"));
+            throw JsonRpc2Error.InvalidParams($"could not determine GATT characteristic for {errorContext}").ToException();
         }
 
         if (this.GattHelpers.BlockList.TryGetValue(serviceId, out var serviceBlockStatus) && serviceBlockStatus.HasFlag(checkFlag))
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"service is blocked with {serviceBlockStatus}: {serviceId}"));
+            throw JsonRpc2Error.InvalidParams($"service is blocked with {serviceBlockStatus}: {serviceId}").ToException();
         }
 
         if (this.GattHelpers.BlockList.TryGetValue(characteristicId, out var characteristicBlockStatus) && characteristicBlockStatus.HasFlag(checkFlag))
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"characteristic is blocked with {serviceBlockStatus}: {serviceId}"));
+            throw JsonRpc2Error.InvalidParams($"characteristic is blocked with {serviceBlockStatus}: {serviceId}").ToException();
         }
 
         if (this.AllowedServices?.Any(allowedServiceId => serviceId.Equals(allowedServiceId)) != true)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"attempt to access unexpected service: {serviceId}"));
+            throw JsonRpc2Error.InvalidParams($"attempt to access unexpected service: {serviceId}").ToException();
         }
 
         return this.DoGetEndpoint(serviceId, characteristicId);

@@ -100,4 +100,14 @@ public class JsonRpc2Error
     {
         return new JsonRpc2Error { Code = -32500, Message = "Application Error", Data = data };
     }
+
+    /// <summary>
+    /// Wrap this error object in a <see cref="JsonRpc2Exception"/> object.
+    /// Makes a new <see cref="JsonRpc2Exception"/> but does not make a new <see cref="JsonRpc2Error"/>.
+    /// </summary>
+    /// <returns>An new instance of <see cref="JsonRpc2Exception"/> wrapping this error.</returns>
+    public JsonRpc2Exception ToException()
+    {
+        return new JsonRpc2Exception(this);
+    }
 }
