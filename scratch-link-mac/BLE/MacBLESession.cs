@@ -22,7 +22,7 @@ using ScratchLink.Mac.Extensions;
 /// <summary>
 /// Implements a BLE session on MacOS.
 /// </summary>
-internal class MacBLESession : BLESession<CBUUID>
+internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
 {
     /// <summary>
     /// The minimum value for RSSI during discovery: peripherals with a weaker signal will be ignored.
@@ -142,25 +142,8 @@ internal class MacBLESession : BLESession<CBUUID>
     }
 
     /// <inheritdoc/>
-    protected override async Task<object> DoConnect(JsonElement jsonPeripheralId)
+    protected override async Task<object> DoConnect(CBPeripheral peripheral)
     {
-        NSUuid peripheralId = null;
-
-        try
-        {
-            var peripheralIdString = jsonPeripheralId.GetString();
-            peripheralId = new NSUuid(peripheralIdString);
-        }
-        catch
-        {
-            // ignore any exceptions: just check below for a valid peripheralId
-        }
-
-        if (peripheralId == null)
-        {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("malformed peripheralId"));
-        }
-
         using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
         {
             if (this.connectedPeripheral != null)
@@ -168,13 +151,8 @@ internal class MacBLESession : BLESession<CBUUID>
                 throw new JsonRpc2Exception(JsonRpc2Error.InvalidRequest("already connected or connecting"));
             }
 
-            if (!this.discoveredPeripherals.TryGetValue(peripheralId, out var discoveredPeripheral))
-            {
-                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("invalid peripheralId: " + peripheralId));
-            }
-
             this.cbManager.StopScan();
-            this.connectedPeripheral = discoveredPeripheral;
+            this.connectedPeripheral = peripheral;
         }
 
 #if DEBUG
@@ -417,16 +395,7 @@ internal class MacBLESession : BLESession<CBUUID>
         }
 
         // the device must have passed the filter!
-        this.discoveredPeripherals[peripheral.Identifier] = peripheral;
-        await this.SendNotification(
-            "didDiscoverPeripheral",
-            new BLEPeripheralDiscovered()
-            {
-                Name = peripheral.Name,
-                PeripheralId = peripheral.Identifier.ToString(),
-                RSSI = rssi.Int32Value,
-            },
-            this.CancellationToken);
+        await this.OnPeripheralDiscovered(peripheral, peripheral.Identifier, peripheral.Name, rssi.Int32Value);
     }
 
     private void CbManager_DisconnectedPeripheral(object sender, CBPeripheralErrorEventArgs e)

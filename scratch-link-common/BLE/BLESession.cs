@@ -10,7 +10,9 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using CoreBluetooth;
 using Fleck;
+using Foundation;
 using Microsoft.Extensions.DependencyInjection;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
@@ -18,12 +20,15 @@ using ScratchLink.JsonRpc;
 /// <summary>
 /// Implements the cross-platform portions of a BLE session.
 /// </summary>
-/// <typeparam name="TUUID">The platform-specific type which represents UUIDs (like Guid or CBUUID).</typeparam>
-internal abstract class BLESession<TUUID> : Session
+/// <typeparam name="TPeripheral">The platform-specific type for a BLE peripheral device.</typeparam>
+/// <typeparam name="TPeripheralAddress">The platform-specific type for a BLE peripheral device's address.</typeparam>
+/// <typeparam name="TUUID">The platform-specific type which represents BLE UUIDs (like Guid or CBUUID).</typeparam>
+internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : PeripheralSession<TPeripheral, TPeripheralAddress>
+    where TPeripheral : class
     where TUUID : IEquatable<TUUID>
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="BLESession{TUUID}"/> class.
+    /// Initializes a new instance of the <see cref="BLESession{TDevice, TPeripheralAddress, TUUID}"/> class.
     /// </summary>
     /// <inheritdoc cref="Session.Session(IWebSocketConnection)"/>
     public BLESession(IWebSocketConnection webSocket)
@@ -32,7 +37,6 @@ internal abstract class BLESession<TUUID> : Session
         this.GattHelpers = ScratchLinkApp.Current.Services.GetService<GattHelpers<TUUID>>();
         this.AllowedServices = new ();
         this.Handlers["discover"] = this.HandleDiscover;
-        this.Handlers["connect"] = this.HandleConnect;
         this.Handlers["write"] = this.HandleWrite;
         this.Handlers["read"] = this.HandleRead;
         this.Handlers["startNotifications"] = this.HandleStartNotifications;
@@ -147,6 +151,7 @@ internal abstract class BLESession<TUUID> : Session
             this.AllowedServices.UnionWith(filter.RequiredServices.OrEmpty());
         }
 
+        this.ClearPeripherals();
         return await this.DoDiscover(filters);
     }
 
@@ -158,30 +163,25 @@ internal abstract class BLESession<TUUID> : Session
     protected abstract Task<object> DoDiscover(List<BLEScanFilter> filters);
 
     /// <summary>
-    /// Implement the JSON-RPC "connect" request to connect to a particular peripheral.
-    /// Valid in the discovery state; transitions to connected state on success.
+    /// Track a discovered peripheral device and report it to the client.
     /// </summary>
-    /// <param name="methodName">The name of the method being called ("connect").</param>
-    /// <param name="args">
-    /// A JSON object containing the UUID of a peripheral found by the most recent discovery request.
-    /// </param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected async Task<object> HandleConnect(string methodName, JsonElement? args)
+    /// <param name="peripheral">The platform-specific device reference or record.</param>
+    /// <param name="peripheralAddress">The internal system address of this device.</param>
+    /// <param name="displayName">A user-friendly name, if possible.</param>
+    /// <param name="rssi">A relative signal strength indicator.</param>
+    /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
+    protected async Task OnPeripheralDiscovered(TPeripheral peripheral, TPeripheralAddress peripheralAddress, string displayName, int rssi)
     {
-        if (args?.TryGetProperty("peripheralId", out var jsonPeripheralId) != true)
+        var peripheralId = this.RegisterPeripheral(peripheral, peripheralAddress);
+
+        var message = new BLEPeripheralDiscovered()
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("connect request must include peripheralId"));
-        }
-
-        return await this.DoConnect(jsonPeripheralId);
+            Name = displayName,
+            PeripheralId = peripheralId,
+            RSSI = rssi,
+        };
+        await this.SendNotification("didDiscoverPeripheral", message, this.CancellationToken);
     }
-
-    /// <summary>
-    /// Platform-specific implementation for connecting to a peripheral device.
-    /// </summary>
-    /// <param name="jsonPeripheralId">A JSON element representing a platform-specific peripheral ID.</param>
-    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected abstract Task<object> DoConnect(JsonElement jsonPeripheralId);
 
     /// <summary>
     /// Implement the JSON-RPC "write" request to write a value to a particular service characteristic.

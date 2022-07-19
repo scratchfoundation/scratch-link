@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// Data class representing a JSON-RPC 2.0 Error object.
 /// </summary>
-internal class JsonRpc2Error
+public class JsonRpc2Error
 {
     /// <summary>
     /// Gets or sets the numeric error code for this error.
