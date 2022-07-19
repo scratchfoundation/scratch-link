@@ -6,12 +6,10 @@ namespace ScratchLink.BT;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Fleck;
-using Microsoft.Extensions.DependencyInjection;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 
@@ -114,10 +112,21 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
     /// A buffer containing the data to send and optionally the message encoding.
     /// </param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected Task<object> HandleSend(string methodName, JsonElement? args)
+    protected async Task<object> HandleSend(string methodName, JsonElement? args)
     {
-        throw new NotImplementedException();
+        var buffer = EncodingHelpers.DecodeBuffer((JsonElement)args);
+
+        var bytesWritten = await this.DoSend(buffer);
+
+        return bytesWritten;
     }
+
+    /// <summary>
+    /// Platform-specific implementation for sending a buffer to the peripheral device.
+    /// </summary>
+    /// <param name="buffer">The data buffer to send.</param>
+    /// <returns>The number of bytes sent.</returns>
+    protected abstract Task<int> DoSend(byte[] buffer);
 
     /// <summary>
     /// Track a discovered device and report it to the client.
