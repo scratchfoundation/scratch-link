@@ -167,7 +167,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
     private void RfcommDelegate_RfcommChannelData(object sender, RfcommChannelDataEventArgs e)
     {
-        Debug.Print("Received {0} bytes", e.Data.Length);
+        _ = this.DidReceiveMessage(e.Data);
     }
 
     private async void Inquiry_DeviceFoundAsync(object sender, DeviceFoundEventArgs e)

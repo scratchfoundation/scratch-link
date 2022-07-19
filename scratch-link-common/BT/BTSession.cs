@@ -129,6 +129,23 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
     protected abstract Task<int> DoSend(byte[] buffer);
 
     /// <summary>
+    /// Report to the client that data was received from the peripheral device.
+    /// </summary>
+    /// <param name="buffer">The bytes received.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    protected async Task DidReceiveMessage(byte[] buffer)
+    {
+        var messageData = EncodingHelpers.EncodeBuffer(buffer, "base64");
+
+        var message = new BTMessageReceived
+        {
+            Encoding = "base64",
+            Message = messageData,
+        };
+        await this.SendNotification("didReceiveMessage", message, this.CancellationToken);
+    }
+
+    /// <summary>
     /// Track a discovered device and report it to the client.
     /// </summary>
     /// <param name="device">The platform-specific device reference or record.</param>
@@ -183,5 +200,24 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
         /// </summary>
         [JsonPropertyName("rssi")]
         public int RSSI { get; set; }
+    }
+
+    /// <summary>
+    /// JSON-ready class to use when reporting that data was received from a peripheral.
+    /// </summary>
+    protected class BTMessageReceived
+    {
+        /// <summary>
+        /// Gets or sets an optional encoding specifier (like "base64").
+        /// If this is missing, <see cref="Message"/> must be a UTF-8 string.
+        /// </summary>
+        [JsonPropertyName("encoding")]
+        public string Encoding { get; set; }
+
+        /// <summary>
+        /// Gets or sets the message content, encoded as specified in the <see cref="Encoding"/> property.
+        /// </summary>
+        [JsonPropertyName("messsage")]
+        public string Message { get; set; }
     }
 }
