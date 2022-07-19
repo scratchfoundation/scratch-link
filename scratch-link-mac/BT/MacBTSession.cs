@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using CoreBluetooth;
 using Fleck;
@@ -22,10 +23,13 @@ using ScratchLink.Mac.BT.Rfcomm;
 /// </summary>
 internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 {
-    private readonly DeviceInquiry inquiry;
+    private readonly DeviceInquiry inquiry = new ();
+    private readonly SemaphoreSlim channelLock = new (1);
 
     private DeviceClassMajor searchClassMajor;
     private DeviceClassMinor searchClassMinor;
+
+    private RfcommChannel connectedChannel;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MacBTSession"/> class.
@@ -35,8 +39,6 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         : base(webSocket)
     {
         ObjCRuntime.Dlfcn.dlopen("/System.Library/Frameworks/IOBluetooth.framework/IOBluetooth", 0);
-
-        this.inquiry = new DeviceInquiry();
 
 #if DEBUG
         this.inquiry.Completed += (o, e) => Debug.Print("Inquiry.Completed: {0} {1}", e.Aborted, e.Error);
@@ -83,11 +85,19 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
             TimeSpan.FromSeconds(15),
             this.CancellationToken,
-            () =>
+            async () =>
             {
                 // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
                 // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
-                device.OpenRfcommChannelSync(out var connectedChannel, 1, rfcommDelegate);
+                await this.channelLock.WaitAsync();
+                try
+                {
+                    device.OpenRfcommChannelSync(out this.connectedChannel, 1, rfcommDelegate);
+                }
+                finally
+                {
+                    this.channelLock.Release();
+                }
             });
 
         if (openChannelResult.Error != IOReturn.Success)
@@ -96,17 +106,17 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             throw new JsonRpc2Exception(JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel."));
         }
 
-        var connectedChannel = openChannelResult.Channel;
-
         // Connect is done already; don't wait for this run loop / session to complete.
         _ = Task.Run(async () =>
         {
             // run loop specifically for this device: necessary to get delegate callbacks
             // TODO: is it actually necessary with this new implementation?
-            while (connectedChannel?.IsOpen ?? false)
+            while (this.connectedChannel?.IsOpen ?? false)
             {
                 await Task.Delay(500);
             }
+
+            this.connectedChannel.Dispose();
 
             await this.SendErrorNotification(JsonRpc2Error.ApplicationError("RFCOMM run loop exited"), this.CancellationToken);
 
@@ -114,6 +124,45 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         });
 
         return null;
+    }
+
+    /// <inheritdoc/>
+    protected override async Task<int> DoSend(byte[] buffer)
+    {
+        ushort shortLength = (ushort)buffer.Length;
+        if (shortLength != buffer.Length)
+        {
+            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("buffer too big to send"));
+        }
+
+        IOReturn writeResult;
+        GCHandle pinnedBuffer = default(GCHandle);
+
+        try
+        {
+            pinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            await this.channelLock.WaitAsync();
+            try
+            {
+                writeResult = (IOReturn)this.connectedChannel.WriteSync(pinnedBuffer.AddrOfPinnedObject(), shortLength);
+            }
+            finally
+            {
+                this.channelLock.Release();
+            }
+        }
+        finally
+        {
+            pinnedBuffer.Free();
+        }
+
+        if (writeResult != IOReturn.Success)
+        {
+            Debug.Print("send error: {0}", writeResult.ToDebugString());
+            throw new JsonRpc2Exception(JsonRpc2Error.InternalError("send encountered an error"));
+        }
+
+        return shortLength;
     }
 
     private void RfcommDelegate_RfcommChannelData(object sender, RfcommChannelDataEventArgs e)
