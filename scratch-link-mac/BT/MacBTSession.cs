@@ -177,6 +177,6 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             return;
         }
 
-        await this.OnDeviceFound(e.Device, e.Device.Address, e.Device.NameOrAddress, e.Device.Rssi);
+        await this.OnPeripheralDiscovered(e.Device, e.Device.Address, e.Device.NameOrAddress, e.Device.Rssi);
     }
 }

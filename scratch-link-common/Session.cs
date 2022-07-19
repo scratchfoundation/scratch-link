@@ -26,9 +26,9 @@ using JsonRpcMethodHandler = System.Func<
 using RequestId = System.UInt32;
 
 /// <summary>
-/// Base class for Scratch Link sessions. One session can search for, connect to, and interact with one peripheral device.
+/// Base class for Scratch Link sessions.
 /// </summary>
-internal class Session : IDisposable
+public class Session : IDisposable
 {
     /// <summary>
     /// Specifies the Scratch Link network protocol version. Note that this is not the application version.

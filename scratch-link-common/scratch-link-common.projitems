@@ -29,5 +29,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)SessionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebSocketListener.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\SemaphoreSlimExtensions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PeripheralSession.cs" />
   </ItemGroup>
 </Project>

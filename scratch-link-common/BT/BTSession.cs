@@ -16,17 +16,14 @@ using ScratchLink.JsonRpc;
 /// <summary>
 /// Implements the cross-platform portions of a Bluetooth Classic (RFCOMM) session.
 /// </summary>
-/// <typeparam name="TDevice">Platform-specific device reference. Used to make a device connection.</typeparam>
-/// <typeparam name="TDeviceId">Platform-specific device address. Used for tracking device discovery records.</typeparam>
-internal abstract class BTSession<TDevice, TDeviceId> : Session
+/// <inheritdoc cref="PeripheralSession{TPeripheral, TPeripheralAddress}"/>
+internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralSession<TPeripheral, TPeripheralAddress>
+    where TPeripheral : class
 {
     /// <summary>
     /// PIN code for auto-pairing.
     /// </summary>
     protected const string AutoPairingCode = "0000";
-
-    private readonly Dictionary<TDeviceId, string> deviceIdToString = new ();
-    private readonly Dictionary<string, TDevice> availableDevices = new ();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BTSession{TDevice, TDeviceId}"/> class.
@@ -59,7 +56,7 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
             throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("majorDeviceClass and minorDeviceClass required"));
         }
 
-        this.availableDevices.Clear();
+        this.ClearPeripherals();
         return this.DoDiscover((byte)majorDeviceClass, (byte)minorDeviceClass);
     }
 
@@ -70,39 +67,6 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
     /// <param name="minorDeviceClass">Discover peripherals with this minor device class.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected abstract Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass);
-
-    /// <summary>
-    /// Implement the JSON-RPC "connect" request to connect to a particular peripheral.
-    /// Valid in the discovery state; transitions to connected state on success.
-    /// </summary>
-    /// <param name="methodName">The name of the method being called ("connect").</param>
-    /// <param name="args">
-    /// A JSON object containing the ID of a peripheral found by the most recent discovery request.
-    /// </param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected Task<object> HandleConnect(string methodName, JsonElement? args)
-    {
-        var peripheralId = args?.TryGetProperty("peripheralId")?.GetString();
-
-        if (peripheralId == null)
-        {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("peripheralId required"));
-        }
-
-        if (!this.availableDevices.TryGetValue(peripheralId, out var device))
-        {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidRequest(string.Format("Device {0} not available for connection", peripheralId)));
-        }
-
-        return this.DoConnect(device);
-    }
-
-    /// <summary>
-    /// Platform-specific implementation for connecting to a peripheral device.
-    /// </summary>
-    /// <param name="device">The requested device.</param>
-    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected abstract Task<object> DoConnect(TDevice device);
 
     /// <summary>
     /// Implement the JSON-RPC "send" request to send data to the connected peripheral.
@@ -148,15 +112,14 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
     /// <summary>
     /// Track a discovered device and report it to the client.
     /// </summary>
-    /// <param name="device">The platform-specific device reference or record.</param>
-    /// <param name="deviceId">The internal system address of this device.</param>
+    /// <param name="peripheral">The platform-specific device reference or record.</param>
+    /// <param name="peripheralAddress">The internal system address of this device.</param>
     /// <param name="displayName">A user-friendly name, if possible.</param>
     /// <param name="rssi">A relative signal strength indicator.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    protected async Task OnDeviceFound(TDevice device, TDeviceId deviceId, string displayName, int rssi)
+    protected async Task OnPeripheralDiscovered(TPeripheral peripheral, TPeripheralAddress peripheralAddress, string displayName, int rssi)
     {
-        var peripheralId = this.GetPeripheralId(deviceId);
-        this.availableDevices[peripheralId] = device;
+        var peripheralId = this.RegisterPeripheral(peripheral, peripheralAddress);
 
         var message = new BTPeripheralDiscovered
         {
@@ -165,17 +128,6 @@ internal abstract class BTSession<TDevice, TDeviceId> : Session
             RSSI = rssi,
         };
         await this.SendRequest("didDiscoverPeripheral", message, this.CancellationToken);
-    }
-
-    private string GetPeripheralId(TDeviceId deviceId)
-    {
-        if (!this.deviceIdToString.TryGetValue(deviceId, out var peripheralId))
-        {
-            peripheralId = Guid.NewGuid().ToString();
-            this.deviceIdToString[deviceId] = peripheralId;
-        }
-
-        return peripheralId;
     }
 
     /// <summary>
