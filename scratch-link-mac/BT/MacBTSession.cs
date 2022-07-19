@@ -67,7 +67,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (inquiryStatus != IOReturn.Success)
         {
             Debug.Print("Failed to start inquiry: {0}", inquiryStatus.ToDebugString());
-            throw new JsonRpc2Exception(JsonRpc2Error.ServerError(-32500, "Device inquiry failed to start"));
+            throw JsonRpc2Error.ServerError(-32500, "Device inquiry failed to start").ToException();
         }
 
         return Task.FromResult<object>(null);
@@ -99,7 +99,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (openChannelResult.Error != IOReturn.Success)
         {
             Debug.Print("Opening RFCOMM channel failed: {0}", openChannelResult.Error.ToDebugString());
-            throw new JsonRpc2Exception(JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel."));
+            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
         }
 
         // Connect is done already; don't wait for this run loop / session to complete.
@@ -128,7 +128,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         ushort shortLength = (ushort)buffer.Length;
         if (shortLength != buffer.Length)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("buffer too big to send"));
+            throw JsonRpc2Error.InvalidParams("buffer too big to send").ToException();
         }
 
         IOReturn writeResult;
@@ -150,7 +150,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (writeResult != IOReturn.Success)
         {
             Debug.Print("send error: {0}", writeResult.ToDebugString());
-            throw new JsonRpc2Exception(JsonRpc2Error.InternalError("send encountered an error"));
+            throw JsonRpc2Error.InternalError("send encountered an error").ToException();
         }
 
         return shortLength;

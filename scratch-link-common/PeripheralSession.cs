@@ -50,14 +50,14 @@ public abstract class PeripheralSession<TPeripheral, TPeripheralAddress> : Sessi
 
         if (peripheralId == null)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("connect request must include peripheralId"));
+            throw JsonRpc2Error.InvalidParams("connect request must include peripheralId").ToException();
         }
 
         var peripheral = this.GetPeripheral(peripheralId);
 
         if (peripheral == null)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidRequest(string.Format("peripheral {0} not available for connection", peripheralId)));
+            throw JsonRpc2Error.InvalidRequest(string.Format("peripheral {0} not available for connection", peripheralId)).ToException();
         }
 
         return await this.DoConnect(peripheral);

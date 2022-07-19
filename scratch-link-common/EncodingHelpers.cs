@@ -30,7 +30,7 @@ public static class EncodingHelpers
     {
         if (!jsonBuffer.TryGetProperty("message", out var jsonMessage) || jsonMessage.ValueKind != JsonValueKind.String)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("missing or invalid 'message' property"));
+            throw JsonRpc2Error.InvalidParams("missing or invalid 'message' property").ToException();
         }
 
         jsonBuffer.TryGetProperty("encoding", out var encoding);
@@ -42,7 +42,7 @@ public static class EncodingHelpers
                 return messageBytes;
             }
 
-            throw new JsonRpc2Exception(JsonRpc2Error.ParseError("failed to parse base64 message"));
+            throw JsonRpc2Error.ParseError("failed to parse base64 message").ToException();
         }
         else if (encoding.ValueKind == JsonValueKind.Undefined || encoding.ValueKind == JsonValueKind.Null)
         {
@@ -50,7 +50,7 @@ public static class EncodingHelpers
             return Encoding.UTF8.GetBytes(jsonMessage.GetString());
         }
 
-        throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}"));
+        throw JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}").ToException();
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public static class EncodingHelpers
             case null:
                 return Encoding.UTF8.GetString(data);
             default:
-                throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}"));
+                throw JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}").ToException();
         }
     }
 }

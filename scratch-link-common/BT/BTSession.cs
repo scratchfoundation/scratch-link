@@ -53,7 +53,7 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
 
         if (majorDeviceClass == null || minorDeviceClass == null)
         {
-            throw new JsonRpc2Exception(JsonRpc2Error.InvalidParams("majorDeviceClass and minorDeviceClass required"));
+            throw JsonRpc2Error.InvalidParams("majorDeviceClass and minorDeviceClass required").ToException();
         }
 
         this.ClearPeripherals();
