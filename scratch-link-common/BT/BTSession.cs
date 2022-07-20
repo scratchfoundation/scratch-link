@@ -169,7 +169,7 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
         /// <summary>
         /// Gets or sets the message content, encoded as specified in the <see cref="Encoding"/> property.
         /// </summary>
-        [JsonPropertyName("messsage")]
+        [JsonPropertyName("message")]
         public string Message { get; set; }
     }
 }
