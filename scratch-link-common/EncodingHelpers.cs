@@ -7,6 +7,7 @@ namespace ScratchLink;
 using System;
 using System.Text;
 using System.Text.Json;
+using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 
 /// <summary>
@@ -33,9 +34,9 @@ public static class EncodingHelpers
             throw JsonRpc2Error.InvalidParams("missing or invalid 'message' property").ToException();
         }
 
-        jsonBuffer.TryGetProperty("encoding", out var encoding);
+        var encoding = jsonBuffer.TryGetProperty("encoding")?.GetString();
 
-        if (encoding.ValueEquals("base64"))
+        if (encoding == "base64")
         {
             if (jsonMessage.TryGetBytesFromBase64(out var messageBytes))
             {
@@ -44,7 +45,7 @@ public static class EncodingHelpers
 
             throw JsonRpc2Error.ParseError("failed to parse base64 message").ToException();
         }
-        else if (encoding.ValueKind == JsonValueKind.Undefined || encoding.ValueKind == JsonValueKind.Null)
+        else if (encoding == null)
         {
             // message is a Unicode string with no additional encoding
             return Encoding.UTF8.GetBytes(jsonMessage.GetString());
