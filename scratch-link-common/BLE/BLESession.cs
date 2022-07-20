@@ -200,7 +200,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
 
         var endpoint = await this.GetEndpoint("write", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeWrites);
         var buffer = EncodingHelpers.DecodeBuffer((JsonElement)args);
-        var withResponse = args?.TryGetProperty("withResponse", out var jsonWithResponse) == true ? jsonWithResponse.IsTruthy() : (bool?)null;
+        var withResponse = args?.TryGetProperty("withResponse")?.IsTruthy();
 
         var bytesWritten = await endpoint.Write(buffer, withResponse, this.CancellationToken);
 
@@ -223,11 +223,11 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
             throw JsonRpc2Error.InvalidParams("required parameter missing").ToException();
         }
 
-        var startNotifications = args?.TryGetProperty("startNotifications", out var jsonStartNotifications) == true && jsonStartNotifications.GetBoolean();
+        var startNotifications = args?.TryGetProperty("startNotifications")?.IsTruthy() ?? false;
         var endpoint = await this.GetEndpoint("read", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
 
         // TODO: add a way for the client to ask for plaintext instead of base64
-        var encoding = args?.TryGetProperty("encoding", out var jsonEncoding) == true ? jsonEncoding.GetString() : "base64";
+        var encoding = args?.TryGetProperty("encoding")?.GetString() ?? "base64";
 
         var bytes = await endpoint.Read(this.CancellationToken);
 
@@ -255,7 +255,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
         var endpoint = await this.GetEndpoint("startNotifications", (JsonElement)args, GattHelpers<TUUID>.BlockListStatus.ExcludeReads);
 
         // TODO: add a way for the client to ask for plaintext instead of base64
-        var encoding = args?.TryGetProperty("encoding", out var jsonEncoding) == true ? jsonEncoding.GetString() : "base64";
+        var encoding = args?.TryGetProperty("encoding")?.GetString() ?? "base64";
 
         // check that the encoding is valid (and throw if not) before setting up the notification
         _ = EncodingHelpers.EncodeBuffer(Array.Empty<byte>(), encoding);
