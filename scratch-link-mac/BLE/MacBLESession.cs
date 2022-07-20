@@ -165,12 +165,14 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         this.connectedPeripheral.ModifiedServices += (o, e) => Debug.Print("ModifiedServices");
         this.connectedPeripheral.RssiRead += (o, e) => Debug.Print("RssiRead");
         this.connectedPeripheral.RssiUpdated += (o, e) => Debug.Print("RssiUpdated");
-        this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Debug.Print("UpdatedCharacterteristicValue");
         this.connectedPeripheral.UpdatedName += (o, e) => Debug.Print("UpdatedName");
         this.connectedPeripheral.UpdatedNotificationState += (o, e) => Debug.Print("UpdatedNotificationState");
         this.connectedPeripheral.UpdatedValue += (o, e) => Debug.Print("UpdatedValue");
         this.connectedPeripheral.WroteCharacteristicValue += (o, e) => Debug.Print("WroteCharacteristicValue");
         this.connectedPeripheral.WroteDescriptorValue += (o, e) => Debug.Print("WroteDescriptorValue");
+
+        // this one is especially noisy
+        // this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Debug.Print("UpdatedCharacterteristicValue");
 #endif
 
         // wait for the connection to complete
