@@ -95,7 +95,22 @@ public class AppDelegate : NSApplicationDelegate
     [Action(VersionItemSelected)]
     private void OnVersionItemSelected(NSObject sender)
     {
-        Debug.Print("todo: copy version info to clipboard");
+        var versionDetailLines = new[]
+        {
+            $"{BundleInfo.Title} {BundleInfo.Version} {BundleInfo.VersionDetail}",
+            $"macOS {NSProcessInfo.ProcessInfo.OperatingSystemVersionString}",
+        };
+        var versionDetails = string.Join('\n', versionDetailLines);
+
+        NSPasteboard.GeneralPasteboard.ClearContents();
+        NSPasteboard.GeneralPasteboard.SetStringForType(versionDetails, NSPasteboard.NSStringType);
+
+        var notification = new NSUserNotification()
+        {
+            Title = "Version information copied to clipboard",
+            InformativeText = versionDetails,
+        };
+        NSUserNotificationCenter.DefaultUserNotificationCenter.DeliverNotification(notification);
     }
 
     [Action(QuitItemSelected)]
