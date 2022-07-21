@@ -80,10 +80,6 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AppDelegate.cs" />
-    <Compile Include="ViewController.cs" />
-    <Compile Include="ViewController.designer.cs">
-      <DependentUpon>ViewController.cs</DependentUpon>
-    </Compile>
     <Compile Include="BLE\MacGattHelpers.cs" />
     <Compile Include="BLE\MacBLESession.cs" />
     <Compile Include="BLE\MacBLEEndpoint.cs" />
@@ -97,9 +93,6 @@
     <Compile Include="IOReturn.cs" />
     <Compile Include="MacSessionManager.cs" />
     <Compile Include="BundleInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <InterfaceDefinition Include="Main.storyboard" />
   </ItemGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />

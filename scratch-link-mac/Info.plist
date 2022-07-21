@@ -24,13 +24,13 @@
 	<string>${AuthorCopyright:HtmlEncode}</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>NSMainStoryboardFile</key>
-	<string>Main</string>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/AppIcon.appiconset</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>TODO: Info.plist NSBluetoothPeripheralUsageDescription</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>TODO: Info.plist NSBluetoothAlwaysUsageDescription</string>
+	<key>LSUIElement</key>
+	<true/>
 </dict>
 </plist>
