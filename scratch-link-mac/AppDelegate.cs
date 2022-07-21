@@ -5,6 +5,7 @@
 namespace ScratchLink.Mac;
 
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using AppKit;
 using CoreBluetooth;
@@ -18,21 +19,12 @@ using ScratchLink.Mac.BLE;
 [Register("AppDelegate")]
 public class AppDelegate : NSApplicationDelegate
 {
-    private readonly Selector onVersionItemSelector;
-    private readonly Selector onQuitSelector;
+    private const string VersionItemSelected = "versionItemSelected:";
+    private const string QuitItemSelected = "quitItemSelected:";
 
     private NSStatusItem statusBarItem;
 
     private ScratchLinkApp app;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AppDelegate"/> class.
-    /// </summary>
-    public AppDelegate()
-    {
-        this.onVersionItemSelector = this.ConnectMethodToSelector(this.OnVersionItemSelected, "onVersionItemSelected");
-        this.onQuitSelector = this.ConnectMethodToSelector(this.OnQuitSelected, "onQuitSelected");
-    }
 
     /// <summary>
     /// Called when the app's initialization is complete but it hasn't received its first event.
@@ -61,24 +53,15 @@ public class AppDelegate : NSApplicationDelegate
         this.app.Quit();
     }
 
-    private Selector ConnectMethodToSelector(Action action, string selectorName)
-    {
-        var asDelegate = action as Delegate;
-        var methodInfo = asDelegate.Method;
-        var selector = new Selector(selectorName);
-        Runtime.ConnectMethod(methodInfo, selector);
-        return selector;
-    }
-
     private NSStatusItem BuildStatusBarItem()
     {
         var appTitle = BundleInfo.Title;
         var appVersion = BundleInfo.Version;
 
         var menu = new NSMenu(appTitle);
-        menu.AddItem($"{appTitle} {appVersion}", this.onVersionItemSelector, string.Empty);
+        menu.AddItem($"{appTitle} {appVersion}", new Selector(VersionItemSelected), string.Empty);
         menu.AddItem(NSMenuItem.SeparatorItem);
-        menu.AddItem("Quit", this.onQuitSelector, "q");
+        menu.AddItem("Quit", new Selector(QuitItemSelected), "q");
 
         var statusBarItem = NSStatusBar.SystemStatusBar.CreateStatusItem(NSStatusItemLength.Square);
         var button = statusBarItem.Button;
@@ -108,12 +91,14 @@ public class AppDelegate : NSApplicationDelegate
         return NSImage.ImageNamed(NSImageName.Caution);
     }
 
-    private void OnVersionItemSelected()
+    [Action(VersionItemSelected)]
+    private void OnVersionItemSelected(NSObject sender)
     {
-        // todo
+        Debug.Print("todo: copy version info to clipboard");
     }
 
-    private void OnQuitSelected()
+    [Action(QuitItemSelected)]
+    private void OnQuitSelected(NSObject sender)
     {
         // todo: actually terminate the app
         // if doing so causes WillTerminate() to be called, remove this Quit() call.
