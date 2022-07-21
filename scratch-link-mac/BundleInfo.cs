@@ -26,7 +26,7 @@ public static class BundleInfo
     public static string Version => GetMainBundleInfoString("CFBundleVersion") ?? defaultVersion;
 
     /// <summary>
-    /// Gets a detailed version string for the app, as specified in the main bundle's <c>ScratchVersionDetail</c> property.
+    /// Gets a string containing additional version detail for the app, as specified in the main bundle's <c>ScratchVersionDetail</c> property.
     /// </summary>
     public static string VersionDetail
     {
