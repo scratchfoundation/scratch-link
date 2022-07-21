@@ -123,7 +123,7 @@ public class Session : IDisposable
     /// <summary>
     /// End this session. This will cause Run() to finish, and Run()'s caller should then Dispose() of this instance.
     /// </summary>
-    protected void EndSession()
+    public void EndSession()
     {
         this.webSocket.Close();
     }

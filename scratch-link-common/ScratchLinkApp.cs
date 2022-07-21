@@ -55,6 +55,15 @@ public class ScratchLinkApp
     }
 
     /// <summary>
+    /// Quit the app.
+    /// </summary>
+    public void Quit()
+    {
+        this.webSocketListener.Stop();
+        this.sessionManager.EndAllSessions();
+    }
+
+    /// <summary>
     /// Builds a Scratch Link app instance.
     /// Fills the role of the .NET generic host or <c>MauiAppBuilder</c>.
     /// </summary>
