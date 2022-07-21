@@ -68,6 +68,17 @@
     <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-512.png" />
     <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-512%402x.png" />
     <ImageAsset Include="Assets.xcassets\Contents.json" />
+    <ImageAsset Include="Assets.xcassets\.DS_Store" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_128x128.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_128x128%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_16x16.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_16x16%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_256x256.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_256x256%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_32x32.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_32x32%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_512x512.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_512x512%402x.png" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
@@ -75,6 +86,7 @@
   <ItemGroup>
     <None Include="Info.plist" />
     <None Include="Entitlements.plist" />
+    <None Include="Makefile" />
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
@@ -89,10 +101,10 @@
     <Compile Include="BT\Rfcomm\RfcommChannelEventArgs.cs" />
     <Compile Include="BT\Rfcomm\RfcommChannelOpenCompleteEventArgs.cs" />
     <Compile Include="BT\Rfcomm\RfcommChannelWriteCompleteEventArgs.cs" />
+    <Compile Include="BundleInfo.cs" />
     <Compile Include="Extensions\NSExtensions.cs" />
     <Compile Include="IOReturn.cs" />
     <Compile Include="MacSessionManager.cs" />
-    <Compile Include="BundleInfo.cs" />
   </ItemGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />

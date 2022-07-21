@@ -67,6 +67,7 @@ public class AppDelegate : NSApplicationDelegate
         var button = statusBarItem.Button;
         button.ImageScaling = NSImageScale.ProportionallyUpOrDown;
         button.Image = this.GetAppIcon();
+        button.Image.Template = true;
         statusBarItem.Menu = menu;
 
         return statusBarItem;
@@ -76,7 +77,7 @@ public class AppDelegate : NSApplicationDelegate
     {
         try
         {
-            var statusBarIcon = NSImage.ImageNamed("iconTemplate");
+            var statusBarIcon = NSImage.ImageNamed("StatusBarIcon");
             if (statusBarIcon != null)
             {
                 return statusBarIcon;
