@@ -96,6 +96,7 @@
     <Compile Include="Extensions\NSExtensions.cs" />
     <Compile Include="IOReturn.cs" />
     <Compile Include="MacSessionManager.cs" />
+    <Compile Include="BundleInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Main.storyboard" />

@@ -6,6 +6,8 @@ namespace ScratchLink;
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Fleck;
 
@@ -30,26 +32,47 @@ internal abstract class SessionManager
     public int ActiveSessionCount { get => this.sessions.Count; }
 
     /// <summary>
+    /// Close all currently-active sessions.
+    /// </summary>
+    public void EndAllSessions()
+    {
+        // shallow-copy the session list since it will change as sessions close
+        var allCurrentSessions = this.sessions.Keys.Select(session => session);
+
+        foreach (var session in allCurrentSessions)
+        {
+            session.EndSession();
+        }
+    }
+
+    /// <summary>
     /// Call this with a new connection context to ask the SessionManager to build and manage a session for it.
     /// </summary>
     /// <param name="webSocket">The WebSocket which the SessionManager should adopt and connect to a session.</param>
-    public void ClientDidConnect(IWebSocketConnection webSocket)
+    public async void ClientDidConnect(IWebSocketConnection webSocket)
     {
-        Task.Run(async () =>
+        using var session = this.MakeNewSession(webSocket);
+        if (!this.sessions.TryAdd(session, true))
         {
-            using var session = this.MakeNewSession(webSocket);
-            this.sessions.TryAdd(session, true);
-            this.ActiveSessionCountChanged?.Invoke(this, EventArgs.Empty);
-            try
+            throw new ApplicationException("Failed to add session to session manager.");
+        }
+
+        this.ActiveSessionCountChanged?.Invoke(this, EventArgs.Empty);
+        try
+        {
+            await session.Run();
+        }
+        finally
+        {
+            if (this.sessions.TryRemove(session, out _))
             {
-                await session.Run();
-            }
-            finally
-            {
-                this.sessions.TryRemove(session, out _);
                 this.ActiveSessionCountChanged?.Invoke(this, EventArgs.Empty);
             }
-        });
+            else
+            {
+                Debug.Print("Failed to remove session from session manager");
+            }
+        }
     }
 
     /// <summary>
