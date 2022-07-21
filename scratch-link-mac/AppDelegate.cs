@@ -101,8 +101,7 @@ public class AppDelegate : NSApplicationDelegate
     [Action(QuitItemSelected)]
     private void OnQuitSelected(NSObject sender)
     {
-        // todo: actually terminate the app
-        // if doing so causes WillTerminate() to be called, remove this Quit() call.
-        this.app.Quit();
+        // this will cause WillTerminate to run
+        NSApplication.SharedApplication.Terminate(sender);
     }
 }
