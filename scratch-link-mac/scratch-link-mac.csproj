@@ -46,9 +46,11 @@
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
-    <LinkMode>SdkOnly</LinkMode>
+    <LinkMode>Full</LinkMode>
     <HttpClientHandler></HttpClientHandler>
     <LangVersion>10.0</LangVersion>
+    <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
+    <EnableSGenConc>true</EnableSGenConc>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
