@@ -9,24 +9,27 @@ jobs:
       - restore_cache:
           keys:
             - homebrew-v1-
-      - run: brew install dotnet-sdk
+      - run:
+          name: Install Homebrew packages
+          command: |
+            export HOMEBREW_NO_AUTO_UPDATE=1
+            brew tap homebrew/cask-versions
+            brew install visual-studio jq
       - save_cache:
           key: homebrew-v1-default
           paths:
             - /Users/distiller/Library/Caches/Homebrew
             - /usr/local/Homebrew
       - run:
-          name: Install .NET workloads
-          command: sudo dotnet workload restore
-          # working_directory should be unnecessary but there's currently a bug with solution items
-          working_directory: scratch-link
+          name: Install Visual Studio for Mac
+          command: ./.circleci/install-vs-mac.sh
       - run:
           name: Restore NuGet dependencies
-          command: dotnet restore
+          command: msbuild -t:Restore scratch-link-mac/scratch-link-mac.csproj
       - run:
-          name: Build for MacCatalyst
-          # TODO: switch from Debug to Release before actual release
-          command: dotnet build -c Debug -f net6.0-maccatalyst
+          name: Build for Mac
+          command: |
+            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:Release "${PWD}/scratch-link.sln"
       - run:
           name: Zip the app
           command: |
