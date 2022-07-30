@@ -36,7 +36,7 @@ jobs:
             - /etc/paths.d/mono-commands
       - run:
           name: Restore NuGet dependencies
-          command: msbuild -t:Restore scratch-link-mac/scratch-link-mac.csproj
+          command: msbuild -t:Restore -p:Configuration=Release scratch-link.sln
       - run:
           name: Build for Mac
           command: |
