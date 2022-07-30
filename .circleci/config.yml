@@ -8,21 +8,32 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - homebrew-v1-
+            - visual-studio-mac-v2
       - run:
-          name: Install Homebrew packages
+          name: Install Visual Studio for Mac (if necessary)
           command: |
-            export HOMEBREW_NO_AUTO_UPDATE=1
-            brew tap homebrew/cask-versions
-            brew install visual-studio jq
+            if [ ! -d "/Applications/Visual Studio.app" -o \
+                 ! -d "/Applications/Xamarin Profiler.app" -o \
+                 ! -d "/Library/Frameworks/Mono.framework" -o \
+                 ! -d "/Library/Frameworks/Xamarin.Mac.framework" -o \
+                 ! -d "/usr/local/share/dotnet" \
+            ]; then
+              export HOMEBREW_NO_AUTO_UPDATE=1
+              brew tap homebrew/cask-versions
+              brew install visual-studio jq
+              ./.circleci/install-vs-mac.sh
+            fi
       - save_cache:
-          key: homebrew-v1-default
+          key: visual-studio-mac-v2
           paths:
-            - /Users/distiller/Library/Caches/Homebrew
-            - /usr/local/Homebrew
-      - run:
-          name: Install Visual Studio for Mac
-          command: ./.circleci/install-vs-mac.sh
+            - /Applications/Visual Studio.app
+            - /Applications/Xamarin Profiler.app
+            - /Library/Frameworks/Mono.framework
+            - /Library/Frameworks/Xamarin.Mac.framework
+            - /usr/local/share/dotnet
+            - /etc/paths.d/dotnet
+            - /etc/paths.d/dotnet-cli-tools
+            - /etc/paths.d/mono-commands
       - run:
           name: Restore NuGet dependencies
           command: msbuild -t:Restore scratch-link-mac/scratch-link-mac.csproj
