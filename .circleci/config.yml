@@ -8,32 +8,36 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - visual-studio-mac-v2
+            - visual-studio-mac-v3
       - run:
-          name: Install Visual Studio for Mac (if necessary)
+          name: Install/Extract Visual Studio for Mac
           command: |
-            if [ ! -d "/Applications/Visual Studio.app" -o \
-                 ! -d "/Applications/Xamarin Profiler.app" -o \
-                 ! -d "/Library/Frameworks/Mono.framework" -o \
-                 ! -d "/Library/Frameworks/Xamarin.Mac.framework" -o \
-                 ! -d "/usr/local/share/dotnet" \
-            ]; then
+            # CACHE_ARCHIVE must match the path in save_cache
+            CACHE_ARCHIVE="/tmp/visual-studio-mac-v3.tar.gz"
+            if [ -f "$CACHE_ARCHIVE" ]; then
+              echo "Cache found. Extracting..."
+              sudo tar -x -C / -P -p --mac-metadata --totals -v -f "$CACHE_ARCHIVE"
+            else
+              echo "Cache not found. Installing..."
               export HOMEBREW_NO_AUTO_UPDATE=1
               brew tap homebrew/cask-versions
               brew install visual-studio jq
               ./.circleci/install-vs-mac.sh
+              echo "Caching for next time..."
+              sudo tar -c -a -C / -P -p --mac-metadata --totals -v -f "$CACHE_ARCHIVE" \
+                "/Applications/Visual Studio.app" \
+                "/Applications/Xamarin Profiler.app" \
+                "/Library/Frameworks/Mono.framework" \
+                "/Library/Frameworks/Xamarin.Mac.framework" \
+                "/usr/local/share/dotnet" \
+                "/etc/paths.d/dotnet" \
+                "/etc/paths.d/dotnet-cli-tools" \
+                "/etc/paths.d/mono-commands"
             fi
       - save_cache:
-          key: visual-studio-mac-v2
-          paths:
-            - /Applications/Visual Studio.app
-            - /Applications/Xamarin Profiler.app
-            - /Library/Frameworks/Mono.framework
-            - /Library/Frameworks/Xamarin.Mac.framework
-            - /usr/local/share/dotnet
-            - /etc/paths.d/dotnet
-            - /etc/paths.d/dotnet-cli-tools
-            - /etc/paths.d/mono-commands
+          key: visual-studio-mac-v3
+          paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
+            - /tmp/visual-studio-mac-v3.tar.gz
       - run:
           name: Restore NuGet dependencies
           command: msbuild -t:Restore -p:Configuration=Release scratch-link.sln
