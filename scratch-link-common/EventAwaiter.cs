@@ -147,16 +147,32 @@ public class EventAwaiter<T> : IDisposable
     /// <param name="timeout">How long to wait for the event. If the timeout expires the Task will throw a <see cref="TimeoutException"/>.</param>
     /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>A Task which will return the args passed to the event when it triggers.</returns>
-    public ValueTask<T> MakeTask(TimeSpan timeout, CancellationToken cancellationToken)
+    public async ValueTask<T> MakeTask(TimeSpan timeout, CancellationToken cancellationToken)
     {
-        // localCancellationSource is canceled on cleanup and should not affect the task results.
+        // timeoutCancellationSource should only affect the task results on timeout, not when it is disposed.
         // If cancellationToken is cancelled it happed externally and should mark the task as canceled.
-        var localCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        localCancellationSource.CancelAfter(timeout);
+        using var timeoutCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCancellationSource.CancelAfter(timeout);
 
-        var localCancellationToken = localCancellationSource.Token;
+        var localCancellationToken = timeoutCancellationSource.Token;
 
-        return this.events.Reader.ReadAsync(localCancellationToken);
+        T result;
+
+        try
+        {
+            result = await this.events.Reader.ReadAsync(localCancellationToken);
+        }
+        catch (OperationCanceledException e)
+        {
+            if (timeoutCancellationSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException();
+            }
+
+            throw e;
+        }
+
+        return result;
     }
 
     /// <summary>
