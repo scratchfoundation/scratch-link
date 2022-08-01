@@ -45,13 +45,15 @@ jobs:
           name: Build for Mac
           command: |
             "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:Release "${PWD}/scratch-link.sln"
+            mkdir -p Artifacts
+            cp -v scratch-link-mac/bin/Release/"Scratch Link"-*.pkg Artifacts/
       - run:
-          name: Zip the app
+          name: Zip the bare app
           command: |
             mkdir -p Artifacts
-            cd scratch-link/bin/Debug/net6.0-maccatalyst/*/*.app/..
+            cd scratch-link-mac/bin/Release/
             ditto -v -c -k --sequesterRsrc --keepParent --zlibCompressionLevel 9 \
-              scratch-link.app ../../../../../Artifacts/scratch-link-mac.zip
+              "Scratch Link.app" ../../../Artifacts/scratch-link-mac.zip
       - store_artifacts:
           path: Artifacts/
 workflows:
