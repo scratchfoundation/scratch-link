@@ -5,6 +5,7 @@
 namespace ScratchLink.Mac;
 
 using Fleck;
+using Foundation;
 using ScratchLink.Mac.BLE;
 using ScratchLink.Mac.BT;
 
@@ -13,6 +14,17 @@ using ScratchLink.Mac.BT;
 /// </summary>
 internal class MacSessionManager : SessionManager
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MacSessionManager"/> class.
+    /// This is only present to told the [Preserve] attribute, which tells the Xamarin linker that
+    /// this method will be used in some way that it otherwise would miss.
+    /// </summary>
+    /// <seealso cref="ScratchLinkApp.Builder.Build"/>
+    [Preserve]
+    public MacSessionManager()
+    {
+    }
+
     /// <inheritdoc/>
     protected override Session MakeNewSession(IWebSocketConnection webSocket)
     {
