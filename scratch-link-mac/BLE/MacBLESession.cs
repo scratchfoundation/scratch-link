@@ -65,7 +65,11 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         this.CancellationToken.Register(() =>
         {
             this.cbManager.StopScan();
-            this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
+            if (this.connectedPeripheral != null)
+            {
+                this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
+                this.connectedPeripheral = null;
+            }
         });
     }
 

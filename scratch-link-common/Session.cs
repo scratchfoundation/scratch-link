@@ -481,9 +481,22 @@ public class Session : IDisposable
 
     private async Task SocketSend(string message, CancellationToken cancellationToken)
     {
-        using (await this.websocketSendLock.WaitDisposableAsync(cancellationToken))
+        try
         {
-            await this.webSocket.Send(message);
+            using (await this.websocketSendLock.WaitDisposableAsync(cancellationToken))
+            {
+                if (this.webSocket.IsAvailable)
+                {
+                    await this.webSocket.Send(message);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // This might mean the socked closed unexpectedly, or it could mean that it was closed
+            // intentionally and a notification just happened to come in before it fully shut down.
+            // That happens frequently with BLE change notifications.
+            Debug.Print("Failed to send a message to a socket.");
         }
     }
 

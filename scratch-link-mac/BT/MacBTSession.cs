@@ -78,28 +78,41 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     {
         this.inquiry.Stop();
 
+        Debug.Print("Attempting to connect to BT device with address={0}", device.AddressString);
+
         var rfcommDelegate = new RfcommChannelEventDelegate();
+
+#if DEBUG
+        rfcommDelegate.RfcommChannelClosedEvent += (o, e) => Debug.Print("RfcommChannelClosedEvent on channel {0}", e.Channel.ChannelID);
+        rfcommDelegate.RfcommChannelControlSignalsChangedEvent += (o, e) => Debug.Print("RfcommChannelControlSignalsChangedEvent on channel {0}", e.Channel.ChannelID);
+        rfcommDelegate.RfcommChannelDataEvent += (o, e) => Debug.Print("RfcommChannelDataEvent on channel {0} with length {1}", e.Channel.ChannelID, e.Data.Length);
+        rfcommDelegate.RfcommChannelFlowControlChangedEvent += (o, e) => Debug.Print("RfcommChannelFlowControlChangedEvent on channel {0}", e.Channel.ChannelID);
+        rfcommDelegate.RfcommChannelOpenCompleteEvent += (o, e) => Debug.Print("RfcommChannelOpenCompleteEvent on channel {0} with error={1}", e.Channel.ChannelID, e.Error);
+        rfcommDelegate.RfcommChannelQueueSpaceAvailableEvent += (o, e) => Debug.Print("RfcommChannelQueueSpaceAvailableEvent on channel {0}", e.Channel.ChannelID);
+        rfcommDelegate.RfcommChannelWriteCompleteEvent += (o, e) => Debug.Print("RfcommChannelWriteCompleteEvent on channel {0} with error={1}", e.Channel.ChannelID, e.Error);
+#endif
+
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
 
-        var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
-            h => rfcommDelegate.RfcommChannelOpenCompleteEvent += h,
-            h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
-            TimeSpan.FromSeconds(15),
-            this.CancellationToken,
-            async () =>
-            {
-                // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
-                // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
-                using (await this.channelLock.WaitDisposableAsync())
-                {
-                    device.OpenRfcommChannelSync(out this.connectedChannel, 1, rfcommDelegate);
-                }
-            });
-
-        if (openChannelResult.Error != IOReturn.Success)
+        using (await this.channelLock.WaitDisposableAsync())
         {
-            Debug.Print("Opening RFCOMM channel failed: {0}", openChannelResult.Error.ToDebugString());
-            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
+            var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
+                h => rfcommDelegate.RfcommChannelOpenCompleteEvent += h,
+                h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
+                TimeSpan.FromSeconds(30),
+                this.CancellationToken,
+                () =>
+                {
+                    // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
+                    // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
+                    device.OpenRfcommChannelSync(out this.connectedChannel, 1, rfcommDelegate.Self);
+                });
+
+            if (openChannelResult.Error != IOReturn.Success)
+            {
+                Debug.Print("Opening RFCOMM channel failed: {0}", openChannelResult.Error.ToDebugString());
+                throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
+            }
         }
 
         // Connect is done already; don't wait for this run loop / session to complete.
