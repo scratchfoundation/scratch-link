@@ -48,7 +48,7 @@
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
-    <LinkMode>Full</LinkMode>
+    <LinkMode>SdkOnly</LinkMode>
     <HttpClientHandler></HttpClientHandler>
     <LangVersion>10.0</LangVersion>
     <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
@@ -72,7 +72,7 @@
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
-    <LinkMode>Full</LinkMode>
+    <LinkMode>SdkOnly</LinkMode>
     <HttpClientHandler></HttpClientHandler>
     <LangVersion>10.0</LangVersion>
     <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
@@ -98,7 +98,7 @@
     <UseSGen>true</UseSGen>
     <UseRefCounting>true</UseRefCounting>
     <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
-    <LinkMode>Full</LinkMode>
+    <LinkMode>SdkOnly</LinkMode>
     <HttpClientHandler></HttpClientHandler>
     <LangVersion>10.0</LangVersion>
     <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
