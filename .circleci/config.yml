@@ -1,11 +1,53 @@
 version: 2.1
 
+alias_anchors: # anchors must be defined in YAML before being used by an alias
+  - &should_sign
+    or:
+      - equal: [ develop, << pipeline.git.branch >> ]
+      - equal: [ main, << pipeline.git.branch >> ]
+      - equal: [ master, << pipeline.git.branch >> ]
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-mac:
+          context: scratch-desktop-and-link
 jobs:
   build-mac:
     macos:
       xcode: 13.4
     steps:
       - checkout
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - run:
+                name: Set up code-signing keychain
+                # DO NOT RUN THIS on your own computer unless you really know what you're doing!
+                command: |
+                  function decodeToFile () {
+                    if [ -z "$1" ]; then
+                      echo "Missing or invalid filename"
+                      return 1
+                    fi
+                    if [ -z "$2" ]; then
+                      echo "Missing environment variable contents for file: $1"
+                      return 2
+                    fi
+                    echo "$2" | base64 --decode > "$1"
+                  }
+                  decodeToFile macos-certs-scratch-foundation.p12 "${CSC_MACOS}"
+                  security -v create-keychain -p circleci circleci.keychain
+                  security -v default-keychain -s circleci.keychain
+                  security -v import macos-certs-scratch-foundation.p12 -k circleci.keychain -P "${CSC_MACOS_PASSWORD}" -T /usr/bin/codesign -T /usr/bin/productbuild
+                  security -v unlock-keychain -p circleci circleci.keychain
+                  # "set-key-partition-list" prints extensive not-so-useful output and adding "-q" (even multiple times) doesn't suppress it.
+                  # The "grep -v" at the end of this line suppresses all of that so any errors or warnings might be more visible.
+                  security -v set-key-partition-list -S apple-tool:,apple:,codesign: -s -k circleci circleci.keychain | grep -v '^    0x'
+                  security -v set-keychain-settings -lut 600 circleci.keychain
+                  security -v find-identity circleci.keychain
+                  rm macos-certs-scratch-foundation.p12
       - restore_cache:
           keys:
             - visual-studio-mac-v3
@@ -20,26 +62,38 @@ jobs:
           key: visual-studio-mac-v3
           paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
             - /tmp/visual-studio-mac-v3.tar.gz
-      - run:
-          name: Restore NuGet dependencies
-          command: msbuild -t:Restore -p:Configuration=Release scratch-link.sln
-      - run:
-          name: Build for Mac
-          command: |
-            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:Release "${PWD}/scratch-link.sln"
-            mkdir -p Artifacts
-            cp -v scratch-link-mac/bin/Release/"Scratch Link"-*.pkg Artifacts/
-      - run:
-          name: Zip the bare app
-          command: |
-            mkdir -p Artifacts
-            cd scratch-link-mac/bin/Release/
-            ditto -v -c -k --sequesterRsrc --keepParent --zlibCompressionLevel 9 \
-              "Scratch Link.app" ../../../Artifacts/scratch-link-mac.zip
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - do_mac_build:
+                configuration: "Debug"
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - do_mac_build:
+                configuration: "Release_DevID"
+            - do_mac_build:
+                configuration: "Release_MAS"
       - store_artifacts:
           path: Artifacts/
-workflows:
-  version: 2
-  build:
-    jobs:
-      - build-mac
+commands:
+  do_mac_build:
+    parameters:
+      configuration:
+        default: "Release"
+        type: string
+    steps:
+      - run:
+          name: "Build for Mac: <<parameters.configuration>>"
+          command: |
+            msbuild -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
+            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>> "${PWD}/scratch-link.sln"
+            # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "cp"
+            for PKGFILE in scratch-link-mac/bin/<<parameters.configuration>>/"Scratch Link"-*.pkg; do
+              if [ -r "$PKGFILE" ]; then
+                mkdir -p Artifacts
+                cp -v "$PKGFILE" Artifacts/
+              fi
+            done

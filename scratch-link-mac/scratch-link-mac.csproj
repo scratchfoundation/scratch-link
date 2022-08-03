@@ -30,6 +30,8 @@
     <UseRefCounting>true</UseRefCounting>
     <HttpClientHandler></HttpClientHandler>
     <LangVersion>10.0</LangVersion>
+    <LinkMode>None</LinkMode>
+    <AOTMode>None</AOTMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -39,7 +41,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\Scratch Link.xml</DocumentationFile>
-    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnableCodeSigning>true</EnableCodeSigning>
     <CreatePackage>true</CreatePackage>
     <EnablePackageSigning>false</EnablePackageSigning>
     <IncludeMonoRuntime>true</IncludeMonoRuntime>
@@ -51,6 +53,61 @@
     <LangVersion>10.0</LangVersion>
     <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
     <EnableSGenConc>true</EnableSGenConc>
+    <AOTMode>None</AOTMode>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <CodeSignProvision></CodeSignProvision>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release_DevID|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release_DevID</OutputPath>
+    <DefineConstants></DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release_DevID\Scratch Link.xml</DocumentationFile>
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CreatePackage>true</CreatePackage>
+    <EnablePackageSigning>true</EnablePackageSigning>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
+    <LinkMode>Full</LinkMode>
+    <HttpClientHandler></HttpClientHandler>
+    <LangVersion>10.0</LangVersion>
+    <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
+    <EnableSGenConc>true</EnableSGenConc>
+    <AOTMode>None</AOTMode>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <CodeSignProvision></CodeSignProvision>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <UseHardenedRuntime>true</UseHardenedRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release_MAS|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release_MAS</OutputPath>
+    <DefineConstants></DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release_MAS\Scratch Link.xml</DocumentationFile>
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CreatePackage>true</CreatePackage>
+    <EnablePackageSigning>true</EnablePackageSigning>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
+    <LinkMode>Full</LinkMode>
+    <HttpClientHandler></HttpClientHandler>
+    <LangVersion>10.0</LangVersion>
+    <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
+    <EnableSGenConc>true</EnableSGenConc>
+    <AOTMode>None</AOTMode>
+    <CodeSigningKey>3rd Party Mac Developer Application</CodeSigningKey>
+    <CodeSignProvision></CodeSignProvision>
+    <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
+    <UseHardenedRuntime>true</UseHardenedRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
