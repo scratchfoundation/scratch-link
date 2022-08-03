@@ -147,6 +147,7 @@
     <None Include="Entitlements.plist" />
     <None Include="Makefile" />
     <None Include="app.config" />
+    <None Include="notarize.sh" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />

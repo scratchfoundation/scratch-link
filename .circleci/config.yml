@@ -76,10 +76,18 @@ jobs:
           steps:
             - do_mac_build:
                 configuration: Release_DevID
-                artifact_tag: "" # friendly for end-user downloads
+                artifact_tag: temp # needs notarization
             - do_mac_build:
                 configuration: Release_MAS
                 artifact_tag: MAS
+            - run:
+                name: Notarize Developer ID build
+                command: |
+                  for PKGPATH in Artifacts/"Scratch Link-temp"*.pkg; do
+                    PKGFILE="${PKGPATH##*/}"
+                    scratch-link-mac/notarize.sh edu.mit.scratch.scratch-link "${PKGPATH}" "Artifacts/${PKGFILE/Scratch Link-temp/Scratch Link}" /tmp \
+                      && rm "${PKGPATH}"
+                  done
       - store_artifacts:
           path: Artifacts/
 commands:
