@@ -6,6 +6,7 @@ alias_anchors: # anchors must be defined in YAML before being used by an alias
       - equal: [ develop, << pipeline.git.branch >> ]
       - equal: [ main, << pipeline.git.branch >> ]
       - equal: [ master, << pipeline.git.branch >> ]
+      - equal: [ "ng-csharp-xamarin", << pipeline.git.branch >> ]
 workflows:
   version: 2
   build:
