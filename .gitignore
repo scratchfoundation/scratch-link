@@ -1,6 +1,7 @@
 .idea/
 .vs/
 .vscode/
+Artifacts/
 bin/
 node_modules/
 obj/
