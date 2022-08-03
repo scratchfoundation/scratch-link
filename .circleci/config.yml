@@ -68,15 +68,18 @@ jobs:
             *should_sign
           steps:
             - do_mac_build:
-                configuration: "Debug"
+                configuration: Debug
+                artifact_tag: Debug
       - when:
           condition:
             *should_sign
           steps:
             - do_mac_build:
-                configuration: "Release_DevID"
+                configuration: Release_DevID
+                artifact_tag: "" # friendly for end-user downloads
             - do_mac_build:
-                configuration: "Release_MAS"
+                configuration: Release_MAS
+                artifact_tag: MAS
       - store_artifacts:
           path: Artifacts/
 commands:
@@ -85,6 +88,9 @@ commands:
       configuration:
         default: "Release"
         type: string
+      artifact_tag:
+        default: ""
+        type: string
     steps:
       - run:
           name: "Build for Mac: <<parameters.configuration>>"
@@ -92,9 +98,13 @@ commands:
             msbuild -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
             "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>> "${PWD}/scratch-link.sln"
             # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "cp"
-            for PKGFILE in scratch-link-mac/bin/<<parameters.configuration>>/"Scratch Link"-*.pkg; do
-              if [ -r "$PKGFILE" ]; then
+            for PKGPATH in scratch-link-mac/bin/<<parameters.configuration>>/"Scratch Link"*.pkg; do
+              if [ -r "$PKGPATH" ]; then
+                PKGFILE="${PKGPATH##*/}"
+                if [ -n "<<parameters.artifact_tag>>" ]; then
+                  PKGFILE="${PKGFILE/Scratch Link/Scratch Link-<<parameters.artifact_tag>>}"
+                fi
                 mkdir -p Artifacts
-                cp -v "$PKGFILE" Artifacts/
+                cp -v "$PKGPATH" "Artifacts/${PKGFILE}"
               fi
             done
