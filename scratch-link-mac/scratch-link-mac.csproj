@@ -56,6 +56,7 @@
     <AOTMode>None</AOTMode>
     <CodeSigningKey>Mac Developer</CodeSigningKey>
     <CodeSignProvision></CodeSignProvision>
+    <UseHardenedRuntime>true</UseHardenedRuntime>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release_DevID|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
