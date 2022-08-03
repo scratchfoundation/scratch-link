@@ -400,6 +400,7 @@ public class Session : IDisposable
         }
         catch (Exception e)
         {
+            Debug.Print($"unhandled error encountered during call: {e}");
 #if DEBUG
             error = JsonRpc2Error.ApplicationError($"unhandled error encountered during call: {e}");
 #else
