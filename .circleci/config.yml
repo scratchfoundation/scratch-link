@@ -49,6 +49,10 @@ jobs:
                   security -v set-keychain-settings -lut 600 circleci.keychain
                   security -v find-identity circleci.keychain
                   rm macos-certs-scratch-foundation.p12
+      - run:
+          name: Build Safari helper
+          command: |
+            xcodebuild -scheme "Scratch Link Safari Helper" -configuration Release -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" clean build test
       - restore_cache:
           keys:
             - visual-studio-mac-v3
