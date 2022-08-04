@@ -110,6 +110,10 @@
     <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
     <UseHardenedRuntime>true</UseHardenedRuntime>
   </PropertyGroup>
+  <Target Name="DeleteBluetoothReporter" BeforeTargets="_CodesignAppBundle">
+    <!-- This file breaks notarization -->
+    <Delete Files="$(AppBundleDir)/Contents/Frameworks/IOBluetooth.framework/Versions/Current/Resources/BluetoothReporter" />
+  </Target>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
