@@ -44,6 +44,8 @@ function do_notarize () {
 		fi
 	done
 	if [ "${NOTARIZE_STATUS}" != "success" ]; then
+		echo "Full plist:"
+		cat "${PLIST_STATUS}"
 		return 1
 	fi
 	echo "Stapling ${DST}"
