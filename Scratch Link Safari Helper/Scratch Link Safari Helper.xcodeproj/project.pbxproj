@@ -72,6 +72,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		690CB936289DDA1400E22073 /* Shipping.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shipping.xcconfig; sourceTree = "<group>"; };
 		699401D8289DA5BD00A46D3F /* All Configurations.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "All Configurations.xcconfig"; sourceTree = "<group>"; };
 		699401D9289DA5E600A46D3F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		699401DB289DA64100A46D3F /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -153,6 +154,7 @@
 				699401DC289DA65C00A46D3F /* Release_DevID.xcconfig */,
 				699401DD289DA67700A46D3F /* Release_MAS.xcconfig */,
 				699401DE289DAB2C00A46D3F /* Version.xcconfig */,
+				690CB936289DDA1400E22073 /* Shipping.xcconfig */,
 			);
 			path = "Configuration Files";
 			sourceTree = "<group>";
