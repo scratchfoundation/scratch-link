@@ -1,0 +1,12 @@
+//
+//  Version.xcconfig
+//  Scratch Link Safari Helper
+//
+//  Created by Christopher Willis-Ford on 8/5/22.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+CURRENT_PROJECT_VERSION = 1;
+MARKETING_VERSION = 2.0;
