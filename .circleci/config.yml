@@ -116,7 +116,7 @@ commands:
       - run:
           name: "Build for Mac: <<parameters.configuration>>"
           command: |
-            msbuild -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
+            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
             "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>> "${PWD}/scratch-link.sln"
             # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "cp"
             for PKGPATH in scratch-link-mac/bin/<<parameters.configuration>>/"Scratch Link"*.pkg; do

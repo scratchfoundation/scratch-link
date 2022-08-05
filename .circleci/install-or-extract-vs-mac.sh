@@ -109,8 +109,8 @@ function install_vs() {
         "/etc/paths.d/dotnet" \
         "/etc/paths.d/dotnet-cli-tools" \
         "/etc/paths.d/mono-commands" \
-        -print0 | sort -z | \
-        sudo tar -c -a -C / -P -p --mac-metadata --totals -v -f "$CACHE_ARCHIVE" --no-recursion --null -T - \
+        -not -type d -print0 | sort -z | \
+        sudo tar -c -a -C / -P -p --mac-metadata --totals -v -f "$CACHE_ARCHIVE" --null -T - \
         2>&1 | reduce_log
 }
 
