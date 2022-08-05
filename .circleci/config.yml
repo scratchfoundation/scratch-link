@@ -19,6 +19,10 @@ jobs:
       xcode: 13.4
     steps:
       - checkout
+      - run:
+          name: Build Safari helper
+          command: |
+            xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
       - when:
           condition:
             *should_sign
@@ -49,10 +53,15 @@ jobs:
                   security -v set-keychain-settings -lut 600 circleci.keychain
                   security -v find-identity circleci.keychain
                   rm macos-certs-scratch-foundation.p12
-      - run:
-          name: Build Safari helper
-          command: |
-            xcodebuild -scheme "Scratch Link Safari Helper" -configuration Release -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" clean build test
+            - run:
+                name: Build signed copies of the Safari helper extension
+                command: |
+                  # clean both, then build both, in case their "clean" steps overlap
+                  for TASK in clean build; do
+                    for CONFIG in Release_DevID Release_MAS; do
+                      xcodebuild -configuration $CONFIG -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -target "Scratch Link Safari Helper Extension" -destination "name=Any Mac" $TASK
+                    done
+                  done
       - restore_cache:
           keys:
             - visual-studio-mac-v3
