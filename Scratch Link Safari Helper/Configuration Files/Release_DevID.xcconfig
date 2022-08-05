@@ -9,5 +9,6 @@
 // https://help.apple.com/xcode/#/dev745c5c974
 
 #include "Release.xcconfig"
+#include "Shipping.xcconfig"
 
 CODE_SIGN_IDENTITY = Developer ID Application;
