@@ -114,6 +114,24 @@
     <!-- This file breaks notarization -->
     <Delete Files="$(AppBundleDir)/Contents/Frameworks/IOBluetooth.framework/Versions/Current/Resources/BluetoothReporter" />
   </Target>
+  <Target Name="EmbedSafariHelper" AfterTargets="_CompileToNative">
+    <PropertyGroup>
+      <SafariHelperSrcDir>$(SolutionDir)Scratch Link Safari Helper/build/$(Configuration)/</SafariHelperSrcDir>
+      <SafariHelperBundleName>Scratch Link Safari Helper Extension.appex</SafariHelperBundleName>
+      <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
+    </PropertyGroup>
+    <Error
+        Text="Please use Xcode to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected bundle at:%0a$(SafariHelperSrcPath)"
+        Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')"
+    />
+    <ItemGroup>
+      <SafariHelperFiles Include="$(SafariHelperSrcPath)\**"/>
+    </ItemGroup>
+    <Copy
+        SourceFiles="@(SafariHelperFiles)"
+        DestinationFolder="$(AppBundleDir)/Contents/Helpers/$(SafariHelperBundleName)/%(RecursiveDir)"
+    />
+  </Target>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
