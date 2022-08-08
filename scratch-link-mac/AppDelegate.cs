@@ -5,6 +5,7 @@
 namespace ScratchLink.Mac;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using AppKit;
 using CoreBluetooth;
@@ -62,12 +63,25 @@ public class AppDelegate : NSApplicationDelegate
         var appTitle = BundleInfo.Title;
         var appVersion = BundleInfo.Version;
 
+        var extensionMenuItem = new NSMenuItem("Manage Safari extensions", new Selector(ExtensionItemSelected), string.Empty);
+
         var menu = new NSMenu(appTitle);
         menu.AddItem($"{appTitle} {appVersion}", new Selector(VersionItemSelected), string.Empty);
-        menu.AddItem(NSMenuItem.SeparatorItem);
-        menu.AddItem("Manage Safari extensions", new Selector(ExtensionItemSelected), string.Empty);
+        menu.AddItem(extensionMenuItem);
         menu.AddItem(NSMenuItem.SeparatorItem);
         menu.AddItem("Quit", new Selector(QuitItemSelected), "q");
+
+        // Safari treats even signed extensions as "unsigned" unless they come through the Mac App Store
+        // so consider this menu item "advanced" unless this is a signed MAS build.
+#if !SIGNED_MAS
+        menu.Delegate = new HideAdvancedMenuItemsDelegate
+        {
+            AdvancedMenuItems =
+            {
+                extensionMenuItem,
+            },
+        };
+#endif
 
         var statusBarItem = NSStatusBar.SystemStatusBar.CreateStatusItem(NSStatusItemLength.Square);
         var button = statusBarItem.Button;
@@ -101,9 +115,21 @@ public class AppDelegate : NSApplicationDelegate
     [Action(VersionItemSelected)]
     private void OnVersionItemSelected(NSObject sender)
     {
+        var buildType =
+#if DEBUG
+            "Unsigned Debug";
+#elif SIGNED_MAS
+            "Mac App Store";
+#elif SIGNED_DEVID
+            "Developer ID";
+#else
+            "Unsigned Release";
+#endif
+
         var versionDetailLines = new[]
         {
             $"{BundleInfo.Title} {BundleInfo.Version} {BundleInfo.VersionDetail}",
+            $"Build type: {buildType}",
             $"macOS {NSProcessInfo.ProcessInfo.OperatingSystemVersionString}",
         };
         var versionDetails = string.Join('\n', versionDetailLines);
@@ -129,7 +155,7 @@ public class AppDelegate : NSApplicationDelegate
     {
         if (error != null)
         {
-            Debug.Print($"Error showing Safari extension preferences: ${error}");
+            Debug.Print($"Error showing Safari extension preferences: {error}");
         }
     }
 
@@ -138,5 +164,27 @@ public class AppDelegate : NSApplicationDelegate
     {
         // this will cause WillTerminate to run
         NSApplication.SharedApplication.Terminate(sender);
+    }
+
+    private class HideAdvancedMenuItemsDelegate : NSObject, INSMenuDelegate
+    {
+        public ICollection<NSMenuItem> AdvancedMenuItems { get; private set; } = new List<NSMenuItem>();
+
+        public void MenuWillHighlightItem(NSMenu menu, NSMenuItem item)
+        {
+            // nothing special
+        }
+
+        [Export("menuWillOpen:")]
+        public void MenuWillOpen(NSMenu menu)
+        {
+            const NSEventModifierMask optionKeyMask = NSEventModifierMask.AlternateKeyMask;
+            var shouldHideAdvancedItems = !NSEvent.CurrentModifierFlags.HasFlag(optionKeyMask);
+
+            foreach (var menuItem in this.AdvancedMenuItems)
+            {
+                menuItem.Hidden = shouldHideAdvancedItems;
+            }
+        }
     }
 }
