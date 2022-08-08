@@ -27,9 +27,9 @@
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/AppIcon.appiconset</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>TODO: Info.plist NSBluetoothPeripheralUsageDescription</string>
+	<string>This will allow the app to find and communicate with Bluetooth peripheral devices.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>TODO: Info.plist NSBluetoothAlwaysUsageDescription</string>
+	<string>This will allow the app to find and communicate with Bluetooth peripheral devices.</string>
 	<key>LSUIElement</key>
 	<true/>
 </dict>
