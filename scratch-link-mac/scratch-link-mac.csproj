@@ -62,7 +62,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release_DevID</OutputPath>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>SIGNED_DEVID;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release_DevID\Scratch Link.xml</DocumentationFile>
@@ -88,7 +88,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release_MAS</OutputPath>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>SIGNED_MAS;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release_MAS\Scratch Link.xml</DocumentationFile>
