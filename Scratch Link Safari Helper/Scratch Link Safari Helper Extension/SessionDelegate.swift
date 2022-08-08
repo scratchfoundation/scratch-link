@@ -12,7 +12,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
     
     let sessionID: UInt32
     let sessionType: String
-    var webSocket: URLSessionWebSocketTask?
+    var webSocket: URLSessionWebSocketTask? // only available in macOS 10.15 or newer
     var openCallback: ((JSONValueResult) -> Void)?
     var receiveCallback: ((JSONObject) -> Void)?
     var closeCallbacks: [(JSONValueResult) -> Void]
