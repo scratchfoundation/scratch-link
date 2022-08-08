@@ -6,11 +6,11 @@ namespace ScratchLink.Mac;
 
 using System;
 using System.Diagnostics;
-using System.Reflection;
 using AppKit;
 using CoreBluetooth;
 using Foundation;
 using ObjCRuntime;
+using SafariServices;
 using ScratchLink.Mac.BLE;
 
 /// <summary>
@@ -19,7 +19,11 @@ using ScratchLink.Mac.BLE;
 [Register("AppDelegate")]
 public class AppDelegate : NSApplicationDelegate
 {
+    // This identifier must match the PRODUCT_BUNDLE_IDENTIFIER setting for the extension's Xcode project
+    private const string ExtensionBundleIdentifier = "scratch.Scratch-Link-Safari-Helper.Extension";
+
     private const string VersionItemSelected = "versionItemSelected:";
+    private const string ExtensionItemSelected = "extensionItemSelected:";
     private const string QuitItemSelected = "quitItemSelected:";
 
     private NSStatusItem statusBarItem;
@@ -60,6 +64,8 @@ public class AppDelegate : NSApplicationDelegate
 
         var menu = new NSMenu(appTitle);
         menu.AddItem($"{appTitle} {appVersion}", new Selector(VersionItemSelected), string.Empty);
+        menu.AddItem(NSMenuItem.SeparatorItem);
+        menu.AddItem("Manage Safari extensions", new Selector(ExtensionItemSelected), string.Empty);
         menu.AddItem(NSMenuItem.SeparatorItem);
         menu.AddItem("Quit", new Selector(QuitItemSelected), "q");
 
@@ -111,6 +117,20 @@ public class AppDelegate : NSApplicationDelegate
             InformativeText = versionDetails,
         };
         NSUserNotificationCenter.DefaultUserNotificationCenter.DeliverNotification(notification);
+    }
+
+    [Action(ExtensionItemSelected)]
+    private void OnExtensionItemSelected(NSObject sender)
+    {
+        SFSafariApplication.ShowPreferencesForExtension(ExtensionBundleIdentifier, this.OnShowExtensionCompleted);
+    }
+
+    private void OnShowExtensionCompleted(NSError error)
+    {
+        if (error != null)
+        {
+            Debug.Print($"Error showing Safari extension preferences: ${error}");
+        }
     }
 
     [Action(QuitItemSelected)]
