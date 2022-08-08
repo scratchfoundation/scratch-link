@@ -23,12 +23,33 @@ jobs:
           name: Build Safari helper
           command: |
             xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
+      - restore_cache:
+          keys:
+            - visual-studio-mac-v3
+      - run:
+          name: Install/Extract Visual Studio for Mac
+          command: |
+            # CACHE_ARCHIVE must match the path in save_cache
+            CACHE_ARCHIVE="/tmp/visual-studio-mac-v3.tar.gz"
+            export HOMEBREW_NO_AUTO_UPDATE=1 # for speed
+            bash ./.circleci/install-or-extract-vs-mac.sh "$CACHE_ARCHIVE"
+      - save_cache:
+          key: visual-studio-mac-v3
+          paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
+            - /tmp/visual-studio-mac-v3.tar.gz
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - do_mac_build:
+                configuration: Debug
+                artifact_tag: Debug
       - when:
           condition:
             *should_sign
           steps:
             - run:
-                name: Set up code-signing keychain
+                name: Set up code-signing keychain # Keep this after long install steps to avoid keychain timeout
                 # DO NOT RUN THIS on your own computer unless you really know what you're doing!
                 command: |
                   function decodeToFile () {
@@ -62,31 +83,6 @@ jobs:
                       xcodebuild -configuration $CONFIG -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -target "Scratch Link Safari Helper Extension" -destination "name=Any Mac" $TASK
                     done
                   done
-      - restore_cache:
-          keys:
-            - visual-studio-mac-v3
-      - run:
-          name: Install/Extract Visual Studio for Mac
-          command: |
-            # CACHE_ARCHIVE must match the path in save_cache
-            CACHE_ARCHIVE="/tmp/visual-studio-mac-v3.tar.gz"
-            export HOMEBREW_NO_AUTO_UPDATE=1 # for speed
-            bash ./.circleci/install-or-extract-vs-mac.sh "$CACHE_ARCHIVE"
-      - save_cache:
-          key: visual-studio-mac-v3
-          paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
-            - /tmp/visual-studio-mac-v3.tar.gz
-      - unless:
-          condition:
-            *should_sign
-          steps:
-            - do_mac_build:
-                configuration: Debug
-                artifact_tag: Debug
-      - when:
-          condition:
-            *should_sign
-          steps:
             - do_mac_build:
                 configuration: Release_DevID
                 artifact_tag: notarizeMe # see below
