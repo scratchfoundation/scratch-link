@@ -62,25 +62,36 @@ public class AppDelegate : NSApplicationDelegate
     {
         var appTitle = BundleInfo.Title;
         var appVersion = BundleInfo.Version;
+        var isExtensionSupported = NSProcessInfo.ProcessInfo.IsOperatingSystemAtLeastVersion(new NSOperatingSystemVersion(10, 15, 0));
 
-        var extensionMenuItem = new NSMenuItem("Manage Safari extensions", new Selector(ExtensionItemSelected), string.Empty);
+        var extensionMenuItem = isExtensionSupported
+            ? new NSMenuItem("Manage Safari extensions", new Selector(ExtensionItemSelected), string.Empty)
+            : null;
 
         var menu = new NSMenu(appTitle);
         menu.AddItem($"{appTitle} {appVersion}", new Selector(VersionItemSelected), string.Empty);
-        menu.AddItem(extensionMenuItem);
+
+        if (isExtensionSupported)
+        {
+            menu.AddItem(extensionMenuItem);
+        }
+
         menu.AddItem(NSMenuItem.SeparatorItem);
         menu.AddItem("Quit", new Selector(QuitItemSelected), "q");
 
         // Safari treats even signed extensions as "unsigned" unless they come through the Mac App Store
         // so consider this menu item "advanced" unless this is a signed MAS build.
 #if !SIGNED_MAS
-        menu.Delegate = new HideAdvancedMenuItemsDelegate
+        if (isExtensionSupported)
         {
-            AdvancedMenuItems =
+            menu.Delegate = new HideAdvancedMenuItemsDelegate
             {
-                extensionMenuItem,
-            },
-        };
+                AdvancedMenuItems =
+                {
+                    extensionMenuItem,
+                },
+            };
+        }
 #endif
 
         var statusBarItem = NSStatusBar.SystemStatusBar.CreateStatusItem(NSStatusItemLength.Square);
@@ -166,6 +177,7 @@ public class AppDelegate : NSApplicationDelegate
         NSApplication.SharedApplication.Terminate(sender);
     }
 
+#if !SIGNED_MAS
     private class HideAdvancedMenuItemsDelegate : NSObject, INSMenuDelegate
     {
         public ICollection<NSMenuItem> AdvancedMenuItems { get; private set; } = new List<NSMenuItem>();
@@ -187,4 +199,5 @@ public class AppDelegate : NSApplicationDelegate
             }
         }
     }
+#endif
 }
