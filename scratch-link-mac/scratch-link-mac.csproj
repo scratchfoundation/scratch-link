@@ -120,16 +120,22 @@
       <SafariHelperBundleName>Scratch Link Safari Helper Extension.appex</SafariHelperBundleName>
       <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
     </PropertyGroup>
-    <Error
-        Text="Please use Xcode to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected bundle at:%0a$(SafariHelperSrcPath)"
+    <Exec
         Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')"
+        Outputs="$(SafariHelperSrcPath)"
+        WorkingDirectory="$(SolutionDir)"
+        Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Helper Extension' -destination 'name=Any Mac' build"
+    />
+    <Error
+        Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')"
+        Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)"
     />
     <ItemGroup>
       <SafariHelperFiles Include="$(SafariHelperSrcPath)\**"/>
     </ItemGroup>
     <Copy
         SourceFiles="@(SafariHelperFiles)"
-        DestinationFolder="$(AppBundleDir)/Contents/Helpers/$(SafariHelperBundleName)/%(RecursiveDir)"
+        DestinationFolder="$(AppBundleDir)/Contents/Plugins/$(SafariHelperBundleName)/%(RecursiveDir)"
     />
   </Target>
   <ItemGroup>
