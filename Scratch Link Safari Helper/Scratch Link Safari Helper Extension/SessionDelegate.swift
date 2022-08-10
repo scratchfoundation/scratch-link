@@ -116,9 +116,12 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                     break // TODO: report error
                 }
             case .failure(let error):
-                os_log(.error, "error receiving from Scratch Link: %@", error.localizedDescription)
+                let errorString = error.localizedDescription
+                os_log(.error, "error receiving from Scratch Link: %@", errorString)
             }
-            webSocket?.receive(completionHandler: receiveHandler)
+            if webSocket?.state == .running {
+                webSocket?.receive(completionHandler: receiveHandler)
+            }
         }
         webSocket?.receive(completionHandler: receiveHandler)
     }

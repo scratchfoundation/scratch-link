@@ -18,3 +18,11 @@ self.addEventListener("message", event => {
         });
     }
 });
+
+browser.runtime.onMessage.addListener((outerMessage, sender, response) => {
+    const message = outerMessage["from-scratch-link"];
+    if (message) {
+        // the client/page script needs the outerMessage so it can tell the message is from Scratch Link
+        self.postMessage(outerMessage, self.origin);
+    }
+});

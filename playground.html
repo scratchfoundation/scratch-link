@@ -85,13 +85,18 @@
     <script src="./node_modules/scratch-vm/src/util/jsonrpc.js"></script>
     <script src="./node_modules/scratch-vm/src/util/scratch-link-websocket.js"></script>
     <!-- Safari WebExtension support, embedded in the Safari extension -->
-    <script src="Scratch Link Safari Helper/Scratch Link Safari Helper Extension/Resources/client.js" async defer></script>
+    <script type="module">
+        console.log('Exporting ScratchLinkSafariSocket module to global');
+        import { ScratchLinkSafariSocket } from './Scratch Link Safari Helper/Scratch Link Safari Helper Extension/Resources/client.mjs';
+        self['ScratchLinkSafariSocket'] = ScratchLinkSafariSocket;
+    </script>
     <!-- Playground-specific code -->
     <script>
         class ScratchLinkClient extends JSONRPC {
             constructor(type) {
                 super();
-                const useSafariSocket = ScratchLinkSafariSocket.isSafariHelperCompatible();
+                const useSafariSocket = self.ScratchLinkSafariSocket && ScratchLinkSafariSocket.isSafariHelperCompatible();
+                addLine(`Using ${useSafariSocket ? 'Safari WebExtension' : 'WebSocket'}`);
                 this._socket = useSafariSocket ?
                     new ScratchLinkSafariSocket(type) :
                     new ScratchLinkWebSocket(type);
