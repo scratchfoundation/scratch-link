@@ -105,7 +105,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         session.setReceiver { message in
             let messageBundle: [String: Any] = [
                 "session": sessionID,
-                "message": message
+                "data": message
             ]
             SFSafariApplication.dispatchMessage(withName: "native dispatchMessage", toExtensionWithIdentifier: myBundleIdentifier, userInfo: messageBundle, completionHandler: nil)
         }

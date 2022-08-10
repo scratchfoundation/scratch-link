@@ -101,9 +101,14 @@ public class Session : IDisposable
         {
             runCompletion.TrySetResult(true);
         };
-        this.webSocket.OnMessage = async message =>
+        this.webSocket.OnMessage = async messageString =>
         {
-            var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(message, this.deserializerOptions);
+            var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(messageString, this.deserializerOptions);
+            await this.HandleMessage(jsonMessage, this.CancellationToken);
+        };
+        this.webSocket.OnBinary = async messageBytes =>
+        {
+            var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(messageBytes, this.deserializerOptions);
             await this.HandleMessage(jsonMessage, this.CancellationToken);
         };
 

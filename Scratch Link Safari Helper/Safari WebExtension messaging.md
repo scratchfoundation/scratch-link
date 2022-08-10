@@ -48,7 +48,7 @@ Page | Page + Content | Notify | `targetWindow.postMessage` | `self.addEventList
 Content | Page + Content | Notify | `targetWindow.postMessage` | `self.addEventListener('message')`
 Content | Background | Request | `browser.runtime.sendMessage` | `browser.runtime.onMessage.addListener`
 Content | Background | Port | `browser.runtime.connect` | `browser.runtime.onConnect.addListener`
-Background | Page + Content | Notify | `browser.tabs.sendMessage` | `self.addEventListener('message')`
+Background | Content | Notify | `browser.tabs.sendMessage` | `browser.runtime.onMessage.addListener`
 Background | Content | Port | `browser.tabs.connect` | `browser.runtime.onConnect.addListener`
 Background | Extension | Request | `browser.runtime.sendNativeMessage` | `NSExtensionRequestHandling.beginRequest`
 Extension | Background | Notify | `SFSafariApplication.dispatchMessage` | `browser.runtime.connectNative`

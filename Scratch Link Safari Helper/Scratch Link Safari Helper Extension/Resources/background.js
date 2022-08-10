@@ -27,6 +27,6 @@ port.onMessage.addListener(message => {
     console.log("background port received: ", message);
     const tabID = sessionTabMap.get(message.userInfo.session);
     if (tabID !== undefined) {
-        browser.tabs.sendMessage(tabID, message.userInfo.message);
+        browser.tabs.sendMessage(tabID, { 'from-scratch-link': message.userInfo });
     }
 });
