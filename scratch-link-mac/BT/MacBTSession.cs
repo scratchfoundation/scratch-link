@@ -53,6 +53,24 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     }
 
     /// <inheritdoc/>
+    protected override void Dispose(bool disposing)
+    {
+        if (!this.DisposedValue)
+        {
+            if (this.connectedChannel != null)
+            {
+                this.connectedChannel.Dispose();
+                this.connectedChannel = null;
+            }
+
+            this.inquiry.Stop();
+            this.inquiry.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    /// <inheritdoc/>
     protected override Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass)
     {
         this.inquiry.Stop();
@@ -128,6 +146,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             }
 
             this.connectedChannel.Dispose();
+            this.connectedChannel = null;
 
             await this.SendErrorNotification(JsonRpc2Error.ApplicationError("RFCOMM run loop exited"));
 
