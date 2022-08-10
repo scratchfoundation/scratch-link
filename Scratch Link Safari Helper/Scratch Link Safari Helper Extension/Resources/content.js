@@ -1,9 +1,24 @@
 (function() {
-    const extensionVersion = "1.0.0";
-    const detectionNode = document.getElementById("scratch-link-extension-detect");
-    if (detectionNode) {
-        detectionNode.innerText = extensionVersion;
+    const injectScratchLinkScript = () => {
+        const extensionScriptNode = document.getElementById("scratch-link-extension-script");
+        if (extensionScriptNode) {
+            extensionScriptNode.innerHTML = ""; // make it safe to change "type"
+            extensionScriptNode.type = "module";
+            extensionScriptNode.innerHTML = [
+               `import("${browser.runtime.getURL("web/ScratchLinkSafariSocket.mjs")}").then(`,
+               "    module => {",
+               "        self.Scratch = self.Scratch || {};",
+               "        self.Scratch.ScratchLinkSafariSocket = module.ScratchLinkSafariSocket;",
+               "    }",
+               ");"
+               ].join("\n");
+        }
     }
+
+    // This content script runs at "document_idle" (Document.readyState == complete)
+    // so a static page should have this element ready by now.
+    // If the script element is added dynamically, send the script injection message (see below).
+    injectScratchLinkScript();
 
     // forward 'to-scratch-link' messages to the background script
     self.addEventListener("message", event => {
@@ -12,6 +27,8 @@
             browser.runtime.sendMessage(message).then(response => {
                 self.postMessage({"from-scratch-link": response}, event.origin);
             });
+        } else if (event.data["inject-scratch-link-script"]) {
+            injectScratchLinkScript();
         }
     });
 

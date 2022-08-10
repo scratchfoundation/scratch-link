@@ -9,7 +9,6 @@
     </style>
 </head>
 <body>
-    <script id="scratch-link-extension-detect" type="text/plain"></script>
     <div><label for="log">Log</label></div>
     <textarea id="log" title="log" readonly style="width: 40rem; height: 10rem;"></textarea>
     <div>
@@ -84,18 +83,15 @@
     <!-- Non-Safari WebSocket support, borrowed from scratch-vm -->
     <script src="./node_modules/scratch-vm/src/util/jsonrpc.js"></script>
     <script src="./node_modules/scratch-vm/src/util/scratch-link-websocket.js"></script>
-    <!-- Safari WebExtension support, embedded in the Safari extension -->
-    <script type="module">
-        console.log('Exporting ScratchLinkSafariSocket module to global');
-        import { ScratchLinkSafariSocket } from './Scratch Link Safari Helper/Scratch Link Safari Helper Extension/Resources/client.mjs';
-        self['ScratchLinkSafariSocket'] = ScratchLinkSafariSocket;
-    </script>
+    <!-- Safari WebExtension support: this script is injected by the Safari extension if it's active -->
+    <script id="scratch-link-extension-script"></script>
     <!-- Playground-specific code -->
     <script>
         class ScratchLinkClient extends JSONRPC {
             constructor(type) {
                 super();
-                const useSafariSocket = self.ScratchLinkSafariSocket && ScratchLinkSafariSocket.isSafariHelperCompatible();
+                const ScratchLinkSafariSocket = self.Scratch && self.Scratch.ScratchLinkSafariSocket;
+                const useSafariSocket = ScratchLinkSafariSocket && ScratchLinkSafariSocket.isSafariHelperCompatible();
                 addLine(`Using ${useSafariSocket ? 'Safari WebExtension' : 'WebSocket'}`);
                 this._socket = useSafariSocket ?
                     new ScratchLinkSafariSocket(type) :
@@ -396,7 +392,7 @@
         }
 
         function getServicesBLE() {
-            Scratch.BLE.sendRemoteRequest (
+            Scratch.BLE.sendRemoteRequest(
                 'getServices'
             ).then(
                 x => {
