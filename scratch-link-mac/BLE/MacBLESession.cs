@@ -61,16 +61,6 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         this.cbManager.UpdatedState += this.WrapEventHandler(this.CbManager_UpdatedState);
         this.cbManager.DiscoveredPeripheral += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
         this.cbManager.DisconnectedPeripheral += this.WrapEventHandler<CBPeripheralErrorEventArgs>(this.CbManager_DisconnectedPeripheral);
-
-        this.CancellationToken.Register(() =>
-        {
-            this.cbManager.StopScan();
-            if (this.connectedPeripheral != null)
-            {
-                this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
-                this.connectedPeripheral = null;
-            }
-        });
     }
 
     private event EventHandler<BluetoothState> BluetoothStateSettled;
@@ -113,6 +103,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     {
         if (disposing && !this.DisposedValue)
         {
+            this.cbManager.StopScan();
             if (this.connectedPeripheral != null)
             {
                 this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
@@ -132,7 +123,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             throw JsonRpc2Error.ApplicationError("Bluetooth is not available").ToException();
         }
 
-        using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
+        using (await this.filterLock.WaitDisposableAsync(DefaultLockTimeout))
         {
             this.filters = filters;
             this.discoveredPeripherals.Clear();
@@ -148,7 +139,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     /// <inheritdoc/>
     protected override async Task<object> DoConnect(CBPeripheral peripheral)
     {
-        using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
+        using (await this.filterLock.WaitDisposableAsync(DefaultLockTimeout))
         {
             if (this.connectedPeripheral != null)
             {
@@ -186,7 +177,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         {
             this.cbManager.ConnectPeripheral(this.connectedPeripheral);
 
-            var connectArgs = await connectAwaiter.MakeTask(BluetoothTimeouts.Connection, this.CancellationToken);
+            var connectArgs = await connectAwaiter.MakeTask(BluetoothTimeouts.Connection, CancellationToken.None);
 
             if (this.connectedPeripheral != connectArgs.Peripheral)
             {
@@ -208,7 +199,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             // Note that while the C# name for this event is "DiscoveredService" (singular),
             // the Obj-C / Swift name is "peripheral:didDiscoverServices:" (plural).
             // In practice, this event actually means that `peripheral.services` is now populated.
-            await servieDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, this.CancellationToken);
+            await servieDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, CancellationToken.None);
         }
 
         // the "connect" request is now complete!
@@ -261,7 +252,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             while (service.Characteristics == null)
             {
                 service.Peripheral.DiscoverCharacteristics(service);
-                await characteristicDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, this.CancellationToken);
+                await characteristicDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, CancellationToken.None);
             }
         }
 
@@ -291,7 +282,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             using var settledAwaiter = new EventAwaiter<BluetoothState>(this.BluetoothStateSettled);
 
             // we need to await HERE to ensure that we get the result before the awaiter is disposed
-            bluetoothState = await settledAwaiter.MakeTask(BluetoothTimeouts.SettleManagerState, this.CancellationToken);
+            bluetoothState = await settledAwaiter.MakeTask(BluetoothTimeouts.SettleManagerState, CancellationToken.None);
         }
 
         return bluetoothState;
@@ -341,7 +332,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
 
             try
             {
-                await this.SendErrorNotification(JsonRpc2Error.ApplicationError("Bluetooth is unavailable"), this.CancellationToken);
+                await this.SendErrorNotification(JsonRpc2Error.ApplicationError("Bluetooth is unavailable"));
             }
             catch (Exception sendErrorException)
             {
@@ -391,7 +382,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             manufacturerData[advertisedId] = advertisedManufacturerData.Skip(2);
         }
 
-        using (await this.filterLock.WaitDisposableAsync(this.CancellationToken))
+        using (await this.filterLock.WaitDisposableAsync(DefaultLockTimeout))
         {
             if (!this.filters.Any(filter => filter.Matches(peripheral.Name, allServices, manufacturerData)))
             {

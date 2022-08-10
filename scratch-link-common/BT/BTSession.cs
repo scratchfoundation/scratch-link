@@ -106,7 +106,7 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
             Encoding = "base64",
             Message = messageData,
         };
-        await this.SendNotification("didReceiveMessage", message, this.CancellationToken);
+        await this.SendNotification("didReceiveMessage", message);
     }
 
     /// <summary>
@@ -127,7 +127,8 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
             Name = displayName,
             RSSI = rssi,
         };
-        await this.SendRequest("didDiscoverPeripheral", message, this.CancellationToken);
+
+        await this.SendRequest("didDiscoverPeripheral", message);
     }
 
     /// <summary>
