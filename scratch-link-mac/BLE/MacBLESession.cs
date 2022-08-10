@@ -412,8 +412,9 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     {
         /// <summary>
         /// Maximum time to wait for the Bluetooth manager to settle to a known state.
+        /// On my personal Mac, 3 seconds is sometimes not long enough.
         /// </summary>
-        public static readonly TimeSpan SettleManagerState = TimeSpan.FromSeconds(3);
+        public static readonly TimeSpan SettleManagerState = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// Maximum time to allow for connecting to a Bluetooth peripheral.
