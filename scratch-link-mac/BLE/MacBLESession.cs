@@ -101,7 +101,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
-        if (disposing && !this.DisposedValue)
+        if (!this.DisposedValue)
         {
             this.cbManager.StopScan();
             if (this.connectedPeripheral != null)
