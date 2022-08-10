@@ -8,7 +8,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,12 +38,16 @@ public class Session : IDisposable
     /// <summary>
     /// Default timeout for remote requests.
     /// </summary>
-    protected static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(3);
+    protected static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Default timeout for waiting on a lock, like when trying to send a message while another message is already sending.
+    /// </summary>
+    protected static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromMilliseconds(500);
 
     private const int MessageSizeLimit = 1024 * 1024; // 1 MiB
 
     private readonly IWebSocketConnection webSocket;
-    private readonly CancellationTokenSource cancellationTokenSource = new ();
 
     private readonly JsonSerializerOptions deserializerOptions = new ()
     {
@@ -79,11 +82,6 @@ public class Session : IDisposable
     protected bool DisposedValue { get; private set; }
 
     /// <summary>
-    /// Gets the cancellation token for this session. Use this for long-running operations anywhere in the session.
-    /// </summary>
-    protected CancellationToken CancellationToken => this.cancellationTokenSource.Token;
-
-    /// <summary>
     /// Gets the mapping from method names to handlers.
     /// </summary>
     protected Dictionary<string, JsonRpcMethodHandler> Handlers { get; } = new ();
@@ -94,9 +92,10 @@ public class Session : IDisposable
     /// After calling this function, do not use the WebSocket context owned by this session.
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public Task Run()
+    public async Task Run()
     {
         var runCompletion = new TaskCompletionSource<bool>();
+
         this.webSocket.OnClose = () =>
         {
             runCompletion.TrySetResult(true);
@@ -104,15 +103,16 @@ public class Session : IDisposable
         this.webSocket.OnMessage = async messageString =>
         {
             var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(messageString, this.deserializerOptions);
-            await this.HandleMessage(jsonMessage, this.CancellationToken);
+            await this.HandleMessage(jsonMessage);
         };
         this.webSocket.OnBinary = async messageBytes =>
         {
             var jsonMessage = JsonSerializer.Deserialize<JsonRpc2Message>(messageBytes, this.deserializerOptions);
-            await this.HandleMessage(jsonMessage, this.CancellationToken);
+            await this.HandleMessage(jsonMessage);
         };
 
-        return runCompletion.Task;
+        // wait for OnClose() to mark the task as completed
+        await runCompletion.Task;
     }
 
     /// <summary>
@@ -146,8 +146,6 @@ public class Session : IDisposable
             if (disposing)
             {
                 this.webSocket.Close();
-                this.cancellationTokenSource.Cancel();
-                this.cancellationTokenSource.Dispose();
             }
 
             this.DisposedValue = true;
@@ -263,12 +261,11 @@ public class Session : IDisposable
     /// <returns>The string "willPing".</returns>
     protected Task<object> HandlePingMe(string methodName, JsonElement? args)
     {
-        var cancellationToken = this.CancellationToken;
         Task.Run(async () =>
         {
             try
             {
-                var pingResult = await this.SendRequest("ping", null, cancellationToken);
+                var pingResult = await this.SendRequest("ping", null);
                 Debug.Print($"Got result from ping: {pingResult}");
             }
             catch (JsonRpc2Exception e)
@@ -288,9 +285,8 @@ public class Session : IDisposable
     /// </summary>
     /// <param name="method">The name of the method to call on the client.</param>
     /// <param name="parameters">The optional parameters to pass to the client method.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    protected async Task SendNotification(string method, object parameters, CancellationToken cancellationToken)
+    protected async Task SendNotification(string method, object parameters)
     {
         var request = new JsonRpc2Request
         {
@@ -300,18 +296,17 @@ public class Session : IDisposable
 
         var message = JsonSerializer.Serialize(request);
 
-        await this.SocketSend(message, cancellationToken);
+        await this.SocketSend(message);
     }
 
     /// <summary>
     /// Inform the client of an error. This is sent as an independent notification, not in response to a request.
     /// </summary>
     /// <param name="error">An object containing information about the error.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    protected async Task SendErrorNotification(JsonRpc2Error error, CancellationToken cancellationToken)
+    protected async Task SendErrorNotification(JsonRpc2Error error)
     {
-        await this.SendResponse(null, null, error, cancellationToken);
+        await this.SendResponse(null, null, error);
     }
 
     /// <summary>
@@ -320,11 +315,10 @@ public class Session : IDisposable
     /// </summary>
     /// <param name="method">The name of the method to call on the client.</param>
     /// <param name="parameters">The optional parameters to pass to the client method.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> resulting in the value returned by the client.</returns>
-    protected async Task<object> SendRequest(string method, object parameters, CancellationToken cancellationToken)
+    protected async Task<object> SendRequest(string method, object parameters)
     {
-        return await this.SendRequest(method, parameters, DefaultRequestTimeout, cancellationToken);
+        return await this.SendRequest(method, parameters, DefaultRequestTimeout);
     }
 
     /// <summary>
@@ -333,9 +327,8 @@ public class Session : IDisposable
     /// <param name="method">The name of the method to call on the client.</param>
     /// <param name="parameters">The optional parameters to pass to the client method.</param>
     /// <param name="timeout">Cancel the request if this much time passes before receiving a response.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>A <see cref="Task"/> resulting in the value returned by the client.</returns>
-    protected async Task<object> SendRequest(string method, object parameters, TimeSpan timeout, CancellationToken cancellationToken)
+    protected async Task<object> SendRequest(string method, object parameters, TimeSpan timeout)
     {
         var requestId = this.GetNextId();
         var request = new JsonRpc2Request
@@ -347,18 +340,19 @@ public class Session : IDisposable
 
         var message = JsonSerializer.Serialize(request);
 
-        using var pendingRequest = new PendingRequestRecord(timeout, cancellationToken);
+        using var pendingRequest = new PendingRequestRecord(timeout);
 
         // register the pending request BEFORE sending the request, just in case the response comes back before we get back from awaiting `SocketSend`
         this.pendingRequests[requestId] = pendingRequest;
 
         try
         {
-            await this.SocketSend(message, cancellationToken);
+            await this.SocketSend(message);
             return await pendingRequest.Task;
         }
         catch (Exception e)
         {
+            Debug.Print($"Exception trying to send request: {method}", parameters);
             pendingRequest.TrySetException(e);
             throw;
         }
@@ -371,7 +365,14 @@ public class Session : IDisposable
 #if DEBUG
     private void SendEventExceptionNotification(Exception e)
     {
-        _ = this.SendErrorNotification(JsonRpc2Error.InternalError(e.ToString()), this.CancellationToken);
+        try
+        {
+            _ = this.SendErrorNotification(JsonRpc2Error.InternalError(e.ToString()));
+        }
+        catch (Exception)
+        {
+            // ignored: the socket is probably closed so there's nothing to do
+        }
     }
 #endif
 
@@ -380,7 +381,7 @@ public class Session : IDisposable
         throw JsonRpc2Error.MethodNotFound(methodName).ToException();
     }
 
-    private async Task HandleRequest(JsonRpc2Request request, CancellationToken cancellationToken)
+    private async Task HandleRequest(JsonRpc2Request request)
     {
         var handler = this.Handlers.GetValueOrDefault(request.Method, this.HandleUnrecognizedMethod);
 
@@ -393,19 +394,22 @@ public class Session : IDisposable
         }
         catch (JsonRpc2Exception e)
         {
+            Debug.Print($"JsonRpc2Exception: {e}", e.StackTrace);
             error = e.Error;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException e)
         {
+            Debug.Print($"OperationCanceledException: {e}", e.StackTrace);
             error = JsonRpc2Error.ApplicationError("operation canceled");
         }
-        catch (TimeoutException)
+        catch (TimeoutException e)
         {
+            Debug.Print($"TimeoutException: {e}", e.StackTrace);
             error = JsonRpc2Error.ApplicationError("timeout");
         }
         catch (Exception e)
         {
-            Debug.Print($"unhandled error encountered during call: {e}");
+            Debug.Print($"Exception encountered during call: {e}", e.StackTrace);
 #if DEBUG
             error = JsonRpc2Error.ApplicationError($"unhandled error encountered during call: {e}");
 #else
@@ -415,7 +419,7 @@ public class Session : IDisposable
 
         if (request.Id is object requestId)
         {
-            await this.SendResponse(requestId, result, error, cancellationToken);
+            await this.SendResponse(requestId, result, error);
         }
     }
 
@@ -443,7 +447,7 @@ public class Session : IDisposable
         requestRecord.TrySetResult(response.Error, response.Result);
     }
 
-    private async Task SendResponse(object id, object result, JsonRpc2Error error, CancellationToken cancellationToken)
+    private async Task SendResponse(object id, object result, JsonRpc2Error error)
     {
         var response = new JsonRpc2Message
         {
@@ -467,7 +471,7 @@ public class Session : IDisposable
 
             try
             {
-                await this.SocketSend(responseString, cancellationToken);
+                await this.SocketSend(responseString);
             }
             catch (Exception e)
             {
@@ -485,11 +489,11 @@ public class Session : IDisposable
         return this.nextId++;
     }
 
-    private async Task SocketSend(string message, CancellationToken cancellationToken)
+    private async Task SocketSend(string message)
     {
         try
         {
-            using (await this.websocketSendLock.WaitDisposableAsync(cancellationToken))
+            using (await this.websocketSendLock.WaitDisposableAsync(DefaultLockTimeout))
             {
                 if (this.webSocket.IsAvailable)
                 {
@@ -506,11 +510,11 @@ public class Session : IDisposable
         }
     }
 
-    private async Task HandleMessage(JsonRpc2Message message, CancellationToken cancellationToken)
+    private async Task HandleMessage(JsonRpc2Message message)
     {
         if (message is JsonRpc2Request request)
         {
-            await this.HandleRequest(request, cancellationToken);
+            await this.HandleRequest(request);
         }
         else if (message is JsonRpc2Response response)
         {
@@ -529,10 +533,10 @@ public class Session : IDisposable
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly CancellationTokenSource timeoutSource;
 
-        public PendingRequestRecord(TimeSpan timeout, CancellationToken cancellationToken)
+        public PendingRequestRecord(TimeSpan timeout)
         {
             this.completionSource = new ();
-            this.cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationTokenSource.Token.Register(() => this.completionSource.TrySetCanceled(), useSynchronizationContext: false);
             if (timeout != Timeout.InfiniteTimeSpan)
             {
@@ -546,8 +550,8 @@ public class Session : IDisposable
 
         public void Dispose()
         {
-            this.cancellationTokenSource.Dispose();
             this.timeoutSource?.Dispose();
+            this.cancellationTokenSource.Dispose();
         }
 
         public void Cancel() => this.cancellationTokenSource.Cancel();

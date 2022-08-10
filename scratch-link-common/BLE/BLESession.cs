@@ -10,9 +10,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using CoreBluetooth;
 using Fleck;
-using Foundation;
 using Microsoft.Extensions.DependencyInjection;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
@@ -180,7 +178,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
             PeripheralId = peripheralId,
             RSSI = rssi,
         };
-        await this.SendNotification("didDiscoverPeripheral", message, this.CancellationToken);
+        await this.SendNotification("didDiscoverPeripheral", message);
     }
 
     /// <summary>
@@ -202,7 +200,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
         var buffer = EncodingHelpers.DecodeBuffer((JsonElement)args);
         var withResponse = args?.TryGetProperty("withResponse")?.IsTruthy();
 
-        var bytesWritten = await endpoint.Write(buffer, withResponse, this.CancellationToken);
+        var bytesWritten = await endpoint.Write(buffer, withResponse);
 
         return bytesWritten;
     }
@@ -229,7 +227,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
         // TODO: add a way for the client to ask for plaintext instead of base64
         var encoding = args?.TryGetProperty("encoding")?.GetString() ?? "base64";
 
-        var bytes = await endpoint.Read(this.CancellationToken);
+        var bytes = await endpoint.Read();
 
         if (startNotifications)
         {
@@ -283,7 +281,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
                 { "message", encodedBytes },
             };
 
-        await this.SendNotification("characteristicDidChange", parameters, this.CancellationToken);
+        await this.SendNotification("characteristicDidChange", parameters);
     }
 
     /// <summary>

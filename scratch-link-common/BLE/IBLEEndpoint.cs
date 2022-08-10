@@ -28,16 +28,14 @@ public interface IBLEEndpoint
     /// </summary>
     /// <param name="buffer">A buffer of bytes to write to the characteristic.</param>
     /// <param name="withResponse">Whether or not to set the "with response" BLE flag. Null for default, true/false to override the default.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>The number of bytes written.</returns>
-    Task<int> Write(byte[] buffer, bool? withResponse, CancellationToken cancellationToken);
+    Task<int> Write(byte[] buffer, bool? withResponse);
 
     /// <summary>
     /// Read the current value of this service characteristic.
     /// </summary>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
     /// <returns>The bytes read from the characteristic's value.</returns>
-    Task<byte[]> Read(CancellationToken cancellationToken);
+    Task<byte[]> Read();
 
     /// <summary>
     /// Start reporting changes in the value of this characteristic.

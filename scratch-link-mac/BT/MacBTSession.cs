@@ -85,22 +85,24 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 #if DEBUG
         rfcommDelegate.RfcommChannelClosedEvent += (o, e) => Debug.Print("RfcommChannelClosedEvent on channel {0}", e.Channel.ChannelID);
         rfcommDelegate.RfcommChannelControlSignalsChangedEvent += (o, e) => Debug.Print("RfcommChannelControlSignalsChangedEvent on channel {0}", e.Channel.ChannelID);
-        rfcommDelegate.RfcommChannelDataEvent += (o, e) => Debug.Print("RfcommChannelDataEvent on channel {0} with length {1}", e.Channel.ChannelID, e.Data.Length);
         rfcommDelegate.RfcommChannelFlowControlChangedEvent += (o, e) => Debug.Print("RfcommChannelFlowControlChangedEvent on channel {0}", e.Channel.ChannelID);
         rfcommDelegate.RfcommChannelOpenCompleteEvent += (o, e) => Debug.Print("RfcommChannelOpenCompleteEvent on channel {0} with error={1}", e.Channel.ChannelID, e.Error);
-        rfcommDelegate.RfcommChannelQueueSpaceAvailableEvent += (o, e) => Debug.Print("RfcommChannelQueueSpaceAvailableEvent on channel {0}", e.Channel.ChannelID);
-        rfcommDelegate.RfcommChannelWriteCompleteEvent += (o, e) => Debug.Print("RfcommChannelWriteCompleteEvent on channel {0} with error={1}", e.Channel.ChannelID, e.Error);
+
+        // These are especially noisy
+        // rfcommDelegate.RfcommChannelDataEvent += (o, e) => Debug.Print("RfcommChannelDataEvent on channel {0} with length {1}", e.Channel.ChannelID, e.Data.Length);
+        // rfcommDelegate.RfcommChannelQueueSpaceAvailableEvent += (o, e) => Debug.Print("RfcommChannelQueueSpaceAvailableEvent on channel {0}", e.Channel.ChannelID);
+        // rfcommDelegate.RfcommChannelWriteCompleteEvent += (o, e) => Debug.Print("RfcommChannelWriteCompleteEvent on channel {0} with error={1}", e.Channel.ChannelID, e.Error);
 #endif
 
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
 
-        using (await this.channelLock.WaitDisposableAsync())
+        using (await this.channelLock.WaitDisposableAsync(DefaultLockTimeout))
         {
             var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
                 h => rfcommDelegate.RfcommChannelOpenCompleteEvent += h,
                 h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
                 TimeSpan.FromSeconds(30),
-                this.CancellationToken,
+                CancellationToken.None,
                 () =>
                 {
                     // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
@@ -127,7 +129,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
             this.connectedChannel.Dispose();
 
-            await this.SendErrorNotification(JsonRpc2Error.ApplicationError("RFCOMM run loop exited"), this.CancellationToken);
+            await this.SendErrorNotification(JsonRpc2Error.ApplicationError("RFCOMM run loop exited"));
 
             this.EndSession();
         });
@@ -150,7 +152,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         try
         {
             pinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            using (await this.channelLock.WaitDisposableAsync())
+            using (await this.channelLock.WaitDisposableAsync(DefaultLockTimeout))
             {
                 writeResult = (IOReturn)this.connectedChannel.WriteSync(pinnedBuffer.AddrOfPinnedObject(), shortLength);
             }
