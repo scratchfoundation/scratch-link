@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import os.log
 
 class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
     
@@ -103,13 +102,13 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseText.data(using: .utf8)!, options: []) as? JSONObject {
                         receiveWrapper(responseJSON)
                     } else {
-                        os_log(.error, messageMalformed)
+                        debugPrint(messageMalformed)
                     }
                 case .data(let responseData):
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseData, options: []) as? JSONObject {
                         receiveWrapper(responseJSON)
                     } else {
-                        os_log(.error, messageMalformed)
+                        debugPrint(messageMalformed)
                     }
                     break // TODO: use responseData
                 @unknown default:
@@ -117,7 +116,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                 }
             case .failure(let error):
                 let errorString = error.localizedDescription
-                os_log(.error, "error receiving from Scratch Link: %@", errorString)
+                debugPrint("error receiving from Scratch Link: \(errorString)")
             }
             if webSocket?.state == .running {
                 webSocket?.receive(completionHandler: receiveHandler)
