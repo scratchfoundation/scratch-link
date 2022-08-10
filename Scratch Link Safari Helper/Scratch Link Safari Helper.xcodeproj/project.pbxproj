@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		69C52B2D27F50239006A46F3 /* client.mjs in Resources */ = {isa = PBXBuildFile; fileRef = 69C52B2C27F50239006A46F3 /* client.mjs */; };
 		69C52B2F27F502F2006A46F3 /* SessionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C52B2E27F502F2006A46F3 /* SessionDelegate.swift */; };
 		69C52B3127F50E57006A46F3 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C52B3027F50E57006A46F3 /* JSON.swift */; };
+		69E1236628A40EC000F6AAD5 /* web in Resources */ = {isa = PBXBuildFile; fileRef = 69E1236528A40EC000F6AAD5 /* web */; };
 		69E961B627E28B86008CF7C0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961B527E28B86008CF7C0 /* AppDelegate.swift */; };
 		69E961BA27E28B86008CF7C0 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 69E961B827E28B86008CF7C0 /* Main.html */; };
 		69E961BC27E28B86008CF7C0 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 69E961BB27E28B86008CF7C0 /* Icon.png */; };
@@ -77,10 +77,10 @@
 		699401DD289DA67700A46D3F /* Release_MAS.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release_MAS.xcconfig; sourceTree = "<group>"; };
 		699401DE289DAB2C00A46D3F /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		69C52B2527ECCB57006A46F3 /* Safari WebExtension messaging.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Safari WebExtension messaging.md"; sourceTree = "<group>"; };
-		69C52B2C27F50239006A46F3 /* client.mjs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = client.mjs; sourceTree = "<group>"; };
 		69C52B2E27F502F2006A46F3 /* SessionDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionDelegate.swift; sourceTree = "<group>"; };
 		69C52B3027F50E57006A46F3 /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		69E1236228A3536800F6AAD5 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
+		69E1236528A40EC000F6AAD5 /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; path = web; sourceTree = "<group>"; };
 		69E961B227E28B86008CF7C0 /* Scratch Link Safari Helper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Scratch Link Safari Helper.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		69E961B527E28B86008CF7C0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		69E961B927E28B86008CF7C0 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = ../Base.lproj/Main.html; sourceTree = "<group>"; };
@@ -237,11 +237,11 @@
 		69E961EB27E28B88008CF7C0 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				69E1236528A40EC000F6AAD5 /* web */,
 				69E961EC27E28B88008CF7C0 /* _locales */,
 				69E961EE27E28B88008CF7C0 /* images */,
 				69E961F027E28B88008CF7C0 /* manifest.json */,
 				69E961F227E28B88008CF7C0 /* background.js */,
-				69C52B2C27F50239006A46F3 /* client.mjs */,
 				69E961F427E28B88008CF7C0 /* content.js */,
 			);
 			path = Resources;
@@ -401,10 +401,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				69C52B2D27F50239006A46F3 /* client.mjs in Resources */,
 				69E961F327E28B88008CF7C0 /* background.js in Resources */,
 				69E961EF27E28B88008CF7C0 /* images in Resources */,
 				69E961F127E28B88008CF7C0 /* manifest.json in Resources */,
+				69E1236628A40EC000F6AAD5 /* web in Resources */,
 				69E961ED27E28B88008CF7C0 /* _locales in Resources */,
 				69E961F527E28B88008CF7C0 /* content.js in Resources */,
 			);

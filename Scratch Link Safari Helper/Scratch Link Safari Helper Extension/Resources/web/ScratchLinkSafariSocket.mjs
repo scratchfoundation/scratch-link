@@ -73,20 +73,6 @@ const installListener = () => {
 };
 
 /**
- * Retrieve the version information for the Scratch Link extension, if it's running.
- * Requires that the page contain an element with the ID `scratch-link-extension-detect`.
- * @returns {Array.<number>} - the major, minor, and patch components of the extension's version, or an empty
- * array if the extension is not detected, including if the page does not contain the detection element.
- */
-const getSafariHelperVersion = function () {
-    const detectionNode = document.getElementById("scratch-link-extension-detect");
-    const innerText = detectionNode && detectionNode.innerText;
-    if (!innerText) return [];
-    const [major, minor, patch] = innerText.split('.', 3).map(x => parseInt(x, 10));
-    return [major, minor, patch];
-}
-
-/**
  * ScratchLinkSafariSocket class: represents a Scratch Link session socket using the Safari extension as transport.
  */
 class ScratchLinkSafariSocket {
@@ -96,8 +82,9 @@ class ScratchLinkSafariSocket {
      * @returns {boolean} - true if it appears that the extension is installed, running, and compatible.
      */
     static isSafariHelperCompatible () {
-        const [major, minor, patch] = getSafariHelperVersion();
-        return (major == 1) && (minor >= 0) && (patch >= 0);
+        // Now that this script is imported straight from the extension, its existence implies compatibility.
+        // In the future we might want to put some other checks in here.
+        return true;
     }
 
     /**
