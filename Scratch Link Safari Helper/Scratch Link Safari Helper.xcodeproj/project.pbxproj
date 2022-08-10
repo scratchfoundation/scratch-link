@@ -10,7 +10,6 @@
 		69C52B2D27F50239006A46F3 /* client.mjs in Resources */ = {isa = PBXBuildFile; fileRef = 69C52B2C27F50239006A46F3 /* client.mjs */; };
 		69C52B2F27F502F2006A46F3 /* SessionDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C52B2E27F502F2006A46F3 /* SessionDelegate.swift */; };
 		69C52B3127F50E57006A46F3 /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69C52B3027F50E57006A46F3 /* JSON.swift */; };
-		69E1236328A3536800F6AAD5 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 69E1236228A3536800F6AAD5 /* Makefile */; };
 		69E961B627E28B86008CF7C0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961B527E28B86008CF7C0 /* AppDelegate.swift */; };
 		69E961BA27E28B86008CF7C0 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 69E961B827E28B86008CF7C0 /* Main.html */; };
 		69E961BC27E28B86008CF7C0 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 69E961BB27E28B86008CF7C0 /* Icon.png */; };
@@ -29,9 +28,6 @@
 		69E961F127E28B88008CF7C0 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F027E28B88008CF7C0 /* manifest.json */; };
 		69E961F327E28B88008CF7C0 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F227E28B88008CF7C0 /* background.js */; };
 		69E961F527E28B88008CF7C0 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F427E28B88008CF7C0 /* content.js */; };
-		69E961F727E28B88008CF7C0 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F627E28B88008CF7C0 /* popup.html */; };
-		69E961F927E28B88008CF7C0 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F827E28B88008CF7C0 /* popup.css */; };
-		69E961FB27E28B88008CF7C0 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961FA27E28B88008CF7C0 /* popup.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -108,9 +104,6 @@
 		69E961F027E28B88008CF7C0 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
 		69E961F227E28B88008CF7C0 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
 		69E961F427E28B88008CF7C0 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = content.js; sourceTree = "<group>"; };
-		69E961F627E28B88008CF7C0 /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
-		69E961F827E28B88008CF7C0 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
-		69E961FA27E28B88008CF7C0 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
 		69E961FC27E28B88008CF7C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Helper_Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Scratch_Link_Safari_Helper_Extension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -250,9 +243,6 @@
 				69E961F227E28B88008CF7C0 /* background.js */,
 				69C52B2C27F50239006A46F3 /* client.mjs */,
 				69E961F427E28B88008CF7C0 /* content.js */,
-				69E961F627E28B88008CF7C0 /* popup.html */,
-				69E961F827E28B88008CF7C0 /* popup.css */,
-				69E961FA27E28B88008CF7C0 /* popup.js */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -413,13 +403,10 @@
 			files = (
 				69C52B2D27F50239006A46F3 /* client.mjs in Resources */,
 				69E961F327E28B88008CF7C0 /* background.js in Resources */,
-				69E961F927E28B88008CF7C0 /* popup.css in Resources */,
-				69E961F727E28B88008CF7C0 /* popup.html in Resources */,
 				69E961EF27E28B88008CF7C0 /* images in Resources */,
 				69E961F127E28B88008CF7C0 /* manifest.json in Resources */,
 				69E961ED27E28B88008CF7C0 /* _locales in Resources */,
 				69E961F527E28B88008CF7C0 /* content.js in Resources */,
-				69E961FB27E28B88008CF7C0 /* popup.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -458,7 +445,6 @@
 			files = (
 				69E961EA27E28B88008CF7C0 /* SafariWebExtensionHandler.swift in Sources */,
 				69C52B3127F50E57006A46F3 /* JSON.swift in Sources */,
-				69E1236328A3536800F6AAD5 /* Makefile in Sources */,
 				69C52B2F27F502F2006A46F3 /* SessionDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
