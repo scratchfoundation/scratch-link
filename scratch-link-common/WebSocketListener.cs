@@ -54,7 +54,7 @@ internal class WebSocketListener
                 return;
             }
 
-            socket.OnOpen = () => this.OnWebSocketConnection(socket);
+            this.OnWebSocketConnection(socket);
         });
     }
 
