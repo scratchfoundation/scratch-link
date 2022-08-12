@@ -31,7 +31,6 @@ jobs:
           command: |
             # CACHE_ARCHIVE must match the path in save_cache
             CACHE_ARCHIVE="/tmp/visual-studio-mac-v3.tar.gz"
-            export HOMEBREW_NO_AUTO_UPDATE=1 # for speed
             bash ./.circleci/install-or-extract-vs-mac.sh "$CACHE_ARCHIVE"
       - save_cache:
           key: visual-studio-mac-v3
