@@ -23,16 +23,6 @@ public class EventAwaiter<T> : IDisposable
 
     /// <summary>
     /// Initializes a new instance of the <see cref="EventAwaiter{T}"/> class.
-    /// This version only supports hooking an event in the calling class, since that's the only class which can access the implicit event delegate.
-    /// </summary>
-    /// <param name="targetEvent">The event to hook.</param>
-    public EventAwaiter(EventHandler<T> targetEvent)
-        : this(h => targetEvent += h, h => targetEvent -= h)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="EventAwaiter{T}"/> class.
     /// This version supports hooking an event in another class by providing <c>addHandler</c> and <c>removeHandler</c> actions.
     /// </summary>
     /// <param name="addHandler">An action to add a handler to the event, like <c>handler => foo.MyEvent += handler</c>.</param>
@@ -42,48 +32,6 @@ public class EventAwaiter<T> : IDisposable
         this.removeHandler = removeHandler;
         this.events = Channel.CreateUnbounded<T>();
         addHandler(this.EventHandler);
-    }
-
-    /// <summary>
-    /// Convenience method to create an instance of the <see cref="EventAwaiter{T}"/> class, await its task, dispose of the instance, and return the event task's results.
-    /// </summary>
-    /// <param name="targetEvent">The event to hook.</param>
-    /// <param name="timeout">How long to wait for the event. If the timeout expires the Task will throw a <see cref="TimeoutException"/>.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
-    /// <param name="action">Optional action to perform after hooking the event but before awaiting the event task. Usually this is code which will trigger the event.</param>
-    /// <returns>A Task which will return the args passed to the event when it triggers.</returns>
-    public static async ValueTask<T> MakeTask(EventHandler<T> targetEvent, TimeSpan timeout, CancellationToken cancellationToken, Action action = null)
-    {
-        using (var awaiter = new EventAwaiter<T>(targetEvent))
-        {
-            if (action != null)
-            {
-                action();
-            }
-
-            return await awaiter.MakeTask(timeout, cancellationToken);
-        }
-    }
-
-    /// <summary>
-    /// Convenience method to create an instance of the <see cref="EventAwaiter{T}"/> class, await its task, dispose of the instance, and return the event task's results.
-    /// </summary>
-    /// <param name="targetEvent">The event to hook.</param>
-    /// <param name="timeout">How long to wait for the event. If the timeout expires the Task will throw a <see cref="TimeoutException"/>.</param>
-    /// <param name="cancellationToken">The cancellation token to use to cancel the operation.</param>
-    /// <param name="asyncAction">Optional async action to await after hooking the event but before awaiting the event task. Usually this is code which will trigger the event.</param>
-    /// <returns>A Task which will return the args passed to the event when it triggers.</returns>
-    public static async ValueTask<T> MakeTask(EventHandler<T> targetEvent, TimeSpan timeout, CancellationToken cancellationToken, Func<Task> asyncAction = null)
-    {
-        using (var awaiter = new EventAwaiter<T>(targetEvent))
-        {
-            if (asyncAction != null)
-            {
-                await asyncAction();
-            }
-
-            return await awaiter.MakeTask(timeout, cancellationToken);
-        }
     }
 
     /// <summary>
