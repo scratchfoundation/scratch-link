@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using CoreBluetooth;
@@ -32,6 +31,8 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     private readonly CBCentralManager cbManager;
 
     private readonly Dictionary<NSUuid, CBPeripheral> discoveredPeripherals = new ();
+
+    private readonly SemaphoreSlim btSettledEventLock = new (1);
 
     private readonly SemaphoreSlim filterLock = new (1);
     private List<BLEScanFilter> filters;
@@ -81,22 +82,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         }
     }
 
-    private BluetoothState CurrentBluetoothState
-    {
-        get => this.cbManager.State switch
-        {
-            CBCentralManagerState.Unsupported => BluetoothState.Unavailable,
-            CBCentralManagerState.Unauthorized => BluetoothState.Unavailable,
-            CBCentralManagerState.PoweredOff => BluetoothState.Unavailable,
-
-            CBCentralManagerState.PoweredOn => BluetoothState.Available,
-
-            // Resetting probably means the OS Bluetooth stack crashed and will "power on" again soon
-            CBCentralManagerState.Resetting => BluetoothState.Unknown,
-            CBCentralManagerState.Unknown => BluetoothState.Unknown,
-            _ => BluetoothState.Unknown
-        };
-    }
+    private BluetoothState CurrentBluetoothState { get; set; } = BluetoothState.Unknown;
 
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
@@ -275,13 +261,27 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     /// <exception cref="TimeoutException">Thrown if the Bluetooth state doesn't settle.</exception>
     private async ValueTask<BluetoothState> GetSettledBluetoothState()
     {
+        // Do this first to make sure we can't miss an event
+        using var settledAwaiter = new EventAwaiter<BluetoothState>(
+            async h =>
+            {
+                using (await this.btSettledEventLock.WaitDisposableAsync(DefaultLockTimeout))
+                {
+                    this.BluetoothStateSettled += h;
+                }
+            },
+            async h =>
+            {
+                using (await this.btSettledEventLock.WaitDisposableAsync(DefaultLockTimeout))
+                {
+                    this.BluetoothStateSettled -= h;
+                }
+            });
+
         var bluetoothState = this.CurrentBluetoothState;
 
         if (bluetoothState == BluetoothState.Unknown)
         {
-            using var settledAwaiter = new EventAwaiter<BluetoothState>(this.BluetoothStateSettled);
-
-            // we need to await HERE to ensure that we get the result before the awaiter is disposed
             bluetoothState = await settledAwaiter.MakeTask(BluetoothTimeouts.SettleManagerState, CancellationToken.None);
         }
 
@@ -290,7 +290,9 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
 
     private async void CbManager_UpdatedState(object sender, EventArgs e)
     {
-        switch (this.cbManager.State)
+        var cbState = this.cbManager.State;
+
+        switch (cbState)
         {
             case CBCentralManagerState.Resetting:
                 Debug.Print("Bluetooth is resetting");
@@ -313,18 +315,33 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
                 break;
         }
 
-        var currentState = this.CurrentBluetoothState;
+        this.CurrentBluetoothState = cbState switch
+        {
+            CBCentralManagerState.Unsupported => BluetoothState.Unavailable,
+            CBCentralManagerState.Unauthorized => BluetoothState.Unavailable,
+            CBCentralManagerState.PoweredOff => BluetoothState.Unavailable,
 
-        if (currentState == BluetoothState.Unknown)
+            CBCentralManagerState.PoweredOn => BluetoothState.Available,
+
+            // Resetting probably means the OS Bluetooth stack crashed and will "power on" again soon
+            CBCentralManagerState.Resetting => BluetoothState.Unknown,
+            CBCentralManagerState.Unknown => BluetoothState.Unknown,
+            _ => BluetoothState.Unknown
+        };
+
+        if (this.CurrentBluetoothState == BluetoothState.Unknown)
         {
             // just wait until the OS makes a decision
             return;
         }
 
-        this.BluetoothStateSettled?.Invoke(this, currentState);
+        using (await this.btSettledEventLock.WaitDisposableAsync(DefaultLockTimeout))
+        {
+            this.BluetoothStateSettled?.Invoke(this, this.CurrentBluetoothState);
+        }
 
         // drop the peripheral & session if necessary
-        if (currentState != BluetoothState.Available && this.connectedPeripheral != null)
+        if (this.CurrentBluetoothState != BluetoothState.Available && this.connectedPeripheral != null)
         {
             this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
             this.connectedPeripheral.Dispose();
@@ -412,9 +429,8 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     {
         /// <summary>
         /// Maximum time to wait for the Bluetooth manager to settle to a known state.
-        /// On my personal Mac, 3 seconds is sometimes not long enough.
         /// </summary>
-        public static readonly TimeSpan SettleManagerState = TimeSpan.FromSeconds(30);
+        public static readonly TimeSpan SettleManagerState = TimeSpan.FromSeconds(3);
 
         /// <summary>
         /// Maximum time to allow for connecting to a Bluetooth peripheral.
