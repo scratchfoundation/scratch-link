@@ -55,6 +55,7 @@ public class AppDelegate : NSApplicationDelegate
     /// <param name="notification">A notification named <c>willTerminateNotification</c>.</param>
     public override void WillTerminate(NSNotification notification)
     {
+        this.statusBarItem.Dispose();
         this.app.Quit();
     }
 
