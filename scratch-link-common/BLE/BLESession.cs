@@ -181,6 +181,19 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
         await this.SendNotification("didDiscoverPeripheral", message);
     }
 
+    /// <inheritdoc/>
+    protected override Task<object> DoConnect(TPeripheral peripheral, JsonElement? args)
+    {
+        return this.DoConnect(peripheral);
+    }
+
+    /// <summary>
+    /// Platform-specific implementation for connecting to a BLE peripheral device.
+    /// </summary>
+    /// <param name="peripheral">The requested BLE peripheral device.</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+    protected abstract Task<object> DoConnect(TPeripheral peripheral);
+
     /// <summary>
     /// Implement the JSON-RPC "write" request to write a value to a particular service characteristic.
     /// </summary>
