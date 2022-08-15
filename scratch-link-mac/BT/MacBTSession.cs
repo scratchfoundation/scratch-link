@@ -92,11 +92,13 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     }
 
     /// <inheritdoc/>
-    protected override async Task<object> DoConnect(BluetoothDevice device)
+    protected override async Task<object> DoConnect(BluetoothDevice device, string pinString)
     {
         this.inquiry.Stop();
 
-        Debug.Print("Attempting to connect to BT device with address={0}", device.AddressString);
+        Debug.Print($"Connect request for BT device with address={device.AddressString}");
+        Debug.Print($"isPaired = {device.IsPaired}");
+        Debug.Print("Attempting to open RFCOMM channel");
 
         var rfcommDelegate = new RfcommChannelEventDelegate();
 

@@ -4,8 +4,6 @@
 
 namespace ScratchLink.BT;
 
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -67,6 +65,22 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
     /// <param name="minorDeviceClass">Discover peripherals with this minor device class.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected abstract Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass);
+
+    /// <inheritdoc/>
+    protected override Task<object> DoConnect(TPeripheral peripheral, JsonElement? args)
+    {
+        var pinString = args?.TryGetProperty("pin")?.GetString();
+
+        return this.DoConnect(peripheral, pinString);
+    }
+
+    /// <summary>
+    /// Platform-specific implementation for connecting to a BT peripheral device.
+    /// </summary>
+    /// <param name="peripheral">The requested BT peripheral device.</param>
+    /// <param name="pinString">The PIN code, if provided by the client. Otherwise, null.</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+    protected abstract Task<object> DoConnect(TPeripheral peripheral, string pinString);
 
     /// <summary>
     /// Implement the JSON-RPC "send" request to send data to the connected peripheral.

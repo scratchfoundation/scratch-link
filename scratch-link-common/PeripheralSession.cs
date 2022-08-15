@@ -61,15 +61,18 @@ public abstract class PeripheralSession<TPeripheral, TPeripheralAddress> : Sessi
             throw JsonRpc2Error.InvalidRequest(string.Format("peripheral {0} not available for connection", peripheralId)).ToException();
         }
 
-        return await this.DoConnect(peripheral);
+        return await this.DoConnect(peripheral, args);
     }
 
     /// <summary>
     /// Platform-specific implementation for connecting to a peripheral device.
     /// </summary>
     /// <param name="peripheral">The requested peripheral device.</param>
+    /// <param name="args">
+    /// A JSON object containing the args passed by the client, in case the platform-specific implementation needs them.
+    /// </param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected abstract Task<object> DoConnect(TPeripheral peripheral);
+    protected abstract Task<object> DoConnect(TPeripheral peripheral, JsonElement? args);
 
     /// <summary>
     /// Store the peripheral in the "discovered peripherals" list using a session-specific peripheral ID.
