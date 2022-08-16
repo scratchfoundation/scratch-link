@@ -7,10 +7,9 @@ namespace ScratchLink.Mac.BT;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using CoreBluetooth;
+using AppKit;
 using Fleck;
 using Foundation;
 using IOBluetooth;
@@ -98,6 +97,12 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
         Debug.Print($"Connect request for BT device with address={device.AddressString}");
         Debug.Print($"isPaired = {device.IsPaired}");
+
+        if (!device.IsPaired)
+        {
+            await this.DoPair(device, pinString);
+        }
+
         Debug.Print("Attempting to open RFCOMM channel");
 
         var rfcommDelegate = new RfcommChannelEventDelegate();
@@ -190,6 +195,42 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         }
 
         return shortLength;
+    }
+
+    private Task DoPair(BluetoothDevice device, string pinString)
+    {
+        // TODO: try to use IOBluetoothUI for a more directed pairing process
+        var completionSource = new TaskCompletionSource<bool>();
+
+        NSApplication.SharedApplication.BeginInvokeOnMainThread(() =>
+        {
+            NSWorkspace.SharedWorkspace.OpenURL(
+                NSUrl.FromFilename("/System/Library/PreferencePanes/Bluetooth.prefPane"),
+                NSWorkspaceLaunchOptions.Default,
+                new NSDictionary(),
+                out var _);
+
+            var alert = new NSAlert
+            {
+                AlertStyle = NSAlertStyle.Informational,
+                MessageText = "Please use Bluetooth Preferences to connect to this device for the first time.",
+                InformativeText = $"Selected peripheral device: {device.NameOrAddress}",
+                AccessoryView = NSTextField.CreateLabel(string.Join(
+                    Environment.NewLine,
+                    "1. Go to Bluetooth Preferences",
+                    $"2. Find {device.NameOrAddress} and press 'Connect'",
+                    $"3. Follow the instructions until {device.NameOrAddress} displays 'Connected'",
+                    $"4. Right-click on {device.NameOrAddress} and pick 'Disconnect'",
+                    "   (Do not click the \u24E7 button!)",
+                    "5. Close Bluetooth Preferences",
+                    "6. Press OK to continue")),
+            };
+            alert.RunModal();
+
+            completionSource.TrySetResult(true);
+        });
+
+        return completionSource.Task;
     }
 
     private void RfcommDelegate_RfcommChannelData(object sender, RfcommChannelDataEventArgs e)
