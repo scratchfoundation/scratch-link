@@ -26,8 +26,8 @@
 		69E961ED27E28B88008CF7C0 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 69E961EC27E28B88008CF7C0 /* _locales */; };
 		69E961EF27E28B88008CF7C0 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 69E961EE27E28B88008CF7C0 /* images */; };
 		69E961F127E28B88008CF7C0 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F027E28B88008CF7C0 /* manifest.json */; };
-		69E961F327E28B88008CF7C0 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F227E28B88008CF7C0 /* background.js */; };
-		69E961F527E28B88008CF7C0 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F427E28B88008CF7C0 /* content.js */; };
+		69E961F327E28B88008CF7C0 /* scratch-link-extension.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F227E28B88008CF7C0 /* scratch-link-extension.js */; };
+		69E961F527E28B88008CF7C0 /* scratch-link-extension-background.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F427E28B88008CF7C0 /* scratch-link-extension-background.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,8 +102,8 @@
 		69E961EC27E28B88008CF7C0 /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _locales; sourceTree = "<group>"; };
 		69E961EE27E28B88008CF7C0 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = images; sourceTree = "<group>"; };
 		69E961F027E28B88008CF7C0 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
-		69E961F227E28B88008CF7C0 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
-		69E961F427E28B88008CF7C0 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = content.js; sourceTree = "<group>"; };
+		69E961F227E28B88008CF7C0 /* scratch-link-extension.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "scratch-link-extension.js"; sourceTree = "<group>"; };
+		69E961F427E28B88008CF7C0 /* scratch-link-extension-background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "scratch-link-extension-background.js"; sourceTree = "<group>"; };
 		69E961FC27E28B88008CF7C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Helper_Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Scratch_Link_Safari_Helper_Extension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -157,8 +157,8 @@
 		69E961A927E28B86008CF7C0 = {
 			isa = PBXGroup;
 			children = (
-				699401DA289DA5F300A46D3F /* Configuration Files */,
 				69C52B2527ECCB57006A46F3 /* Safari WebExtension messaging.md */,
+				699401DA289DA5F300A46D3F /* Configuration Files */,
 				69E961B427E28B86008CF7C0 /* Scratch Link Safari Helper */,
 				69E961D127E28B88008CF7C0 /* Scratch Link Safari HelperTests */,
 				69E961DB27E28B88008CF7C0 /* Scratch Link Safari HelperUITests */,
@@ -241,8 +241,8 @@
 				69E961EC27E28B88008CF7C0 /* _locales */,
 				69E961EE27E28B88008CF7C0 /* images */,
 				69E961F027E28B88008CF7C0 /* manifest.json */,
-				69E961F227E28B88008CF7C0 /* background.js */,
-				69E961F427E28B88008CF7C0 /* content.js */,
+				69E961F227E28B88008CF7C0 /* scratch-link-extension.js */,
+				69E961F427E28B88008CF7C0 /* scratch-link-extension-background.js */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -401,12 +401,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				69E961F327E28B88008CF7C0 /* background.js in Resources */,
+				69E961F327E28B88008CF7C0 /* scratch-link-extension.js in Resources */,
 				69E961EF27E28B88008CF7C0 /* images in Resources */,
 				69E961F127E28B88008CF7C0 /* manifest.json in Resources */,
 				69E1236628A40EC000F6AAD5 /* web in Resources */,
 				69E961ED27E28B88008CF7C0 /* _locales in Resources */,
-				69E961F527E28B88008CF7C0 /* content.js in Resources */,
+				69E961F527E28B88008CF7C0 /* scratch-link-extension-background.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
