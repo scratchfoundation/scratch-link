@@ -7,7 +7,7 @@
     "version": "1.0",
 
     "web_accessible_resources": [
-        "web/ScratchLinkSafariSocket.mjs"
+        "web/scratch-link-safari-socket.mjs"
     ],
 
     "icons": {
@@ -19,12 +19,12 @@
     },
 
     "background": {
-        "scripts": [ "background.js" ],
+        "scripts": [ "scratch-link-extension-background.js" ],
         "persistent": false
     },
 
     "content_scripts": [{
-        "js": [ "content.js" ],
+        "js": [ "scratch-link-extension.js" ],
         "matches": [ "<all_urls>" ]
     }],
 

@@ -5,7 +5,7 @@
             extensionScriptNode.innerHTML = ""; // make it safe to change "type"
             extensionScriptNode.type = "module";
             extensionScriptNode.innerHTML = [
-               `import("${browser.runtime.getURL("web/ScratchLinkSafariSocket.mjs")}").then(`,
+               `import("${browser.runtime.getURL("web/scratch-link-safari-socket.mjs")}").then(`,
                "    module => {",
                "        self.Scratch = self.Scratch || {};",
                "        self.Scratch.ScratchLinkSafariSocket = module.ScratchLinkSafariSocket;",
