@@ -26,3 +26,18 @@ port.onMessage.addListener(message => {
         browser.tabs.sendMessage(tabID, { 'from-scratch-link': message.userInfo });
     }
 });
+
+browser.runtime.onConnect.addListener(port => {
+    port.onMessage.addListener(messageToScratchLink => {
+        const {session, method, params, id} = messageToScratchLink;
+
+        browser.runtime.sendNativeMessage('application.id', {
+            session,
+            method,
+            params,
+            id
+        }, responseFromScratchLink => {
+            port.postMessage(responseFromScratchLink);
+        } );
+    } );
+});
