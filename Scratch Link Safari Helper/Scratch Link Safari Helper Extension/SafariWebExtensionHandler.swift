@@ -14,7 +14,7 @@ let SFExtensionMessageKey = "message"
 
 fileprivate let logger = OSLog(subsystem: myBundleIdentifier, category: "SessionDelegate")
 
-var sessionMap = Dictionary<UInt32, SessionDelegate>()
+var sessionMap = Dictionary<UInt32?, SessionDelegate>()
 
 func getUnusedSessionID() -> UInt32 {
     while true {
@@ -30,7 +30,7 @@ func getUnusedSessionID() -> UInt32 {
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
     typealias MethodHandler = (
-        _ sessionID: UInt32,
+        _ sessionID: UInt32?,
         _ method: String,
         _ params: JSONObject?,
         _ responseID: UInt32?,
@@ -38,17 +38,17 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     ) -> Void
     
 	func beginRequest(with context: NSExtensionContext) {
-        guard
-            let message = getMessage(from: context),
-            let method = message["method"] as? String,
-            let sessionID = (
-                method == "open" ? getUnusedSessionID() : message["session"] as? UInt32
-            )
-        else {
-            os_log("Ignoring malformed message")
+        guard let message = getMessage(from: context) else {
+            os_log("ignoring malformed message")
             return
         }
         
+        guard let method = message["method"] as? String else {
+            os_log("ignoring message without method")
+            return
+        }
+
+        let sessionID = message["session"] as? UInt32
         let id = message["id"] as? UInt32
         let params = message["params"] as? JSONObject
         
@@ -60,6 +60,8 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                 return closeSession
             case "send":
                 return sendMessage
+            case "keepalive":
+                return keepAlive
             default:
                 return unrecognizedMethod
             }
@@ -93,12 +95,13 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         return item.userInfo?[SFExtensionMessageKey] as? JSONObject
     }
 
-    func openSession(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
+    func openSession(with _: UInt32?, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
 
         guard let sessionType = params?["type"] as? String else {
             return completion(.failure("call to 'open' with bad or missing 'type' parameter"))
         }
         
+        let sessionID = getUnusedSessionID()
         let session = SessionDelegate.open(sessionID: sessionID, sessionType: sessionType, completion: completion)
         sessionMap[sessionID] = session
 
@@ -111,7 +114,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
     }
 
-    func sendMessage(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
+    func sendMessage(with sessionID: UInt32?, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
         guard let session = sessionMap[sessionID] else {
             return completion(.failure("attempt to send message on unrecognized session"))
         }
@@ -128,14 +131,18 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         }
     }
     
-    func closeSession(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
+    func closeSession(with sessionID: UInt32?, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
         guard let session = sessionMap[sessionID] else {
             return completion(.failure("attempt to close unrecognized session"))
         }
         session.close(completion: completion)
     }
     
-    func unrecognizedMethod(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
+    func keepAlive(with sessionID: UInt32?, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
+        return completion(.success("ok"))
+    }
+
+    func unrecognizedMethod(with sessionID: UInt32?, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
         if #available(macOSApplicationExtension 11.0, *) {
             os_log("Ignoring call to unrecognized method: \(method)")
         } else {
