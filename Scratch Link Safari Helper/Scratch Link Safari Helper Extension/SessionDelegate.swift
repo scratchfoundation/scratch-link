@@ -6,6 +6,9 @@
 //
 
 import Foundation
+import os.log
+
+fileprivate let logger = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "nil", category: "SessionDelegate")
 
 class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
     
@@ -35,7 +38,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
     
     func send(messageJSON: JSONObject, completion: @escaping (JSONObjectResult) -> Void) {
         guard let webSocket = webSocket else {
-            return completion(.failure("session not open"))
+            return completion(.failure("attempt to send with a session that is not open"))
         }
         guard let messageData = try? JSONSerialization.data(withJSONObject: messageJSON) else {
             return completion(.failure("attempt to send malformed message"))
@@ -52,7 +55,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
 
     func close(completion: @escaping (JSONValueResult) -> Void) {
         guard let webSocket = webSocket else {
-            return completion(.failure("session not open"))
+            return completion(.failure("attempt to close session that is not open"))
         }
         closeCallbacks.append(completion)
         webSocket.cancel(with: .normalClosure, reason: nil)
@@ -85,6 +88,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         if let openCallback = openCallback {
             openCallback(.failure("closed"))
         }
+        os_log("session closed")
         let oldCallbacks = closeCallbacks
         closeCallbacks = []
         for callback in oldCallbacks {
@@ -102,13 +106,13 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseText.data(using: .utf8)!, options: []) as? JSONObject {
                         receiveWrapper(responseJSON)
                     } else {
-                        debugPrint(messageMalformed)
+                        os_log(messageMalformed)
                     }
                 case .data(let responseData):
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseData, options: []) as? JSONObject {
                         receiveWrapper(responseJSON)
                     } else {
-                        debugPrint(messageMalformed)
+                        os_log(messageMalformed)
                     }
                     break // TODO: use responseData
                 @unknown default:
@@ -116,10 +120,17 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                 }
             case .failure(let error):
                 let errorString = error.localizedDescription
-                debugPrint("error receiving from Scratch Link: \(errorString)")
+                if #available(macOSApplicationExtension 11.0, *) {
+                    os_log("error receiving from Scratch Link: \(errorString)")
+                } else {
+                    os_log("error receiving from Scratch Link")
+                }
             }
             if webSocket?.state == .running {
                 webSocket?.receive(completionHandler: receiveHandler)
+            }
+            else {
+                os_log("skipping receive: socket not running")
             }
         }
         webSocket?.receive(completionHandler: receiveHandler)
