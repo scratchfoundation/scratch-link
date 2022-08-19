@@ -105,6 +105,10 @@
         }
     };
 
+    window.addEventListener('unload', () => {
+        browser.runtime.sendMessage('unload');
+    });
+
     // We only need one keepalive even if we have a bunch of sessions
     // but if we don't have any sessions at all, we don't need a keepalive
     // also, if there's already activity going on then a keepalive is unnecessary and might even hurt throughput slightly

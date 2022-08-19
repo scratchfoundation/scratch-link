@@ -27,6 +27,7 @@ func getUnusedSessionID() -> UInt32 {
 
 // WARNING: This class is reinstantiated for each request from the browser!
 // Any information that must be retained across requests, like the session map, must be stored outside this class.
+// Safari web extensions are supported in Safari 14 and later
 class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
     typealias MethodHandler = (
