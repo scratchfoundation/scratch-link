@@ -7,9 +7,12 @@
 
 import Foundation
 import SafariServices
+import os.log
 
 let myBundleIdentifier = Bundle.main.bundleIdentifier ?? "nil"
 let SFExtensionMessageKey = "message"
+
+fileprivate let logger = OSLog(subsystem: myBundleIdentifier, category: "SessionDelegate")
 
 var sessionMap = Dictionary<UInt32, SessionDelegate>()
 
@@ -42,15 +45,13 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                 method == "open" ? getUnusedSessionID() : message["session"] as? UInt32
             )
         else {
-            debugPrint("Ignoring malformed message")
+            os_log("Ignoring malformed message")
             return
         }
         
         let id = message["id"] as? UInt32
         let params = message["params"] as? JSONObject
         
-        debugPrint("Received message from browser.runtime.sendNativeMessage: \(message)")
-
         let handler: MethodHandler = {
             switch method {
             case "open":
@@ -135,7 +136,11 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     }
     
     func unrecognizedMethod(with sessionID: UInt32, method: String, params: JSONObject?, id: UInt32?, completion: @escaping (JSONValueResult) -> Void) -> Void {
-        debugPrint("Ignoring call to unrecognized method: \(method)")
+        if #available(macOSApplicationExtension 11.0, *) {
+            os_log("Ignoring call to unrecognized method: \(method)")
+        } else {
+            os_log("Ignoring call to unrecognized method")
+        }
         return completion(.failure("unrecognized method"))
     }
     
