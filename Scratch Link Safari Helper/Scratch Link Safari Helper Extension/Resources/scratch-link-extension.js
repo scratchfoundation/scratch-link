@@ -1,25 +1,13 @@
 (function() {
-    // Safari unloads the native app if comms are idle for ~5 seconds
-    // Set this value to less than half that, so we can miss one and still have some wiggle room
-    const keepaliveTime = 2000; // milliseconds
-    let mostRecentActivity;
+    // If the native app sends a message to the background script, the Safari window pops to the front and steals focus.
+    // Also, Safari unloads the native app if comms are idle for ~5 seconds.
+    // We can solve both of these problems by polling for messages from Scratch Link.
+    // Scratch projects generally run at 30 Hz max, so keep pollFrequency >= 30.
+    // The browser will enforce some minimum amount of time (4 ms or more by spec), so at some point making this "faster" won't work.
+    // TODO: consider polling for all sessions in this context at once instead of each independently.
+    const pollFrequency = 60; // Hz
 
     const pageSessions = new Map();
-
-    /**
-     * Refresh the keepalive timer. Call this when any message goes to or comes from the native app.
-     * Do not call this for activity handled completely in JavaScript, such as script injection.
-     */
-    const keepaliveRefresh = () => {
-        mostRecentActivity = Date.now();
-    };
-
-    /**
-     * Check if the last activity was so long ago that we need to send a keepalive message.
-     */
-    const isKeepaliveExpired = () => {
-        return Date.now() > mostRecentActivity + keepaliveTime;
-    };
 
     /**
      * Check for an element in the document with id='scratch-link-extension-script'.
@@ -60,7 +48,6 @@
     browser.runtime.onMessage.addListener((outerMessage, sender, response) => {
         const message = outerMessage["from-scratch-link"];
         if (message) {
-            keepaliveRefresh();
             // the client/page script needs the outerMessage so it can tell the message is from Scratch Link
             self.postMessage(outerMessage, self.origin);
         }
@@ -71,33 +58,14 @@
      * @param {object} messageToScratchLink - the "to-scratch-link" message from the page.
      * @param {string} origin - the origin of the page that sent the message.
      */
-    const onMessageToScratchLink = (messageToScratchLink, origin) => {
+    const onMessageToScratchLink = async (messageToScratchLink, origin) => {
         if (messageToScratchLink.method == "open") {
-            keepaliveRefresh();
-            browser.runtime.sendMessage(messageToScratchLink).then(response => {
-                const sessionId = response.session;
-                if (!response.error && sessionId && response.result === sessionId) {
-                    const port = browser.runtime.connect({name: sessionId.toString()});
-                    port.onDisconnect.addListener(() => {
-                        console.log("Scratch Link extension disconnected a session", sessionId);
-                        pageSessions.delete(response.session);
-                    });
-                    const onMessageFromScratchLink = messageFromScratchLink => {
-                        keepaliveRefresh();
-                        self.postMessage({"from-scratch-link": messageFromScratchLink}, origin);
-                    };
-                    port.onMessage.addListener(onMessageFromScratchLink);
-                    pageSessions.set(sessionId, port);
-                    onMessageFromScratchLink(response);
-                } else {
-                    console.error("Scratch Link extension failed to open a session", response);
-                }
-            });
+            const openResponse = await browser.runtime.sendMessage(messageToScratchLink);
+            onSessionOpened(openResponse, origin);
         } else {
             const sessionId = messageToScratchLink.session;
             const port = pageSessions.get(sessionId);
             if (port) {
-                keepaliveRefresh();
                 port.postMessage(messageToScratchLink);
             } else {
                 console.error("Scratch Link extension failed to find port for session", sessionId);
@@ -105,18 +73,66 @@
         }
     };
 
+    const onSessionOpened = async (response, origin) => {
+        // check for an error or otherwise bad response
+        const sessionId = response.session;
+        if (response.error || !sessionId || response.result !== sessionId) {
+            console.error("Scratch Link extension failed to open a session", response);
+            return;
+        }
+
+        // connect the port and store it in the session set
+        const port = browser.runtime.connect({name: sessionId.toString()});
+        pageSessions.set(sessionId, port);
+
+        // set up polling for messages from Scratch Link
+        // we can reuse the same message repeatedly to save on GC
+        const pollMessageId = 'web-extension-poll';
+        const sessionPollMessage = {method: 'poll', session: sessionId, id: pollMessageId};
+        const pollInterval = setInterval(
+            () => port.postMessage(sessionPollMessage),
+            1000 / pollFrequency
+        );
+
+        // clean up on disconnect
+        port.onDisconnect.addListener(() => {
+            console.log("Scratch Link extension disconnected a session", sessionId);
+            clearInterval(pollInterval);
+            pageSessions.delete(response.session);
+        });
+
+        // forward messages from Scratch Link to the page
+        const onMessageFromScratchLink = messageFromScratchLink => {
+            switch (messageFromScratchLink.id) {
+                case pollMessageId:
+                    handlePollResults(sessionId, messageFromScratchLink.result);
+                    break;
+                default:
+                    self.postMessage({"from-scratch-link": messageFromScratchLink}, origin);
+                    break;
+            }
+        };
+        port.onMessage.addListener(onMessageFromScratchLink);
+
+        // now that all the plumbing is ready, forward the 'open' message response to the page
+        onMessageFromScratchLink(response);
+    };
+
+    const handlePollResults = (sessionId, messages) => {
+        if (!messages) {
+            return;
+        }
+
+        for (let message of messages) {
+            self.postMessage({'from-scratch-link': {
+                session: sessionId,
+                data: message
+            }}, origin);
+        }
+    };
+
+    // if this script is about to be unloaded, tell the background script to clean up our sessions
     window.addEventListener('unload', () => {
         browser.runtime.sendMessage('unload');
     });
-
-    // We only need one keepalive even if we have a bunch of sessions
-    // but if we don't have any sessions at all, we don't need a keepalive
-    // also, if there's already activity going on then a keepalive is unnecessary and might even hurt throughput slightly
-    const keepaliveMessage = {method: 'keepalive'};
-    const keepaliveInterval = setInterval(() => {
-        if (pageSessions.size > 0 && isKeepaliveExpired()) {
-            keepaliveRefresh();
-            browser.runtime.sendMessage(keepaliveMessage);
-        }
-    }, keepaliveTime);
 })();

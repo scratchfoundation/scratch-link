@@ -11,31 +11,30 @@ import os.log
 fileprivate let logger = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "nil", category: "SessionDelegate")
 
 class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
-    
+
     let sessionID: UInt32
     let sessionType: String
     var webSocket: URLSessionWebSocketTask? // only available in macOS 10.15 or newer
     var openCallback: ((JSONValueResult) -> Void)?
-    var receiveCallback: ((JSONObject) -> Void)?
     var closeCallbacks: [(JSONValueResult) -> Void]
-    var pendingRequests: [Int: (JSONObjectResult) -> Void]
-    
+    var pendingRequests: [JSONValue: (JSONObjectResult) -> Void]
+
+    // accumulate responses for polling
+    let pendingResponsesQ: DispatchQueue
+    var pendingResponses: [JSONObject]
+
     // MARK: - Public API
-    
+
     static func open(sessionID: UInt32, sessionType: String, completion: @escaping (JSONValueResult) -> Void) -> SessionDelegate {
         let session = SessionDelegate(sessionID, sessionType, completion)
         let urlSession = URLSession(configuration: .default, delegate: session, delegateQueue: OperationQueue())
         let webSocket = urlSession.webSocketTask(with: URL(string: "ws://localhost:20111/scratch/" + sessionType)!)
-        
+
         session.start(webSocket)
-        
+
         return session
     }
-    
-    func setReceiver(onReceive: @escaping (JSONObject) -> Void) {
-        self.receiveCallback = onReceive
-    }
-    
+
     func send(messageJSON: JSONObject, completion: @escaping (JSONObjectResult) -> Void) {
         guard let webSocket = webSocket else {
             return completion(.failure("attempt to send with a session that is not open"))
@@ -47,10 +46,26 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         webSocket.send(messageObject) { error in
             if let error = error {
                 return completion(.failure(error.localizedDescription))
-            } else if let id = messageJSON["id"] as? Int {
+            } else if let id = messageJSON["id"] as? JSONValue {
                 self.pendingRequests[id] = completion
             }
         }
+    }
+
+    func poll(completion: @escaping (JSONValueResult) -> Void) {
+        // take ownership of the current message queue and replace it with a new, empty one
+        // unless there are no messages, in which case don't do anything
+        let responses = pendingResponsesQ.sync {() -> [JSONObject]? in
+            if pendingResponses.isEmpty {
+                return nil
+            }
+
+            let responses = pendingResponses
+            pendingResponses = [JSONObject]()
+            return responses
+        }
+
+        return completion(.success(responses))
     }
 
     func close(completion: @escaping (JSONValueResult) -> Void) {
@@ -62,7 +77,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
     }
 
     // MARK: - Internals
-    
+
     private init (_ sessionID: UInt32, _ sessionType: String, _ openCallback: @escaping (JSONValueResult) -> Void) {
         self.sessionType = sessionType
         self.sessionID = sessionID
@@ -70,6 +85,8 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         self.openCallback = openCallback
         self.closeCallbacks = []
         self.pendingRequests = [:]
+        self.pendingResponsesQ = DispatchQueue(label: "controls messages pending for JS")
+        self.pendingResponses = [JSONObject]()
         super.init()
     }
 
@@ -78,7 +95,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         webSocket.resume()
         listen()
     }
-    
+
     internal func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         openCallback!(.success(sessionID))
         openCallback = nil
@@ -104,13 +121,13 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                 switch response {
                 case .string(let responseText):
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseText.data(using: .utf8)!, options: []) as? JSONObject {
-                        receiveWrapper(responseJSON)
+                        onMessageFromScratchLink(responseJSON)
                     } else {
                         os_log(messageMalformed)
                     }
                 case .data(let responseData):
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseData, options: []) as? JSONObject {
-                        receiveWrapper(responseJSON)
+                        onMessageFromScratchLink(responseJSON)
                     } else {
                         os_log(messageMalformed)
                     }
@@ -135,17 +152,19 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         }
         webSocket?.receive(completionHandler: receiveHandler)
     }
-    
-    private func receiveWrapper(_ receivedJSON: JSONObject) {
+
+    private func onMessageFromScratchLink(_ receivedJSON: JSONObject) {
         if receivedJSON["method"] == nil,
-           let id = receivedJSON["id"] as? Int,
+           let id = receivedJSON["id"] as? JSONValue,
            let pendingRequest = pendingRequests[id] {
             // if all that is true, this is a response to a request through `send()`
             pendingRequests.removeValue(forKey: id)
             pendingRequest(.success(receivedJSON))
         } else {
             // otherwise it's something else and we should report it out unmodified
-            receiveCallback?(receivedJSON)
+            pendingResponsesQ.async {
+                self.pendingResponses.append(receivedJSON)
+            }
         }
     }
 }

@@ -8,11 +8,19 @@ const sessionTabMap = new Map();
 
 // handle a message from a content script
 browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    // the content script reports that its window / tab / frame is being unloaded
-    if (request === 'unload') {
-        return onSenderUnload(sender);
+
+    // handle any special messages that don't fit the JSON-RPC format
+    switch (request) {
+        // the content script reports that its window / tab / frame is being unloaded
+        case 'unload':
+            onSenderUnload(sender);
+            return false; // no, don't expect an async call to sendResponse
+
+        default:
+            // fall through
     }
 
+    // unpack a JSON-RPC-like message
     const {session, method, params, id} = request;
 
     // forward the message to the native app
@@ -30,15 +38,6 @@ browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // if the message contained an ID, tell the browser we're expecting an asynchronous call to sendResponse
     return (id !== undefined);
-});
-
-// connect a port to receive messages from the native app
-const port = browser.runtime.connectNative(appId);
-port.onMessage.addListener(message => {
-    const clientInfo = sessionTabMap.get(message.userInfo.session);
-    if (clientInfo) {
-        browser.tabs.sendMessage(clientInfo.tabId, { 'from-scratch-link': message.userInfo }, clientInfo.options);
-    }
 });
 
 // handle a connection coming from a content script

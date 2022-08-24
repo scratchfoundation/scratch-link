@@ -7,8 +7,8 @@
 
 import Foundation
 
-typealias JSONValue = AnyHashable?
-typealias JSONObject = Dictionary<String, JSONValue>
+typealias JSONValue = AnyHashable
+typealias JSONObject = Dictionary<String, JSONValue?>
 
 enum JSONObjectResult {
     case success(JSONObject? = nil)
