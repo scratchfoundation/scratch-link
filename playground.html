@@ -186,6 +186,7 @@
                 switch (method) {
                     case 'didDiscoverPeripheral':
                         addLine(`Peripheral discovered: ${stringify(params)}`);
+                        document.getElementById('peripheralId').value = params['peripheralId'];
                         break;
                     case 'didReceiveMessage':
                         addLine(`Message received from peripheral: ${stringify(params)}`);
