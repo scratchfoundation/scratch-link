@@ -37,6 +37,11 @@ public abstract class PeripheralSession<TPeripheral, TPeripheralAddress> : Sessi
     }
 
     /// <summary>
+    /// Gets a value indicating whether this session is connected to a peripheral device.
+    /// </summary>
+    protected abstract bool IsConnected { get; }
+
+    /// <summary>
     /// Implement the JSON-RPC "connect" request to connect to a particular peripheral device.
     /// Valid in the discovery state; transitions to connected state on success.
     /// </summary>
@@ -47,6 +52,11 @@ public abstract class PeripheralSession<TPeripheral, TPeripheralAddress> : Sessi
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected async Task<object> HandleConnect(string methodName, JsonElement? args)
     {
+        if (this.IsConnected)
+        {
+            throw JsonRpc2Error.InvalidRequest("cannot connect when already connected").ToException();
+        }
+
         var peripheralId = args?.TryGetProperty("peripheralId")?.GetString();
 
         if (peripheralId == null)

@@ -120,23 +120,12 @@
       <SafariHelperBundleName>Scratch Link Safari Helper Extension.appex</SafariHelperBundleName>
       <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
     </PropertyGroup>
-    <Exec
-        Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')"
-        Outputs="$(SafariHelperSrcPath)"
-        WorkingDirectory="$(SolutionDir)"
-        Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Helper Extension' -destination 'name=Any Mac' build"
-    />
-    <Error
-        Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')"
-        Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)"
-    />
+    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Helper Extension' -destination 'name=Any Mac' build" />
+    <Error Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)" />
     <ItemGroup>
-      <SafariHelperFiles Include="$(SafariHelperSrcPath)\**"/>
+      <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />
     </ItemGroup>
-    <Copy
-        SourceFiles="@(SafariHelperFiles)"
-        DestinationFolder="$(AppBundleDir)/Contents/Plugins/$(SafariHelperBundleName)/%(RecursiveDir)"
-    />
+    <Copy SourceFiles="@(SafariHelperFiles)" DestinationFolder="$(AppBundleDir)/Contents/Plugins/$(SafariHelperBundleName)/%(RecursiveDir)" />
   </Target>
   <ItemGroup>
     <Reference Include="System" />
@@ -194,6 +183,7 @@
     <Compile Include="Extensions\NSExtensions.cs" />
     <Compile Include="IOReturn.cs" />
     <Compile Include="MacSessionManager.cs" />
+    <Compile Include="Extensions\DispatchQueueExtensions.cs" />
   </ItemGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />

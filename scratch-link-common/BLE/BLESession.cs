@@ -43,11 +43,6 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     }
 
     /// <summary>
-    /// Gets a value indicating whether or not a peripheral is currently connected and available.
-    /// </summary>
-    protected abstract bool IsConnected { get; }
-
-    /// <summary>
     /// Gets a GattHelpers instance configured for this platform.
     /// </summary>
     protected GattHelpers<TUUID> GattHelpers { get; }
