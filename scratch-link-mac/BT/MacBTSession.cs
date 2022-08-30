@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using AppKit;
+using CoreFoundation;
 using Fleck;
 using Foundation;
 using IOBluetooth;
@@ -17,6 +18,7 @@ using ScratchLink.BT;
 using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.Mac.BT.Rfcomm;
+using ScratchLink.Mac.Extensions;
 
 /// <summary>
 /// Implements a BT session on MacOS.
@@ -24,7 +26,7 @@ using ScratchLink.Mac.BT.Rfcomm;
 internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 {
     private readonly DeviceInquiry inquiry = new ();
-    private readonly SemaphoreSlim channelLock = new (1);
+    private readonly DispatchQueue rfcommQueue = new DispatchQueue("RFCOMM dispatch queue for MacBT session");
 
     private DeviceClassMajor searchClassMajor;
     private DeviceClassMinor searchClassMinor;
@@ -52,14 +54,22 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     }
 
     /// <inheritdoc/>
+    protected override bool IsConnected => this.connectedChannel != null;
+
+    /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
         if (!this.DisposedValue)
         {
             if (this.connectedChannel != null)
             {
+                var device = this.connectedChannel.Device;
+
                 this.connectedChannel.Dispose();
                 this.connectedChannel = null;
+
+                Debug.Print("disconnecting device");
+                device.CloseConnection();
             }
 
             this.inquiry.Stop();
@@ -95,12 +105,20 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     {
         this.inquiry.Stop();
 
-        Debug.Print($"Connect request for BT device with address={device.AddressString}");
-        Debug.Print($"isPaired = {device.IsPaired}");
+        Debug.Print($"Connect request for BT device with address={device.AddressString}, isPaired = {device.IsPaired}");
 
         if (!device.IsPaired)
         {
             await this.DoPair(device, pinString);
+        }
+
+        if (device.IsConnected)
+        {
+            // this could mean the user just paired and macOS decided not to disconnect this time
+            Debug.Print("Device is already open. Attempting to close...");
+            var closeResult = (IOReturn)device.CloseConnection();
+            Debug.Print($"Close result: {closeResult.ToDebugString()}");
+            await Task.Delay(1000); // let the close operation settle
         }
 
         Debug.Print("Attempting to open RFCOMM channel");
@@ -121,44 +139,32 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
 
-        using (await this.channelLock.WaitDisposableAsync(DefaultLockTimeout))
-        {
-            var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
-                h => rfcommDelegate.RfcommChannelOpenCompleteEvent += h,
-                h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
-                TimeSpan.FromSeconds(30),
-                CancellationToken.None,
-                () =>
-                {
-                    // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
-                    // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
-                    device.OpenRfcommChannelSync(out this.connectedChannel, 1, rfcommDelegate.Self);
-                });
-
-            if (openChannelResult.Error != IOReturn.Success)
+        RfcommChannel channel = null;
+        var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
+            h => rfcommDelegate.RfcommChannelOpenCompleteEvent += h,
+            h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
+            TimeSpan.FromSeconds(30),
+            CancellationToken.None,
+            () =>
             {
-                Debug.Print("Opening RFCOMM channel failed: {0}", openChannelResult.Error.ToDebugString());
-                throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
-            }
+                // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
+                // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
+                device.OpenRfcommChannelAsync(out channel, 1, rfcommDelegate);
+            });
+
+        if (openChannelResult.Error != IOReturn.Success)
+        {
+            Debug.Print("Opening RFCOMM channel failed: {0}", openChannelResult.Error.ToDebugString());
+            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
         }
 
-        // Connect is done already; don't wait for this run loop / session to complete.
-        _ = Task.Run(async () =>
+        // finally, commit the connection to shared state
+        await this.rfcommQueue.DispatchTask(() =>
         {
-            // run loop specifically for this device: necessary to get delegate callbacks
-            // TODO: is it actually necessary with this new implementation?
-            while (this.connectedChannel?.IsOpen ?? false)
-            {
-                await Task.Delay(500);
-            }
-
-            this.connectedChannel.Dispose();
-            this.connectedChannel = null;
-
-            await this.SendErrorNotification(JsonRpc2Error.ApplicationError("RFCOMM run loop exited"));
-
-            this.EndSession();
+            this.connectedChannel = channel;
         });
+
+        rfcommDelegate.RfcommChannelClosedEvent += (o, e) => this.EndSession();
 
         return null;
     }
@@ -172,29 +178,34 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             throw JsonRpc2Error.InvalidParams("buffer too big to send").ToException();
         }
 
-        IOReturn writeResult;
-        GCHandle pinnedBuffer = default(GCHandle);
-
-        try
+        return await this.rfcommQueue.DispatchTask(() =>
         {
-            pinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-            using (await this.channelLock.WaitDisposableAsync(DefaultLockTimeout))
+            if (this.connectedChannel == null)
             {
+                throw JsonRpc2Error.InvalidRequest("cannot send when not connected").ToException();
+            }
+
+            IOReturn writeResult;
+            GCHandle pinnedBuffer = default(GCHandle);
+
+            try
+            {
+                pinnedBuffer = GCHandle.Alloc(buffer, GCHandleType.Pinned);
                 writeResult = (IOReturn)this.connectedChannel.WriteSync(pinnedBuffer.AddrOfPinnedObject(), shortLength);
             }
-        }
-        finally
-        {
-            pinnedBuffer.Free();
-        }
+            finally
+            {
+                pinnedBuffer.Free();
+            }
 
-        if (writeResult != IOReturn.Success)
-        {
-            Debug.Print("send error: {0}", writeResult.ToDebugString());
-            throw JsonRpc2Error.InternalError("send encountered an error").ToException();
-        }
+            if (writeResult != IOReturn.Success)
+            {
+                Debug.Print("send error: {0}", writeResult.ToDebugString());
+                throw JsonRpc2Error.InternalError("send encountered an error").ToException();
+            }
 
-        return shortLength;
+            return shortLength;
+        });
     }
 
     private Task DoPair(BluetoothDevice device, string pinString)
@@ -219,11 +230,11 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
                     Environment.NewLine,
                     "1. Go to Bluetooth Preferences",
                     $"2. Find {device.NameOrAddress} and press 'Connect'",
-                    $"3. Follow the instructions until {device.NameOrAddress} displays 'Connected'",
-                    $"4. Right-click on {device.NameOrAddress} and pick 'Disconnect'",
-                    "   (Do not click the \u24E7 button!)",
-                    "5. Close Bluetooth Preferences",
-                    "6. Press OK to continue")),
+                    $"3. Follow the instructions on your computer and/or device",
+                    $"   until {device.NameOrAddress} displays 'Connected'",
+                    "4. Close Bluetooth Preferences",
+                    "5. Press OK to continue",
+                    "6. You might need to retry the connection")),
             };
             alert.RunModal();
 
