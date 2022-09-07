@@ -70,6 +70,7 @@
 
 /* Begin PBXFileReference section */
 		690CB936289DDA1400E22073 /* Shipping.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shipping.xcconfig; sourceTree = "<group>"; };
+		694C924028C90B2A00182C58 /* inject-version-info.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "inject-version-info.sh"; sourceTree = "<group>"; };
 		699401D8289DA5BD00A46D3F /* All Configurations.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "All Configurations.xcconfig"; sourceTree = "<group>"; };
 		699401D9289DA5E600A46D3F /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		699401DB289DA64100A46D3F /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -230,6 +231,7 @@
 				69E961FC27E28B88008CF7C0 /* Info.plist */,
 				69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Helper_Extension.entitlements */,
 				69E961EB27E28B88008CF7C0 /* Resources */,
+				694C924028C90B2A00182C58 /* inject-version-info.sh */,
 			);
 			path = "Scratch Link Safari Helper Extension";
 			sourceTree = "<group>";
@@ -312,6 +314,7 @@
 				69E961E027E28B88008CF7C0 /* Sources */,
 				69E961E127E28B88008CF7C0 /* Frameworks */,
 				69E961E227E28B88008CF7C0 /* Resources */,
+				694C924128C90C2A00182C58 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -411,6 +414,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		694C924128C90C2A00182C58 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/${TARGETNAME}/manifest.json",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "exec \"${PROJECT_DIR}/${TARGETNAME}/inject-version-info.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		69E961AE27E28B86008CF7C0 /* Sources */ = {
