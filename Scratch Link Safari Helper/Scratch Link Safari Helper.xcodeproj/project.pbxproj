@@ -25,7 +25,6 @@
 		69E961EA27E28B88008CF7C0 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961E927E28B88008CF7C0 /* SafariWebExtensionHandler.swift */; };
 		69E961ED27E28B88008CF7C0 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 69E961EC27E28B88008CF7C0 /* _locales */; };
 		69E961EF27E28B88008CF7C0 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 69E961EE27E28B88008CF7C0 /* images */; };
-		69E961F127E28B88008CF7C0 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F027E28B88008CF7C0 /* manifest.json */; };
 		69E961F327E28B88008CF7C0 /* scratch-link-extension.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F227E28B88008CF7C0 /* scratch-link-extension.js */; };
 		69E961F527E28B88008CF7C0 /* scratch-link-extension-background.js in Resources */ = {isa = PBXBuildFile; fileRef = 69E961F427E28B88008CF7C0 /* scratch-link-extension-background.js */; };
 /* End PBXBuildFile section */
@@ -406,7 +405,6 @@
 			files = (
 				69E961F327E28B88008CF7C0 /* scratch-link-extension.js in Resources */,
 				69E961EF27E28B88008CF7C0 /* images in Resources */,
-				69E961F127E28B88008CF7C0 /* manifest.json in Resources */,
 				69E1236628A40EC000F6AAD5 /* web in Resources */,
 				69E961ED27E28B88008CF7C0 /* _locales in Resources */,
 				69E961F527E28B88008CF7C0 /* scratch-link-extension-background.js in Resources */,
@@ -424,15 +422,17 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(SRCROOT)/${TARGETNAME}/manifest.json",
+				"$(SRCROOT)/${TARGETNAME}/Resources/manifest.json",
 			);
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"${CONFIGURATION_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/manifest.json",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "exec \"${PROJECT_DIR}/${TARGETNAME}/inject-version-info.sh\"\n";
+			shellScript = "# This script reads the \"SCRIPT_INPUT_FILE_0\" and \"SCRIPT_OUTPUT_FILE_0\" variables set by Xcode\n# These variables are set by the \"Input Files\" and \"Output Files\" project settings\nexec \"${PROJECT_DIR}/${TARGETNAME}/inject-version-info.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
