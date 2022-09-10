@@ -43,11 +43,11 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         ObjCRuntime.Dlfcn.dlopen("/System.Library/Frameworks/IOBluetooth.framework/IOBluetooth", 0);
 
 #if DEBUG
-        this.inquiry.Completed += (o, e) => Debug.Print("Inquiry.Completed: {0} {1}", e.Aborted, e.Error);
-        this.inquiry.DeviceFound += (o, e) => Debug.Print("Inquiry.DeviceFound: {0}", e.Device);
-        this.inquiry.DeviceInquiryStarted += (o, e) => Debug.Print("Inquiry.Started");
-        this.inquiry.DeviceNameUpdated += (o, e) => Debug.Print("Inquiry.DeviceNameUpdated: {0} {1}", e.DevicesRemaining, e.Device);
-        this.inquiry.UpdatingDeviceNamesStarted += (o, e) => Debug.Print("Inquiry.UpdatingDeviceNamesStarted: {0}", e.DevicesRemaining);
+        this.inquiry.Completed += (o, e) => Debug.WriteLine($"Inquiry.Completed: Aborted={e.Aborted} Error={e.Error}");
+        this.inquiry.DeviceFound += (o, e) => Debug.WriteLine($"Inquiry.DeviceFound: {e.Device}");
+        this.inquiry.DeviceInquiryStarted += (o, e) => Debug.WriteLine("Inquiry.Started");
+        this.inquiry.DeviceNameUpdated += (o, e) => Debug.WriteLine($"Inquiry.DeviceNameUpdated: Remaining={e.DevicesRemaining} Device={e.Device}");
+        this.inquiry.UpdatingDeviceNamesStarted += (o, e) => Debug.WriteLine($"Inquiry.UpdatingDeviceNamesStarted: Remaining={e.DevicesRemaining}");
 #endif
 
         this.inquiry.DeviceFound += this.WrapEventHandler<DeviceFoundEventArgs>(this.Inquiry_DeviceFoundAsync);
@@ -68,7 +68,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
                 this.connectedChannel.Dispose();
                 this.connectedChannel = null;
 
-                Debug.Print("disconnecting device");
+                Trace.WriteLine("disconnecting device");
                 device.CloseConnection();
             }
 
@@ -93,7 +93,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         var inquiryStatus = (IOReturn)this.inquiry.Start();
         if (inquiryStatus != IOReturn.Success)
         {
-            Debug.Print("Failed to start inquiry: {0}", inquiryStatus.ToDebugString());
+            Trace.WriteLine($"Failed to start inquiry: {inquiryStatus.ToDebugString()}");
             throw JsonRpc2Error.ServerError(-32500, "Device inquiry failed to start").ToException();
         }
 
@@ -105,7 +105,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     {
         this.inquiry.Stop();
 
-        Debug.Print($"Connect request for BT device with address={device.AddressString}, isPaired = {device.IsPaired}");
+        Trace.WriteLine($"Connect request for BT device with address={device.AddressString}, isPaired = {device.IsPaired}");
 
         if (!device.IsPaired)
         {
@@ -115,26 +115,26 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (device.IsConnected)
         {
             // this could mean the user just paired and macOS decided not to disconnect this time
-            Debug.Print("Device is already open. Attempting to close...");
+            Trace.WriteLine("Device is already open. Attempting to close...");
             var closeResult = (IOReturn)device.CloseConnection();
-            Debug.Print($"Close result: {closeResult.ToDebugString()}");
+            Trace.WriteLine($"Close result: {closeResult.ToDebugString()}");
             await Task.Delay(1000); // let the close operation settle
         }
 
-        Debug.Print("Attempting to open RFCOMM channel");
+        Trace.WriteLine("Attempting to open RFCOMM channel");
 
         var rfcommDelegate = new RfcommChannelEventDelegate();
 
 #if DEBUG
-        rfcommDelegate.RfcommChannelClosedEvent += (o, e) => Debug.Print("RfcommChannelClosedEvent on channel {0}", e.Channel.ChannelID);
-        rfcommDelegate.RfcommChannelControlSignalsChangedEvent += (o, e) => Debug.Print("RfcommChannelControlSignalsChangedEvent on channel {0}", e.Channel.ChannelID);
-        rfcommDelegate.RfcommChannelFlowControlChangedEvent += (o, e) => Debug.Print("RfcommChannelFlowControlChangedEvent on channel {0}", e.Channel.ChannelID);
-        rfcommDelegate.RfcommChannelOpenCompleteEvent += (o, e) => Debug.Print("RfcommChannelOpenCompleteEvent on channel {0} with error={1}", e.Channel.ChannelID, e.Error);
+        rfcommDelegate.RfcommChannelClosedEvent += (o, e) => Debug.WriteLine($"RfcommChannelClosedEvent on channel {e.Channel.ChannelID}");
+        rfcommDelegate.RfcommChannelControlSignalsChangedEvent += (o, e) => Debug.WriteLine($"RfcommChannelControlSignalsChangedEvent on channel {e.Channel.ChannelID}");
+        rfcommDelegate.RfcommChannelFlowControlChangedEvent += (o, e) => Debug.WriteLine($"RfcommChannelFlowControlChangedEvent on channel {e.Channel.ChannelID}");
+        rfcommDelegate.RfcommChannelOpenCompleteEvent += (o, e) => Debug.WriteLine($"RfcommChannelOpenCompleteEvent on channel {e.Channel.ChannelID} with error={e.Error}");
 
         // These are especially noisy
-        // rfcommDelegate.RfcommChannelDataEvent += (o, e) => Debug.Print("RfcommChannelDataEvent on channel {0} with length {1}", e.Channel.ChannelID, e.Data.Length);
-        // rfcommDelegate.RfcommChannelQueueSpaceAvailableEvent += (o, e) => Debug.Print("RfcommChannelQueueSpaceAvailableEvent on channel {0}", e.Channel.ChannelID);
-        // rfcommDelegate.RfcommChannelWriteCompleteEvent += (o, e) => Debug.Print("RfcommChannelWriteCompleteEvent on channel {0} with error={1}", e.Channel.ChannelID, e.Error);
+        // rfcommDelegate.RfcommChannelDataEvent += (o, e) => Debug.WriteLine($"RfcommChannelDataEvent on channel {e.Channel.ChannelID} with length {e.Data.Length}");
+        // rfcommDelegate.RfcommChannelQueueSpaceAvailableEvent += (o, e) => Debug.WriteLine($"RfcommChannelQueueSpaceAvailableEvent on channel {e.Channel.ChannelID}");
+        // rfcommDelegate.RfcommChannelWriteCompleteEvent += (o, e) => Debug.WriteLine($"RfcommChannelWriteCompleteEvent on channel {e.Channel.ChannelID} with error={e.Error}");
 #endif
 
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
@@ -154,7 +154,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
         if (openChannelResult.Error != IOReturn.Success)
         {
-            Debug.Print("Opening RFCOMM channel failed: {0}", openChannelResult.Error.ToDebugString());
+            Trace.WriteLine($"Opening RFCOMM channel failed: {openChannelResult.Error.ToDebugString()}");
             throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
         }
 
@@ -200,7 +200,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
             if (writeResult != IOReturn.Success)
             {
-                Debug.Print("send error: {0}", writeResult.ToDebugString());
+                Trace.WriteLine($"send error: {writeResult.ToDebugString()}");
                 throw JsonRpc2Error.InternalError("send encountered an error").ToException();
             }
 

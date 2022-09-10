@@ -68,6 +68,7 @@ public class Session : IDisposable
         this.webSocket = webSocket;
         this.Handlers["getVersion"] = this.HandleGetVersion;
         this.Handlers["pingMe"] = this.HandlePingMe;
+        Trace.WriteLine("session started");
     }
 
     /// <summary>
@@ -92,7 +93,7 @@ public class Session : IDisposable
     /// After calling this function, do not use the WebSocket context owned by this session.
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task Run()
+    public Task Run()
     {
         var runCompletion = new TaskCompletionSource<bool>();
 
@@ -111,8 +112,10 @@ public class Session : IDisposable
             await this.HandleMessage(jsonMessage);
         };
 
+        Trace.WriteLine("session running");
+
         // wait for OnClose() to mark the task as completed
-        await runCompletion.Task;
+        return runCompletion.Task;
     }
 
     /// <summary>
@@ -131,6 +134,7 @@ public class Session : IDisposable
     public void EndSession()
     {
         this.webSocket.Close();
+        Trace.WriteLine("session ended");
     }
 
     /// <summary>
@@ -141,6 +145,7 @@ public class Session : IDisposable
     /// <param name="disposing">True if called from <see cref="Dispose()"/>.</param>
     protected virtual void Dispose(bool disposing)
     {
+        Trace.WriteLine("session disposing");
         if (!this.DisposedValue)
         {
             if (disposing)
@@ -390,6 +395,7 @@ public class Session : IDisposable
 
         try
         {
+            Debug.Print($"handling: {request.Method}");
             result = await handler(request.Method, request.Params as JsonElement?);
         }
         catch (JsonRpc2Exception e)
@@ -506,7 +512,7 @@ public class Session : IDisposable
             // This might mean the socked closed unexpectedly, or it could mean that it was closed
             // intentionally and a notification just happened to come in before it fully shut down.
             // That happens frequently with BLE change notifications.
-            Debug.Print("Failed to send a message to a socket.");
+            Trace.WriteLine("Failed to send a message to a socket.");
         }
     }
 
@@ -522,7 +528,7 @@ public class Session : IDisposable
         }
         else
         {
-            Debug.Print("Received a message which was not recognized as a Request or Response");
+            Trace.WriteLine("Received a message which was not recognized as a Request or Response");
         }
     }
 

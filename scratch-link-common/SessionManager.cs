@@ -50,6 +50,7 @@ internal abstract class SessionManager
     /// <param name="webSocket">The WebSocket which the SessionManager should adopt and connect to a session.</param>
     public async void ClientDidConnect(IWebSocketConnection webSocket)
     {
+        Trace.WriteLine("ClientDidConnect");
         using var session = this.MakeNewSession(webSocket);
         if (!this.sessions.TryAdd(session, true))
         {
@@ -60,6 +61,7 @@ internal abstract class SessionManager
         try
         {
             await session.Run();
+            Trace.WriteLine("session.Run() complete");
         }
         finally
         {
@@ -69,7 +71,7 @@ internal abstract class SessionManager
             }
             else
             {
-                Debug.Print("Failed to remove session from session manager");
+                Trace.WriteLine("Failed to remove session from session manager");
             }
         }
     }
