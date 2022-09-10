@@ -5,6 +5,7 @@
 namespace ScratchLink;
 
 using System;
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using ScratchLink.BLE;
 
@@ -20,6 +21,8 @@ public class ScratchLinkApp
 
     private ScratchLinkApp(IServiceProvider platformServicesProvider)
     {
+        Debug.AutoFlush = Trace.AutoFlush = true;
+
         this.Services = platformServicesProvider;
         if (Current != null)
         {

@@ -46,17 +46,19 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     public MacBLESession(IWebSocketConnection webSocket)
         : base(webSocket)
     {
+        Trace.WriteLine("before cb");
         this.cbManager = new ();
+        Trace.WriteLine("after cb");
 
 #if DEBUG
-        this.cbManager.ConnectedPeripheral += (o, e) => Debug.Print("ConnectedPeripheral");
-        this.cbManager.DisconnectedPeripheral += (o, e) => Debug.Print("DisconnectedPeripheral");
-        this.cbManager.DiscoveredPeripheral += (o, e) => Debug.Print("DiscoveredPeripheral");
-        this.cbManager.FailedToConnectPeripheral += (o, e) => Debug.Print("FailedToConnectPeripheral");
-        this.cbManager.RetrievedConnectedPeripherals += (o, e) => Debug.Print("RetrievedConnectedPeripherals");
-        this.cbManager.RetrievedPeripherals += (o, e) => Debug.Print("RetrievedPeripherals");
-        this.cbManager.UpdatedState += (o, e) => Debug.Print("UpdatedState {0}", this.cbManager.State);
-        this.cbManager.WillRestoreState += (o, e) => Debug.Print("WillRestoreState");
+        this.cbManager.ConnectedPeripheral += (o, e) => Debug.WriteLine("ConnectedPeripheral");
+        this.cbManager.DisconnectedPeripheral += (o, e) => Debug.WriteLine("DisconnectedPeripheral");
+        this.cbManager.DiscoveredPeripheral += (o, e) => Debug.WriteLine("DiscoveredPeripheral");
+        this.cbManager.FailedToConnectPeripheral += (o, e) => Debug.WriteLine("FailedToConnectPeripheral");
+        this.cbManager.RetrievedConnectedPeripherals += (o, e) => Debug.WriteLine("RetrievedConnectedPeripherals");
+        this.cbManager.RetrievedPeripherals += (o, e) => Debug.WriteLine("RetrievedPeripherals");
+        this.cbManager.UpdatedState += (o, e) => Debug.WriteLine($"UpdatedState {this.cbManager.State}");
+        this.cbManager.WillRestoreState += (o, e) => Debug.WriteLine("WillRestoreState");
 #endif
 
         this.cbManager.UpdatedState += this.WrapEventHandler(this.CbManager_UpdatedState);
@@ -103,6 +105,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     /// <inheritdoc/>
     protected override async Task<object> DoDiscover(List<BLEScanFilter> filters)
     {
+        Trace.WriteLine("in DoDiscover");
         var currentState = await this.GetSettledBluetoothState();
         if (currentState != BluetoothState.Available)
         {
@@ -137,23 +140,23 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         }
 
 #if DEBUG
-        this.connectedPeripheral.DidOpenL2CapChannel += (o, e) => Debug.Print("DidOpenL2CapChannel");
-        this.connectedPeripheral.DiscoveredCharacteristic += (o, e) => Debug.Print("DiscoveredCharacteristic");
-        this.connectedPeripheral.DiscoveredDescriptor += (o, e) => Debug.Print("DiscoveredDescriptor");
-        this.connectedPeripheral.DiscoveredIncludedService += (o, e) => Debug.Print("DiscoveredIncludedService");
-        this.connectedPeripheral.DiscoveredService += (o, e) => Debug.Print("DiscoveredService");
-        this.connectedPeripheral.IsReadyToSendWriteWithoutResponse += (o, e) => Debug.Print("IsReadyToSendWriteWithoutResponse");
-        this.connectedPeripheral.ModifiedServices += (o, e) => Debug.Print("ModifiedServices");
-        this.connectedPeripheral.RssiRead += (o, e) => Debug.Print("RssiRead");
-        this.connectedPeripheral.RssiUpdated += (o, e) => Debug.Print("RssiUpdated");
-        this.connectedPeripheral.UpdatedName += (o, e) => Debug.Print("UpdatedName");
-        this.connectedPeripheral.UpdatedNotificationState += (o, e) => Debug.Print("UpdatedNotificationState");
-        this.connectedPeripheral.UpdatedValue += (o, e) => Debug.Print("UpdatedValue");
-        this.connectedPeripheral.WroteCharacteristicValue += (o, e) => Debug.Print("WroteCharacteristicValue");
-        this.connectedPeripheral.WroteDescriptorValue += (o, e) => Debug.Print("WroteDescriptorValue");
+        this.connectedPeripheral.DidOpenL2CapChannel += (o, e) => Debug.WriteLine("DidOpenL2CapChannel");
+        this.connectedPeripheral.DiscoveredCharacteristic += (o, e) => Debug.WriteLine("DiscoveredCharacteristic");
+        this.connectedPeripheral.DiscoveredDescriptor += (o, e) => Debug.WriteLine("DiscoveredDescriptor");
+        this.connectedPeripheral.DiscoveredIncludedService += (o, e) => Debug.WriteLine("DiscoveredIncludedService");
+        this.connectedPeripheral.DiscoveredService += (o, e) => Debug.WriteLine("DiscoveredService");
+        this.connectedPeripheral.IsReadyToSendWriteWithoutResponse += (o, e) => Debug.WriteLine("IsReadyToSendWriteWithoutResponse");
+        this.connectedPeripheral.ModifiedServices += (o, e) => Debug.WriteLine("ModifiedServices");
+        this.connectedPeripheral.RssiRead += (o, e) => Debug.WriteLine("RssiRead");
+        this.connectedPeripheral.RssiUpdated += (o, e) => Debug.WriteLine("RssiUpdated");
+        this.connectedPeripheral.UpdatedName += (o, e) => Debug.WriteLine("UpdatedName");
+        this.connectedPeripheral.UpdatedNotificationState += (o, e) => Debug.WriteLine("UpdatedNotificationState");
+        this.connectedPeripheral.UpdatedValue += (o, e) => Debug.WriteLine("UpdatedValue");
+        this.connectedPeripheral.WroteCharacteristicValue += (o, e) => Debug.WriteLine("WroteCharacteristicValue");
+        this.connectedPeripheral.WroteDescriptorValue += (o, e) => Debug.WriteLine("WroteDescriptorValue");
 
         // this one is especially noisy
-        // this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Debug.Print("UpdatedCharacterteristicValue");
+        // this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Debug.WriteLine("UpdatedCharacterteristicValue");
 #endif
 
         // wait for the connection to complete
@@ -261,28 +264,39 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     /// <exception cref="TimeoutException">Thrown if the Bluetooth state doesn't settle.</exception>
     private async ValueTask<BluetoothState> GetSettledBluetoothState()
     {
+        Trace.WriteLine("about to GetSettled");
+
         // Do this first to make sure we can't miss an event
         using var settledAwaiter = new EventAwaiter<BluetoothState>(
             async h =>
             {
+                Trace.WriteLine("about to hook");
                 using (await this.btSettledEventLock.WaitDisposableAsync(DefaultLockTimeout))
                 {
+                    Trace.WriteLine("hooking");
                     this.BluetoothStateSettled += h;
+                    Trace.WriteLine("hooked");
                 }
             },
             async h =>
             {
+                Trace.WriteLine("about to unhook");
                 using (await this.btSettledEventLock.WaitDisposableAsync(DefaultLockTimeout))
                 {
+                    Trace.WriteLine("unhooking");
                     this.BluetoothStateSettled -= h;
+                    Trace.WriteLine("unhooked");
                 }
             });
 
         var bluetoothState = this.CurrentBluetoothState;
+        Trace.WriteLine($"starting state is {bluetoothState}");
 
         if (bluetoothState == BluetoothState.Unknown)
         {
+            Trace.WriteLine("awaiting");
             bluetoothState = await settledAwaiter.MakeTask(BluetoothTimeouts.SettleManagerState, CancellationToken.None);
+            Trace.WriteLine($"settled state is {bluetoothState}");
         }
 
         return bluetoothState;
@@ -295,23 +309,23 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         switch (cbState)
         {
             case CBCentralManagerState.Resetting:
-                Debug.Print("Bluetooth is resetting");
+                Trace.WriteLine("Bluetooth is resetting");
                 break;
             case CBCentralManagerState.Unsupported:
-                Debug.Print("Bluetooth is unsupported");
+                Trace.WriteLine("Bluetooth is unsupported");
                 break;
             case CBCentralManagerState.Unauthorized:
-                Debug.Print("Bluetooth is unauthorized");
+                Trace.WriteLine("Bluetooth is unauthorized");
                 break;
             case CBCentralManagerState.PoweredOff:
-                Debug.Print("Bluetooth is now powered off");
+                Trace.WriteLine("Bluetooth is now powered off");
                 break;
             case CBCentralManagerState.PoweredOn:
-                Debug.Print("Bluetooth is now powered on");
+                Trace.WriteLine("Bluetooth is now powered on");
                 break;
             case CBCentralManagerState.Unknown:
             default:
-                Debug.Print($"Bluetooth transitioned to unknown state: {this.cbManager.State}");
+                Trace.WriteLine($"Bluetooth transitioned to unknown state: {this.cbManager.State}");
                 break;
         }
 
@@ -353,7 +367,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             }
             catch (Exception sendErrorException)
             {
-                Debug.Print("Failed to report error to client due to: ", sendErrorException);
+                Trace.WriteLine($"Failed to report error to client due to: {sendErrorException}");
             }
 
             this.EndSession();
@@ -430,7 +444,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         /// <summary>
         /// Maximum time to wait for the Bluetooth manager to settle to a known state.
         /// </summary>
-        public static readonly TimeSpan SettleManagerState = TimeSpan.FromSeconds(3);
+        public static readonly TimeSpan SettleManagerState = TimeSpan.FromSeconds(30); // TODO: decrease before release
 
         /// <summary>
         /// Maximum time to allow for connecting to a Bluetooth peripheral.

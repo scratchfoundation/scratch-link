@@ -37,6 +37,8 @@ public class AppDelegate : NSApplicationDelegate
     /// <param name="notification">A notification named <c>didFinishLaunchingNotification</c>.</param>
     public override void DidFinishLaunching(NSNotification notification)
     {
+        Trace.Listeners.Add(new OSLogTraceListener());
+
         var appBuilder = new ScratchLinkApp.Builder();
         appBuilder.SetArguments(new NSProcessInfo().Arguments);
         appBuilder.SetSessionManager<MacSessionManager>();
@@ -167,7 +169,7 @@ public class AppDelegate : NSApplicationDelegate
     {
         if (error != null)
         {
-            Debug.Print($"Error showing Safari extension preferences: {error}");
+            Trace.WriteLine($"Error showing Safari extension preferences: {error}");
         }
     }
 

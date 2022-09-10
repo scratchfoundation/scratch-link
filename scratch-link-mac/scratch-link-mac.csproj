@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\Scratch Link.xml</DocumentationFile>
@@ -37,7 +37,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
-    <DefineConstants></DefineConstants>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\Scratch Link.xml</DocumentationFile>
@@ -62,7 +62,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release_DevID</OutputPath>
-    <DefineConstants>SIGNED_DEVID;</DefineConstants>
+    <DefineConstants>SIGNED_DEVID;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release_DevID\Scratch Link.xml</DocumentationFile>
@@ -88,7 +88,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release_MAS</OutputPath>
-    <DefineConstants>SIGNED_MAS;</DefineConstants>
+    <DefineConstants>SIGNED_MAS;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release_MAS\Scratch Link.xml</DocumentationFile>
@@ -184,6 +184,7 @@
     <Compile Include="IOReturn.cs" />
     <Compile Include="MacSessionManager.cs" />
     <Compile Include="Extensions\DispatchQueueExtensions.cs" />
+    <Compile Include="OSLogTraceListener.cs" />
   </ItemGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />

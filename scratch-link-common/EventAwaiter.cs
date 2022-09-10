@@ -152,7 +152,7 @@ public class EventAwaiter<T> : IDisposable
     {
         if (!this.events.Writer.TryWrite(args))
         {
-            Debug.Print("EventAwaiter failed to write an event!");
+            Trace.WriteLine("EventAwaiter failed to write an event!");
         }
     }
 }
