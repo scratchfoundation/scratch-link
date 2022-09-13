@@ -185,6 +185,7 @@
     <Compile Include="MacSessionManager.cs" />
     <Compile Include="Extensions\DispatchQueueExtensions.cs" />
     <Compile Include="OSLogTraceListener.cs" />
+    <Compile Include="BLE\CBCentralManagerEventDelegate.cs" />
   </ItemGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />

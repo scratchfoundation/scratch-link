@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CoreBluetooth;
+using CoreFoundation;
 using Fleck;
 using Foundation;
 using ScratchLink.BLE;
@@ -29,6 +30,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     protected static readonly NSNumber MinimumSignalStrength = -70;
 
     private readonly CBCentralManager cbManager;
+    private readonly CBCentralManagerEventDelegate cbDelegate;
 
     private readonly Dictionary<NSUuid, CBPeripheral> discoveredPeripherals = new ();
 
@@ -47,23 +49,32 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         : base(webSocket)
     {
         Trace.WriteLine("before cb");
-        this.cbManager = new ();
+
+        this.cbDelegate = new CBCentralManagerEventDelegate();
+
+        var options = new CBCentralInitOptions
+        {
+            ShowPowerAlert = true,
+        };
+        options.Dictionary[CBCentralManager.OptionRestoreIdentifierKey] = new NSString("Scratch Link");
+
+        this.cbManager = new (this.cbDelegate, DispatchQueue.MainQueue, options);
         Trace.WriteLine("after cb");
 
 #if DEBUG
-        this.cbManager.ConnectedPeripheral += (o, e) => Debug.WriteLine("ConnectedPeripheral");
-        this.cbManager.DisconnectedPeripheral += (o, e) => Debug.WriteLine("DisconnectedPeripheral");
-        this.cbManager.DiscoveredPeripheral += (o, e) => Debug.WriteLine("DiscoveredPeripheral");
-        this.cbManager.FailedToConnectPeripheral += (o, e) => Debug.WriteLine("FailedToConnectPeripheral");
-        this.cbManager.RetrievedConnectedPeripherals += (o, e) => Debug.WriteLine("RetrievedConnectedPeripherals");
-        this.cbManager.RetrievedPeripherals += (o, e) => Debug.WriteLine("RetrievedPeripherals");
-        this.cbManager.UpdatedState += (o, e) => Debug.WriteLine($"UpdatedState {this.cbManager.State}");
-        this.cbManager.WillRestoreState += (o, e) => Debug.WriteLine("WillRestoreState");
+        this.cbDelegate.ConnectedPeripheralEvent += (o, e) => Debug.WriteLine("ConnectedPeripheral");
+        this.cbDelegate.DisconnectedPeripheralEvent += (o, e) => Debug.WriteLine("DisconnectedPeripheral");
+        this.cbDelegate.DiscoveredPeripheralEvent += (o, e) => Debug.WriteLine("DiscoveredPeripheral");
+        this.cbDelegate.FailedToConnectPeripheralEvent += (o, e) => Debug.WriteLine("FailedToConnectPeripheral");
+        this.cbDelegate.RetrievedConnectedPeripheralsEvent += (o, e) => Debug.WriteLine("RetrievedConnectedPeripherals");
+        this.cbDelegate.RetrievedPeripheralsEvent += (o, e) => Debug.WriteLine("RetrievedPeripherals");
+        this.cbDelegate.UpdatedStateEvent += (o, e) => Debug.WriteLine($"UpdatedState {this.cbManager.State}");
+        this.cbDelegate.WillRestoreStateEvent += (o, e) => Debug.WriteLine("WillRestoreState");
 #endif
 
-        this.cbManager.UpdatedState += this.WrapEventHandler(this.CbManager_UpdatedState);
-        this.cbManager.DiscoveredPeripheral += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
-        this.cbManager.DisconnectedPeripheral += this.WrapEventHandler<CBPeripheralErrorEventArgs>(this.CbManager_DisconnectedPeripheral);
+        this.cbDelegate.UpdatedStateEvent += this.WrapEventHandler(this.CbManager_UpdatedState);
+        this.cbDelegate.DiscoveredPeripheralEvent += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
+        this.cbDelegate.DisconnectedPeripheralEvent += this.WrapEventHandler<CBPeripheralErrorEventArgs>(this.CbManager_DisconnectedPeripheral);
     }
 
     private event EventHandler<BluetoothState> BluetoothStateSettled;
@@ -161,8 +172,8 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
 
         // wait for the connection to complete
         using (var connectAwaiter = new EventAwaiter<CBPeripheralEventArgs>(
-            h => this.cbManager.ConnectedPeripheral += h,
-            h => this.cbManager.ConnectedPeripheral -= h))
+            h => this.cbDelegate.ConnectedPeripheralEvent += h,
+            h => this.cbDelegate.ConnectedPeripheralEvent -= h))
         {
             this.cbManager.ConnectPeripheral(this.connectedPeripheral);
 
