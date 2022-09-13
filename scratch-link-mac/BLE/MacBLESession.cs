@@ -58,9 +58,6 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         };
         options.Dictionary[CBCentralManager.OptionRestoreIdentifierKey] = new NSString("Scratch Link");
 
-        this.cbManager = new (this.cbDelegate, DispatchQueue.MainQueue, options);
-        Trace.WriteLine("after cb");
-
 #if DEBUG
         this.cbDelegate.ConnectedPeripheralEvent += (o, e) => Debug.WriteLine("ConnectedPeripheral");
         this.cbDelegate.DisconnectedPeripheralEvent += (o, e) => Debug.WriteLine("DisconnectedPeripheral");
@@ -68,13 +65,16 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         this.cbDelegate.FailedToConnectPeripheralEvent += (o, e) => Debug.WriteLine("FailedToConnectPeripheral");
         this.cbDelegate.RetrievedConnectedPeripheralsEvent += (o, e) => Debug.WriteLine("RetrievedConnectedPeripherals");
         this.cbDelegate.RetrievedPeripheralsEvent += (o, e) => Debug.WriteLine("RetrievedPeripherals");
-        this.cbDelegate.UpdatedStateEvent += (o, e) => Debug.WriteLine($"UpdatedState {this.cbManager.State}");
+        this.cbDelegate.UpdatedStateEvent += (o, e) => Debug.WriteLine($"UpdatedState {(o as CBCentralManager).State}");
         this.cbDelegate.WillRestoreStateEvent += (o, e) => Debug.WriteLine("WillRestoreState");
 #endif
 
         this.cbDelegate.UpdatedStateEvent += this.WrapEventHandler(this.CbManager_UpdatedState);
         this.cbDelegate.DiscoveredPeripheralEvent += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
         this.cbDelegate.DisconnectedPeripheralEvent += this.WrapEventHandler<CBPeripheralErrorEventArgs>(this.CbManager_DisconnectedPeripheral);
+
+        this.cbManager = new (this.cbDelegate, DispatchQueue.MainQueue, options);
+        Trace.WriteLine("after cb");
     }
 
     private event EventHandler<BluetoothState> BluetoothStateSettled;
@@ -315,7 +315,10 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
 
     private async void CbManager_UpdatedState(object sender, EventArgs e)
     {
-        var cbState = this.cbManager.State;
+        // this can fire during construction of `this.cbManager`, before it actually gets set
+        // in that case `this.cbManager` is null, so access the manager through `sender` instead
+        var cbManager = sender as CBCentralManager;
+        var cbState = cbManager.State;
 
         switch (cbState)
         {
@@ -336,7 +339,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
                 break;
             case CBCentralManagerState.Unknown:
             default:
-                Trace.WriteLine($"Bluetooth transitioned to unknown state: {this.cbManager.State}");
+                Trace.WriteLine($"Bluetooth transitioned to unknown state: {cbState}");
                 break;
         }
 
@@ -368,7 +371,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         // drop the peripheral & session if necessary
         if (this.CurrentBluetoothState != BluetoothState.Available && this.connectedPeripheral != null)
         {
-            this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
+            cbManager.CancelPeripheralConnection(this.connectedPeripheral);
             this.connectedPeripheral.Dispose();
             this.connectedPeripheral = null;
 
