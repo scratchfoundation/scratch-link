@@ -273,6 +273,8 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
                     $"2. Find {device.NameOrAddress} and press 'Connect'",
                     $"3. Follow the instructions on your computer and/or device",
                     $"   until {device.NameOrAddress} displays 'Connected'",
+                    "   * Check 'Options' to make sure the PIN / Passkey / Code",
+                    "     matches on your computer and your device",
                     "4. Close Bluetooth Preferences",
                     "5. Press OK to continue",
                     "6. You might need to retry the connection")),
