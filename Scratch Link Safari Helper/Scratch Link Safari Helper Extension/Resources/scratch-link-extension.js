@@ -89,8 +89,19 @@
         // we can reuse the same message repeatedly to save on GC
         const pollMessageId = 'web-extension-poll';
         const sessionPollMessage = {method: 'poll', session: sessionId, id: pollMessageId};
+
+        let pollPending = 0;
+
+        const pollForMessages = () => {
+            // if there's no limit here, poll calls can stack up and eventually cause a crash
+            // allowing 1 extra request to be inflight might offer a slightly better chance of keeping both ends busy
+            if (pollPending > 1) return;
+            ++pollPending;
+            port.postMessage(sessionPollMessage);
+        };
+
         const pollInterval = setInterval(
-            () => port.postMessage(sessionPollMessage),
+            pollForMessages,
             1000 / pollFrequency
         );
 
@@ -105,6 +116,7 @@
         const onMessageFromScratchLink = messageFromScratchLink => {
             switch (messageFromScratchLink.id) {
                 case pollMessageId:
+                    --pollPending;
                     handlePollResults(sessionId, messageFromScratchLink.result);
                     break;
                 default:
