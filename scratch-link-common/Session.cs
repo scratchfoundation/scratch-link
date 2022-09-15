@@ -271,15 +271,15 @@ public class Session : IDisposable
             try
             {
                 var pingResult = await this.SendRequest("ping", null);
-                Debug.Print($"Got result from ping: {pingResult}");
+                Trace.WriteLine($"Got result from ping: {pingResult}");
             }
             catch (JsonRpc2Exception e)
             {
-                Debug.Print($"Got JSON-RPC error from ping: {e.Error}");
+                Trace.WriteLine($"Got JSON-RPC error from ping: {e.Error}");
             }
             catch (Exception e)
             {
-                Debug.Print($"Got unrecognized exception from ping: {e}");
+                Trace.WriteLine($"Got unrecognized exception from ping: {e}");
             }
         });
         return Task.FromResult<object>("willPing");
@@ -357,7 +357,7 @@ public class Session : IDisposable
         }
         catch (Exception e)
         {
-            Debug.Print($"Exception trying to send request: {method}", parameters);
+            Trace.WriteLine($"Exception trying to send request: {method}, params={parameters}");
             pendingRequest.TrySetException(e);
             throw;
         }
@@ -395,27 +395,27 @@ public class Session : IDisposable
 
         try
         {
-            Debug.Print($"handling: {request.Method}");
+            // Trace.WriteLine($"handling: {request.Method}");
             result = await handler(request.Method, request.Params as JsonElement?);
         }
         catch (JsonRpc2Exception e)
         {
-            Debug.Print($"JsonRpc2Exception: {e}", e.StackTrace);
+            Trace.WriteLine($"JsonRpc2Exception: {e}", e.StackTrace);
             error = e.Error;
         }
         catch (OperationCanceledException e)
         {
-            Debug.Print($"OperationCanceledException: {e}", e.StackTrace);
+            Trace.WriteLine($"OperationCanceledException: {e}", e.StackTrace);
             error = JsonRpc2Error.ApplicationError("operation canceled");
         }
         catch (TimeoutException e)
         {
-            Debug.Print($"TimeoutException: {e}", e.StackTrace);
+            Trace.WriteLine($"TimeoutException: {e}", e.StackTrace);
             error = JsonRpc2Error.ApplicationError("timeout");
         }
         catch (Exception e)
         {
-            Debug.Print($"Exception encountered during call: {e}", e.StackTrace);
+            Trace.WriteLine($"Exception encountered during call: {e}", e.StackTrace);
 #if DEBUG
             error = JsonRpc2Error.ApplicationError($"unhandled error encountered during call: {e}");
 #else
@@ -439,14 +439,14 @@ public class Session : IDisposable
         }
         catch (Exception)
         {
-            Debug.Print($"Response appears to have invalid ID = {response.Id}");
+            Trace.WriteLine($"Response appears to have invalid ID = {response.Id}");
             return;
         }
 
         var requestRecord = this.pendingRequests.GetValueOrDefault(responseId, null);
         if (requestRecord == null)
         {
-            Debug.Print($"Could not find request record with ID = {response.Id}");
+            Trace.WriteLine($"Could not find request record with ID = {response.Id}");
             return;
         }
 
@@ -481,12 +481,12 @@ public class Session : IDisposable
             }
             catch (Exception e)
             {
-                Debug.Print($"Failed to send serialized response due to {e}");
+                Trace.WriteLine($"Failed to send serialized response due to {e}");
             }
         }
         catch (Exception e)
         {
-            Debug.Print($"Failed to serialize response: {response} due to {e}");
+            Trace.WriteLine($"Failed to serialize response: {response} due to {e}");
         }
     }
 

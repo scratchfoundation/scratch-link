@@ -59,14 +59,14 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         options.Dictionary[CBCentralManager.OptionRestoreIdentifierKey] = new NSString("Scratch Link");
 
 #if DEBUG
-        this.cbDelegate.ConnectedPeripheralEvent += (o, e) => Debug.WriteLine("ConnectedPeripheral");
-        this.cbDelegate.DisconnectedPeripheralEvent += (o, e) => Debug.WriteLine("DisconnectedPeripheral");
-        this.cbDelegate.DiscoveredPeripheralEvent += (o, e) => Debug.WriteLine("DiscoveredPeripheral");
-        this.cbDelegate.FailedToConnectPeripheralEvent += (o, e) => Debug.WriteLine("FailedToConnectPeripheral");
-        this.cbDelegate.RetrievedConnectedPeripheralsEvent += (o, e) => Debug.WriteLine("RetrievedConnectedPeripherals");
-        this.cbDelegate.RetrievedPeripheralsEvent += (o, e) => Debug.WriteLine("RetrievedPeripherals");
-        this.cbDelegate.UpdatedStateEvent += (o, e) => Debug.WriteLine($"UpdatedState {(o as CBCentralManager).State}");
-        this.cbDelegate.WillRestoreStateEvent += (o, e) => Debug.WriteLine("WillRestoreState");
+        this.cbDelegate.ConnectedPeripheralEvent += (o, e) => Trace.WriteLine("ConnectedPeripheral");
+        this.cbDelegate.DisconnectedPeripheralEvent += (o, e) => Trace.WriteLine("DisconnectedPeripheral");
+        this.cbDelegate.DiscoveredPeripheralEvent += (o, e) => Trace.WriteLine("DiscoveredPeripheral");
+        this.cbDelegate.FailedToConnectPeripheralEvent += (o, e) => Trace.WriteLine("FailedToConnectPeripheral");
+        this.cbDelegate.RetrievedConnectedPeripheralsEvent += (o, e) => Trace.WriteLine("RetrievedConnectedPeripherals");
+        this.cbDelegate.RetrievedPeripheralsEvent += (o, e) => Trace.WriteLine("RetrievedPeripherals");
+        this.cbDelegate.UpdatedStateEvent += (o, e) => Trace.WriteLine($"UpdatedState {(o as CBCentralManager).State}");
+        this.cbDelegate.WillRestoreStateEvent += (o, e) => Trace.WriteLine("WillRestoreState");
 #endif
 
         this.cbDelegate.UpdatedStateEvent += this.WrapEventHandler(this.CbManager_UpdatedState);
@@ -151,23 +151,23 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         }
 
 #if DEBUG
-        this.connectedPeripheral.DidOpenL2CapChannel += (o, e) => Debug.WriteLine("DidOpenL2CapChannel");
-        this.connectedPeripheral.DiscoveredCharacteristic += (o, e) => Debug.WriteLine("DiscoveredCharacteristic");
-        this.connectedPeripheral.DiscoveredDescriptor += (o, e) => Debug.WriteLine("DiscoveredDescriptor");
-        this.connectedPeripheral.DiscoveredIncludedService += (o, e) => Debug.WriteLine("DiscoveredIncludedService");
-        this.connectedPeripheral.DiscoveredService += (o, e) => Debug.WriteLine("DiscoveredService");
-        this.connectedPeripheral.IsReadyToSendWriteWithoutResponse += (o, e) => Debug.WriteLine("IsReadyToSendWriteWithoutResponse");
-        this.connectedPeripheral.ModifiedServices += (o, e) => Debug.WriteLine("ModifiedServices");
-        this.connectedPeripheral.RssiRead += (o, e) => Debug.WriteLine("RssiRead");
-        this.connectedPeripheral.RssiUpdated += (o, e) => Debug.WriteLine("RssiUpdated");
-        this.connectedPeripheral.UpdatedName += (o, e) => Debug.WriteLine("UpdatedName");
-        this.connectedPeripheral.UpdatedNotificationState += (o, e) => Debug.WriteLine("UpdatedNotificationState");
-        this.connectedPeripheral.UpdatedValue += (o, e) => Debug.WriteLine("UpdatedValue");
-        this.connectedPeripheral.WroteCharacteristicValue += (o, e) => Debug.WriteLine("WroteCharacteristicValue");
-        this.connectedPeripheral.WroteDescriptorValue += (o, e) => Debug.WriteLine("WroteDescriptorValue");
+        this.connectedPeripheral.DidOpenL2CapChannel += (o, e) => Trace.WriteLine("DidOpenL2CapChannel");
+        this.connectedPeripheral.DiscoveredCharacteristic += (o, e) => Trace.WriteLine("DiscoveredCharacteristic");
+        this.connectedPeripheral.DiscoveredDescriptor += (o, e) => Trace.WriteLine("DiscoveredDescriptor");
+        this.connectedPeripheral.DiscoveredIncludedService += (o, e) => Trace.WriteLine("DiscoveredIncludedService");
+        this.connectedPeripheral.DiscoveredService += (o, e) => Trace.WriteLine("DiscoveredService");
+        this.connectedPeripheral.IsReadyToSendWriteWithoutResponse += (o, e) => Trace.WriteLine("IsReadyToSendWriteWithoutResponse");
+        this.connectedPeripheral.ModifiedServices += (o, e) => Trace.WriteLine("ModifiedServices");
+        this.connectedPeripheral.RssiRead += (o, e) => Trace.WriteLine("RssiRead");
+        this.connectedPeripheral.RssiUpdated += (o, e) => Trace.WriteLine("RssiUpdated");
+        this.connectedPeripheral.UpdatedName += (o, e) => Trace.WriteLine("UpdatedName");
+        this.connectedPeripheral.UpdatedNotificationState += (o, e) => Trace.WriteLine("UpdatedNotificationState");
+        this.connectedPeripheral.UpdatedValue += (o, e) => Trace.WriteLine("UpdatedValue");
+        this.connectedPeripheral.WroteCharacteristicValue += (o, e) => Trace.WriteLine("WroteCharacteristicValue");
+        this.connectedPeripheral.WroteDescriptorValue += (o, e) => Trace.WriteLine("WroteDescriptorValue");
 
         // this one is especially noisy
-        // this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Debug.WriteLine("UpdatedCharacterteristicValue");
+        // this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Trace.WriteLine("UpdatedCharacterteristicValue");
 #endif
 
         // wait for the connection to complete

@@ -43,11 +43,11 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         ObjCRuntime.Dlfcn.dlopen("/System.Library/Frameworks/IOBluetooth.framework/IOBluetooth", 0);
 
 #if DEBUG
-        this.inquiry.Completed += (o, e) => Debug.WriteLine($"Inquiry.Completed: Aborted={e.Aborted} Error={e.Error}");
-        this.inquiry.DeviceFound += (o, e) => Debug.WriteLine($"Inquiry.DeviceFound: {e.Device}");
-        this.inquiry.DeviceInquiryStarted += (o, e) => Debug.WriteLine("Inquiry.Started");
-        this.inquiry.DeviceNameUpdated += (o, e) => Debug.WriteLine($"Inquiry.DeviceNameUpdated: Remaining={e.DevicesRemaining} Device={e.Device}");
-        this.inquiry.UpdatingDeviceNamesStarted += (o, e) => Debug.WriteLine($"Inquiry.UpdatingDeviceNamesStarted: Remaining={e.DevicesRemaining}");
+        this.inquiry.Completed += (o, e) => Trace.WriteLine($"Inquiry.Completed: Aborted={e.Aborted} Error={e.Error}");
+        this.inquiry.DeviceFound += (o, e) => Trace.WriteLine($"Inquiry.DeviceFound: {e.Device}");
+        this.inquiry.DeviceInquiryStarted += (o, e) => Trace.WriteLine("Inquiry.Started");
+        this.inquiry.DeviceNameUpdated += (o, e) => Trace.WriteLine($"Inquiry.DeviceNameUpdated: Remaining={e.DevicesRemaining} Device={e.Device}");
+        this.inquiry.UpdatingDeviceNamesStarted += (o, e) => Trace.WriteLine($"Inquiry.UpdatingDeviceNamesStarted: Remaining={e.DevicesRemaining}");
 #endif
 
         this.inquiry.DeviceFound += this.WrapEventHandler<DeviceFoundEventArgs>(this.Inquiry_DeviceFoundAsync);
@@ -126,15 +126,15 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         var rfcommDelegate = new RfcommChannelEventDelegate();
 
 #if DEBUG
-        rfcommDelegate.RfcommChannelClosedEvent += (o, e) => Debug.WriteLine($"RfcommChannelClosedEvent on channel {e.Channel.ChannelID}");
-        rfcommDelegate.RfcommChannelControlSignalsChangedEvent += (o, e) => Debug.WriteLine($"RfcommChannelControlSignalsChangedEvent on channel {e.Channel.ChannelID}");
-        rfcommDelegate.RfcommChannelFlowControlChangedEvent += (o, e) => Debug.WriteLine($"RfcommChannelFlowControlChangedEvent on channel {e.Channel.ChannelID}");
-        rfcommDelegate.RfcommChannelOpenCompleteEvent += (o, e) => Debug.WriteLine($"RfcommChannelOpenCompleteEvent on channel {e.Channel.ChannelID} with error={e.Error}");
+        rfcommDelegate.RfcommChannelClosedEvent += (o, e) => Trace.WriteLine($"RfcommChannelClosedEvent on channel {e.Channel.ChannelID}");
+        rfcommDelegate.RfcommChannelControlSignalsChangedEvent += (o, e) => Trace.WriteLine($"RfcommChannelControlSignalsChangedEvent on channel {e.Channel.ChannelID}");
+        rfcommDelegate.RfcommChannelFlowControlChangedEvent += (o, e) => Trace.WriteLine($"RfcommChannelFlowControlChangedEvent on channel {e.Channel.ChannelID}");
+        rfcommDelegate.RfcommChannelOpenCompleteEvent += (o, e) => Trace.WriteLine($"RfcommChannelOpenCompleteEvent on channel {e.Channel.ChannelID} with error={e.Error}");
 
         // These are especially noisy
-        // rfcommDelegate.RfcommChannelDataEvent += (o, e) => Debug.WriteLine($"RfcommChannelDataEvent on channel {e.Channel.ChannelID} with length {e.Data.Length}");
-        // rfcommDelegate.RfcommChannelQueueSpaceAvailableEvent += (o, e) => Debug.WriteLine($"RfcommChannelQueueSpaceAvailableEvent on channel {e.Channel.ChannelID}");
-        // rfcommDelegate.RfcommChannelWriteCompleteEvent += (o, e) => Debug.WriteLine($"RfcommChannelWriteCompleteEvent on channel {e.Channel.ChannelID} with error={e.Error}");
+        // rfcommDelegate.RfcommChannelDataEvent += (o, e) => Trace.WriteLine($"RfcommChannelDataEvent on channel {e.Channel.ChannelID} with length {e.Data.Length}");
+        // rfcommDelegate.RfcommChannelQueueSpaceAvailableEvent += (o, e) => Trace.WriteLine($"RfcommChannelQueueSpaceAvailableEvent on channel {e.Channel.ChannelID}");
+        // rfcommDelegate.RfcommChannelWriteCompleteEvent += (o, e) => Trace.WriteLine($"RfcommChannelWriteCompleteEvent on channel {e.Channel.ChannelID} with error={e.Error}");
 #endif
 
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
