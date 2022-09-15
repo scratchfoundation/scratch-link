@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using AppKit;
 using CoreFoundation;
@@ -139,17 +140,36 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
 
+#if false // rely on the value returned by OpenRfcommChannel, like Scratch Link 1.x did: doesn't seem reliable on macOS 12
+        Trace.WriteLine("about to openRfcommChannel");
+        var openResult = (IOReturn)device.OpenRfcommChannelSync(out var channel, 1, rfcommDelegate);
+        Trace.WriteLine($"openRfcommChannel result={openResult.ToDebugString()}");
+        if (openResult != IOReturn.Success)
+        {
+            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
+        }
+#elif false // ignore OpenRfcommChannel return value and wait for RfcommChannelOpenComplete event: doesn't seem reliable on macOS <12
         RfcommChannel channel = null;
         var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
-            h => rfcommDelegate.RfcommChannelOpenCompleteEvent += h,
-            h => rfcommDelegate.RfcommChannelOpenCompleteEvent -= h,
+            h =>
+            {
+                rfcommDelegate.RfcommChannelOpenCompleteEvent += h;
+                Trace.WriteLine("hooked RfcommChannelOpenCompleteEvent");
+            },
+            h =>
+            {
+                rfcommDelegate.RfcommChannelOpenCompleteEvent -= h;
+                Trace.WriteLine("unhooked RfcommChannelOpenCompleteEvent");
+            },
             TimeSpan.FromSeconds(30),
             CancellationToken.None,
             () =>
             {
                 // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
                 // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
-                device.OpenRfcommChannelAsync(out channel, 1, rfcommDelegate);
+                Trace.WriteLine("about to openRfcommChannel");
+                var openResult = (IOReturn)device.OpenRfcommChannelSync(out channel, 1, rfcommDelegate);
+                Trace.WriteLine($"Ignoring openRfcommChannel result={openResult.ToDebugString()}");
             });
 
         if (openChannelResult.Error != IOReturn.Success)
@@ -157,6 +177,27 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             Trace.WriteLine($"Opening RFCOMM channel failed: {openChannelResult.Error.ToDebugString()}");
             throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
         }
+#else // ignore all secondary indicators and just poll to see if the channel becomes open
+        Trace.WriteLine("about to openRfcommChannel");
+        var openResult = (IOReturn)device.OpenRfcommChannelSync(out var channel, 1, rfcommDelegate);
+        Trace.WriteLine($"ignoring openRfcommChannel result={openResult.ToDebugString()}");
+
+        var connectionDidTimeout = false;
+        using (var connectionTimer = new Timer((_) => { connectionDidTimeout = true; }, null, TimeSpan.FromSeconds(30), Timeout.InfiniteTimeSpan))
+        {
+            while (!(channel.IsOpen || connectionDidTimeout))
+            {
+                await Task.Delay(100);
+            }
+        }
+
+        if (!channel.IsOpen)
+        {
+            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
+        }
+#endif
+
+        Trace.WriteLine("RFCOMM channel is open");
 
         // finally, commit the connection to shared state
         await this.rfcommQueue.DispatchTask(() =>
@@ -169,7 +210,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         return null;
     }
 
-    /// <inheritdoc/>
+        /// <inheritdoc/>
     protected override async Task<int> DoSend(byte[] buffer)
     {
         ushort shortLength = (ushort)buffer.Length;
