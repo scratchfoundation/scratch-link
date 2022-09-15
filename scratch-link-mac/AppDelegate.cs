@@ -68,7 +68,7 @@ public class AppDelegate : NSApplicationDelegate
         var isExtensionSupported = NSProcessInfo.ProcessInfo.IsOperatingSystemAtLeastVersion(new NSOperatingSystemVersion(10, 15, 0));
 
         var extensionMenuItem = isExtensionSupported
-            ? new NSMenuItem("Manage Safari extensions", new Selector(ExtensionItemSelected), string.Empty)
+            ? new NSMenuItem("Manage Safari extensions...", new Selector(ExtensionItemSelected), string.Empty)
             : null;
 
         var menu = new NSMenu(appTitle);
