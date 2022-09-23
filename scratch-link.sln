@@ -31,6 +31,11 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "scratch-link-common", "scra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "scratch-link-mac", "scratch-link-mac\scratch-link-mac.csproj", "{CDF7978E-13C6-40A9-81F9-2A3B4F7E861C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedProps", "SharedProps", "{52974047-90CA-4584-811B-242220DB05AB}"
+	ProjectSection(SolutionItems) = preProject
+		SharedProps\StyleCop.props = SharedProps\StyleCop.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +58,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{76FB6BC3-4F2E-46D1-97C2-60345B053C9C} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
+		{52974047-90CA-4584-811B-242220DB05AB} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {61F7FB11-1E47-470C-91E2-47F8143E1572}
