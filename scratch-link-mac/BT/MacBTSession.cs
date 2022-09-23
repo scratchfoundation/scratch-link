@@ -179,7 +179,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         }
 #else // ignore all secondary indicators and just poll to see if the channel becomes open
         Trace.WriteLine("about to openRfcommChannel");
-        var openResult = (IOReturn)device.OpenRfcommChannelSync(out var channel, 1, rfcommDelegate);
+        var openResult = (IOReturn)device.OpenRfcommChannelAsync(out var channel, 1, rfcommDelegate);
         Trace.WriteLine($"ignoring openRfcommChannel result={openResult.ToDebugString()}");
 
         var connectionDidTimeout = false;
@@ -305,6 +305,12 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             (e.Device.DeviceClassMinor != 0))
         {
             // minor class doesn't match
+            return;
+        }
+
+        if (e.Device.IsConnected)
+        {
+            Trace.WriteLine($"BT ignoring connected device that would otherwise match: {e.Device.NameOrAddress}");
             return;
         }
 
