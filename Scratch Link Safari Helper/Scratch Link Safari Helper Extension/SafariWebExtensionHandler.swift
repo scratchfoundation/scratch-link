@@ -87,6 +87,8 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                     response["error"] = error
                 }
                 self.completeContextRequest(for: context, withMessage: response)
+            } else {
+                self.completeContextRequest(for: context)
             }
         }
     }
@@ -149,11 +151,17 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         return completion(.failure("unrecognized method"))
     }
 
-    func completeContextRequest(for context: NSExtensionContext, withMessage message: JSONObject?, completionHandler: ((Bool) -> Void)? = nil) {
+    // Complete the request without returning anything. Do not use this to return nil/null!
+    func completeContextRequest(for context: NSExtensionContext) {
+        context.completeRequest(returningItems: nil, completionHandler: nil)
+    }
+
+    // Complete the request and return a JSON value. Pass nil for 'message' to return null.
+    func completeContextRequest(for context: NSExtensionContext, withMessage message: JSONObject?) {
         let response = NSExtensionItem()
         if let message = message {
             response.userInfo = [ SFExtensionMessageKey: message ]
         }
-        context.completeRequest(returningItems: [response], completionHandler: completionHandler)
+        context.completeRequest(returningItems: [response], completionHandler: nil)
     }
 }
