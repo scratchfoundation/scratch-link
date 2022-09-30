@@ -7,12 +7,9 @@
 
 import Foundation
 import SafariServices
-import os.log
 
 let myBundleIdentifier = Bundle.main.bundleIdentifier ?? "nil"
 let SFExtensionMessageKey = "message"
-
-fileprivate let logger = OSLog(subsystem: myBundleIdentifier, category: "SessionDelegate")
 
 var sessionMap = [UInt32?: SessionDelegate]()
 
@@ -40,17 +37,17 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
     func beginRequest(with context: NSExtensionContext) {
         guard let message = getMessage(from: context) else {
-            os_log("could not retrieve message")
+            ScratchLog.log("could not retrieve message", type: .error)
             return
         }
 
         guard let jsonMessage = message as? JSONObject else {
-            os_log("ignoring malformed message")
+            ScratchLog.log("ignoring malformed message", type: .error)
             return
         }
 
         guard let method = jsonMessage["method"] as? String else {
-            os_log("ignoring message without method")
+            ScratchLog.log("ignoring message without method", type: .error)
             return
         }
 
@@ -148,11 +145,7 @@ class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
     }
 
     func unrecognizedMethod(with sessionID: UInt32?, method: String, params: JSONObject?, id: JSONValue?, completion: @escaping (JSONValueResult) -> Void) -> Void {
-        if #available(macOSApplicationExtension 11.0, *) {
-            os_log("Ignoring call to unrecognized method: \(method)")
-        } else {
-            os_log("Ignoring call to unrecognized method")
-        }
+        ScratchLog.log("Ignoring call to unrecognized method: %{public}@", type: .error, method)
         return completion(.failure("unrecognized method"))
     }
 

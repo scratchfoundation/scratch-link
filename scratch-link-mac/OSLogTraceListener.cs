@@ -13,15 +13,28 @@ using CoreFoundation;
 /// </summary>
 public class OSLogTraceListener : TraceListener
 {
+    private const string LogSubsystem = "org.scratch.link";
+    private const string LogCategory = "app";
+
+    private readonly OSLog log;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OSLogTraceListener"/> class.
+    /// </summary>
+    public OSLogTraceListener()
+    {
+        this.log = new OSLog(LogSubsystem, LogCategory);
+    }
+
     /// <inheritdoc/>
     public override void Write(string message)
     {
-        OSLog.Default.Log(message);
+        this.log.Log(message);
     }
 
     /// <inheritdoc/>
     public override void WriteLine(string message)
     {
-        OSLog.Default.Log(message);
+        this.log.Log(message);
     }
 }
