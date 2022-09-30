@@ -6,9 +6,6 @@
 //
 
 import Foundation
-import os.log
-
-fileprivate let logger = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "nil", category: "SessionDelegate")
 
 class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
 
@@ -105,7 +102,7 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
         if let openCallback = openCallback {
             openCallback(.failure("closed"))
         }
-        os_log("session closed")
+        ScratchLog.log("session closed", type: .info)
         let oldCallbacks = closeCallbacks
         closeCallbacks = []
         for callback in oldCallbacks {
@@ -123,31 +120,26 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseText.data(using: .utf8)!, options: []) as? JSONObject {
                         onMessageFromScratchLink(responseJSON)
                     } else {
-                        os_log(messageMalformed)
+                        ScratchLog.log(messageMalformed, type: .error)
                     }
                 case .data(let responseData):
                     if let responseJSON = try? JSONSerialization.jsonObject(with: responseData, options: []) as? JSONObject {
                         onMessageFromScratchLink(responseJSON)
                     } else {
-                        os_log(messageMalformed)
+                        ScratchLog.log(messageMalformed, type: .error)
                     }
                     break // TODO: use responseData
                 @unknown default:
                     break // TODO: report error
                 }
             case .failure(let error):
-                let errorString = error.localizedDescription
-                if #available(macOSApplicationExtension 11.0, *) {
-                    os_log("error receiving from Scratch Link: \(errorString)")
-                } else {
-                    os_log("error receiving from Scratch Link")
-                }
+                ScratchLog.log("error receiving from Scratch Link: %{public}@", type: .error, String(describing: error))
             }
             if webSocket?.state == .running {
                 webSocket?.receive(completionHandler: receiveHandler)
             }
             else {
-                os_log("skipping receive: socket not running")
+                ScratchLog.log("skipping receive: socket not running", type: .error)
             }
         }
         webSocket?.receive(completionHandler: receiveHandler)
