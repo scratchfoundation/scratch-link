@@ -139,7 +139,8 @@ class SessionDelegate: NSObject, URLSessionWebSocketDelegate {
                 webSocket?.receive(completionHandler: receiveHandler)
             }
             else {
-                ScratchLog.log("skipping receive: socket not running", type: .error)
+                ScratchLog.log("closing session: socket not running", type: .error)
+                onMessageFromScratchLink(["method": "sessionDidClose"])
             }
         }
         webSocket?.receive(completionHandler: receiveHandler)
