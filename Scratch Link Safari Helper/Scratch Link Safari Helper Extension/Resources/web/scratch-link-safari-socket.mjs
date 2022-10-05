@@ -58,7 +58,7 @@ const messageListener = function (event) {
     } else {
         const session = sessions.get(message.session);
         if (session) {
-            session._handleMessage(message.data);
+            session._handleMessageWrapper(message.data);
         }
     }
 };
@@ -153,7 +153,7 @@ class ScratchLinkSafariSocket {
     _close () {
         if (this._id) {
             sessions.delete(this._id);
-            this._onClose();
+            this._onClose(new CloseEvent('close'));
             this._id = null;
         }
     }
@@ -200,6 +200,21 @@ class ScratchLinkSafariSocket {
      */
     setHandleMessage (callback) {
         this._handleMessage = callback;
+    }
+
+    _handleMessageWrapper (message) {
+        switch (message.method) {
+        case 'sessionDidClose':
+            return this._handleSessionDidClose();
+        default:
+            return this._handleMessage(message);
+        }
+    }
+
+    _handleSessionDidClose () {
+        console.error('session closed unexpectedly');
+        // call `close()`, not `_onClose()`, because we need to notify the background script
+        this.close();
     }
 
     _sendNotify (method, params = {}) {
