@@ -1,5 +1,10 @@
 
 /**
+ * How long should we wait for a response to `open` before throwing a timeout?
+ */
+const openTimeout = 5000; // milliseconds
+
+/**
  * Has the message listener been installed?
  */
 let listenerInstalled = false;
@@ -118,14 +123,21 @@ class ScratchLinkSafariSocket {
             throw new Error('Unknown session type: ' + this._type);
         }
         installListener();
-        this._sendRequest('open', openParams).then(
+        Promise.race([
+            this._sendRequest('open', openParams),
+            new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    reject(new Event('error')) // mimic behavior in other browsers
+                }, openTimeout);
+            })
+        ]).then(
             result => {
                 this._id = result;
                 sessions.set(this._id, this);
                 this._onOpen();
             },
             error => {
-                this._close();
+                this._onError(error);
             }
         );
     }
