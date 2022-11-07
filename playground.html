@@ -36,6 +36,18 @@
             <button id="getServicesBLE">Get services of connected peripheral</button>
         </div>
         <fieldset>
+            <legend>Stress Test</legend>
+            <button id="stressBLE">Go</button>
+            <input id="stressPingBLE" type="checkbox" title="Ping?" />
+            <label for="stressPingBLE">Ping?</label>
+            <input id="stressGetVersionBLE" type="checkbox" title="Get version?" />
+            <label for="stressGetVersionBLE">Get version?</label>
+            <input id="stressDiscoverBLE" type="checkbox" title="Discover?" />
+            <label for="stressDiscoverBLE">Discover?</label>
+            <input id="stressConnectBLE" type="checkbox" title="Connect?" />
+            <label for="stressConnectBLE">Connect?</label>
+        </fieldset>
+        <fieldset>
             <legend>Optional Services</legend>
             <textarea id="optionalServicesBLE" placeholder="Optional services, if any, separated by whitespace" style="width:20rem;height:3rem;"></textarea>
         </fieldset>
@@ -66,6 +78,18 @@
             <button id="discoverBT">Find BT devices</button>
             <button id="closeBT">Goodbye</button>
         </div>
+        <fieldset>
+            <legend>Stress Test</legend>
+            <button id="stressBT">Go</button>
+            <input id="stressPingBT" type="checkbox" title="Ping?" />
+            <label for="stressPingBT">Ping?</label>
+            <input id="stressGetVersionBT" type="checkbox" title="Get version?" />
+            <label for="stressGetVersionBT">Get version?</label>
+            <input id="stressDiscoverBT" type="checkbox" title="Discover?" />
+            <label for="stressDiscoverBT">Discover?</label>
+            <input id="stressConnectBT" type="checkbox" title="Connect?" />
+            <label for="stressConnectBT">Connect?</label>
+        </fieldset>
         <div>
             <input id="peripheralId" value="0016533d0504" type="text" placeholder="Peripheral id">
             <button id="connectBT">Make friends</button>
