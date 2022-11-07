@@ -6,9 +6,82 @@
 // - ScratchLinkSafariSocket (if Safari extension is present)
 /// <reference path="global.d.ts"/>
 
+class LogDisplay {
+    /**
+     * @param {HTMLElement} logElement
+     */
+    constructor (logElement, lineCount = 256) {
+        this._logElement = logElement;
+        this._lineCount = lineCount;
+        this._lines = [];
+        this._dirty = false;
+        this._follow = true;
+    }
+
+    /**
+     * @param {string} text
+     */
+    addLine (text) {
+        this._lines.push(text);
+        if (!this._dirty) {
+            this._dirty = true;
+            requestAnimationFrame(() => {
+                this._trim();
+                this._logElement.textContent = this._lines.join('\n');
+                if (this._follow) {
+                    this._logElement.scrollTop = this._logElement.scrollHeight;
+                }
+                this._dirty = false;
+            });
+        }
+    }
+
+    _trim () {
+        this._lines = this._lines.splice(-this._lineCount);
+    }
+}
+
+const log = document.getElementById('log');
+const follow = document.getElementById('follow');
+const logDisplay = new LogDisplay(log);
+
+/**
+ * @param {string} text
+ */
+function addLine (text) {
+    logDisplay.addLine(text);
+    logDisplay._follow = follow.checked;
+}
+
+/**
+ * @param {object} o
+ */
+function stringify (o) {
+    if (o instanceof Event) {
+        if (o instanceof ErrorEvent) {
+            return `${o.constructor.name} {error: ${stringify(o.error)}`;
+        }
+        return `${o.constructor.name} {type: "${o.type}"}`;
+    }
+    return JSON.stringify(o);//, o && Object.getOwnPropertyNames(o));
+}
+
+class DidReceiveCallEvent extends Event {
+    constructor(method, params) {
+        super(method); // this is probably not a good idea in untrusted environments but it works for this playground
+        this.method = method;
+        this.params = params;
+    }
+}
+
 class ScratchLinkClient extends JSONRPC {
+    /**
+     * @param {string} type
+     */
     constructor(type) {
         super();
+        this._scratchLinkPeripheralType = type;
+        this._events = new EventTarget();
         const ScratchLinkSafariSocket = self.Scratch && self.Scratch.ScratchLinkSafariSocket;
         const useSafariSocket = ScratchLinkSafariSocket && ScratchLinkSafariSocket.isSafariHelperCompatible();
         addLine(`Using ${useSafariSocket ? 'Safari WebExtension' : 'WebSocket'}`);
@@ -16,9 +89,6 @@ class ScratchLinkClient extends JSONRPC {
             new ScratchLinkSafariSocket(type) :
             new ScratchLinkWebSocket(type);
         addLine(`Socket created for ${type}`);
-        this._socket.setOnOpen(() => {
-            addLine(`Socket opened for ${type}`);
-        });
         this._socket.setOnClose(e => {
             addLine(`Socket closed: ${stringify(e)}`);
         });
@@ -29,11 +99,23 @@ class ScratchLinkClient extends JSONRPC {
             addLine(`Received message: ${stringify(message)}`);
             this._handleMessage(message);
         });
-        this._sendMessage = message => {
+        this._sendMessage = (/** @type {object} */ message) => {
             addLine(`Sending message: ${stringify(message)}`);
             return this._socket.sendMessage(message);
         };
-        this._socket.open();
+    }
+
+    /**
+     * @returns {Promise<ScratchLinkClient>}
+     */
+    open () {
+        return new Promise(resolve => {
+            this._socket.setOnOpen(() => {
+                addLine(`Socket opened for ${this._scratchLinkPeripheralType}`);
+                resolve(this);
+            });
+            this._socket.open();
+        });
     }
 }
 
@@ -44,12 +126,20 @@ class ScratchBLE extends ScratchLinkClient {
         this.discoveredPeripheralId = null;
     }
 
+    /**
+     * @param {object} options
+     */
     requestDevice(options) {
         return this.sendRemoteRequest('discover', options);
     }
 
+    /**
+     * @param {any} method
+     * @param {{ [paramName: string]: any; }} params
+     */
     didReceiveCall(method, params) {
         addLine(`Received call to method: ${method}`);
+        this._events.dispatchEvent(new DidReceiveCallEvent(method, params));
         switch (method) {
         case 'didDiscoverPeripheral':
             addLine(`Peripheral discovered: ${stringify(params)}`);
@@ -61,6 +151,10 @@ class ScratchBLE extends ScratchLinkClient {
         }
     }
 
+    /**
+     * @param {number | string} serviceId
+     * @param {number | string} characteristicId
+     */
     read(serviceId, characteristicId, optStartNotifications = false) {
         const params = {
             serviceId,
@@ -72,6 +166,11 @@ class ScratchBLE extends ScratchLinkClient {
         return this.sendRemoteRequest('read', params);
     }
 
+    /**
+     * @param {number | string} serviceId
+     * @param {number | string} characteristicId
+     * @param {string} message
+     */
     write(serviceId, characteristicId, message, encoding = null, withResponse = null) {
         const params = { serviceId, characteristicId, message };
         if (encoding) {
@@ -89,19 +188,34 @@ class ScratchBT extends ScratchLinkClient {
         super('BT');
     }
 
+    /**
+     * @param {object} options
+     */
     requestDevice(options) {
         return this.sendRemoteRequest('discover', options);
     }
 
+    /**
+     * @param {object} options
+     */
     connectDevice(options) {
         return this.sendRemoteRequest('connect', options);
     }
 
+    /**
+     * @param {object} options
+     */
     sendMessage(options) {
         return this.sendRemoteRequest('send', options);
     }
 
+    /**
+     * @param {string} method
+     * @param {{ [paramName: string]: any; }} params
+     */
     didReceiveCall(method, params) {
+        addLine(`Received call to method: ${method}`);
+        this._events.dispatchEvent(new DidReceiveCallEvent(method, params));
         switch (method) {
             case 'didDiscoverPeripheral':
                 addLine(`Peripheral discovered: ${stringify(params)}`);
@@ -116,6 +230,10 @@ class ScratchBT extends ScratchLinkClient {
     }
 }
 
+/**
+ * @param {string} buttonId
+ * @param {function} func
+ */
 function attachFunctionToButton(buttonId, func) {
     const button = document.getElementById(buttonId);
     button.onclick = () => {
@@ -127,13 +245,30 @@ function attachFunctionToButton(buttonId, func) {
     }
 }
 
+/**
+ * @param {ScratchLinkClient} session
+ */
 function getVersion(session) {
-    session.sendRemoteRequest('getVersion').then(
+    return session.sendRemoteRequest('getVersion').then(
         x => {
             addLine(`Version request resolved with: ${stringify(x)}`);
         },
         e => {
             addLine(`Version request rejected with: ${stringify(e)}`);
+        }
+    );
+}
+
+/**
+ * @param {ScratchLinkClient} session
+ */
+function pingMe (session) {
+    return session.sendRemoteRequest('pingMe').then(
+        x => {
+            addLine(`Ping request resolved with: ${stringify(x)}`);
+        },
+        e => {
+            addLine(`Ping request rejected with: ${stringify(e)}`);
         }
     );
 }
@@ -144,17 +279,7 @@ function initBLE() {
     }
     addLine('Connecting...');
     self.Scratch.BLE = new ScratchBLE();
-}
-
-function pingBLE() {
-    Scratch.BLE.sendRemoteRequest('pingMe').then(
-        x => {
-            addLine(`Ping request resolved with: ${stringify(x)}`);
-        },
-        e => {
-            addLine(`Ping request rejected with: ${stringify(e)}`);
-        }
-    );
+    return self.Scratch.BLE.open();
 }
 
 const filterInputsBLE = [];
@@ -257,7 +382,7 @@ function discoverBLE() {
         if (filterInputs.exactNameInput.value) filter.name = filterInputs.exactNameInput.value;
         if (filterInputs.namePrefixInput.value) filter.namePrefix = filterInputs.namePrefixInput.value;
         if (filterInputs.servicesInput.value.trim()) filter.services = filterInputs.servicesInput.value.trim().split(/\s+/);
-        if (filter.services) filter.services = filter.services.map(s => parseInt(s));
+        if (filter.services) filter.services = filter.services.map((/** @type {string} */ s) => parseInt(s));
 
         let hasManufacturerDataFilters = false;
         const manufacturerDataFilters = {};
@@ -267,8 +392,8 @@ function discoverBLE() {
             const manufacturerDataFilter = {};
             manufacturerDataFilters[id] = manufacturerDataFilter;
             hasManufacturerDataFilters = true;
-            if (manufacturerDataFilterInputs.prefixInput.value) manufacturerDataFilter.dataPrefix = manufacturerDataFilterInputs.prefixInput.value.trim().split(/\s+/).map(p => parseInt(p));
-            if (manufacturerDataFilterInputs.maskInput.value) manufacturerDataFilter.mask = manufacturerDataFilterInputs.maskInput.value.trim().split(/\s+/).map(m => parseInt(m));
+            if (manufacturerDataFilterInputs.prefixInput.value) manufacturerDataFilter.dataPrefix = manufacturerDataFilterInputs.prefixInput.value.trim().split(/\s+/).map((/** @type {string} */ p) => parseInt(p));
+            if (manufacturerDataFilterInputs.maskInput.value) manufacturerDataFilter.mask = manufacturerDataFilterInputs.maskInput.value.trim().split(/\s+/).map((/** @type {string} */ m) => parseInt(m));
         }
         if (hasManufacturerDataFilters) {
             filter.manufacturerData = manufacturerDataFilters;
@@ -281,9 +406,11 @@ function discoverBLE() {
     };
 
     const optionalServicesBLE = document.getElementById('optionalServicesBLE');
-    if (optionalServicesBLE.value.trim()) deviceDetails.optionalServices = optionalServicesBLE.value.trim().split(/\s+/);
+    if (optionalServicesBLE.value.trim()) {
+        deviceDetails.optionalServices = optionalServicesBLE.value.trim().split(/\s+/);
+    }
 
-    Scratch.BLE.requestDevice(
+    return Scratch.BLE.requestDevice(
         deviceDetails
     ).then(
         x => {
@@ -297,7 +424,7 @@ function discoverBLE() {
 
 function connectBLE() {
     // this should really be implicit in `requestDevice` but splitting it out helps with debugging
-    Scratch.BLE.sendRemoteRequest(
+    return Scratch.BLE.sendRemoteRequest(
         'connect',
         { peripheralId: Scratch.BLE.discoveredPeripheralId }
     ).then(
@@ -311,7 +438,7 @@ function connectBLE() {
 }
 
 function getServicesBLE() {
-    Scratch.BLE.sendRemoteRequest(
+    return Scratch.BLE.sendRemoteRequest(
         'getServices'
     ).then(
         x => {
@@ -324,14 +451,14 @@ function getServicesBLE() {
 }
 
 function setServiceMicroBit() {
-    if (filtersBLE.length < 1) addFilterBLE();
+    if (filterInputsBLE.length < 1) addFilterBLE();
     filterInputsBLE[0].namePrefixInput.value = null;
     filterInputsBLE[0].exactNameInput.value = null;
     filterInputsBLE[0].servicesInput.value = '0xf005';
 }
 
 function readMicroBit() {
-    Scratch.BLE.read(0xf005, '5261da01-fa7e-42ab-850b-7c80220097cc', true).then(
+    return Scratch.BLE.read(0xf005, '5261da01-fa7e-42ab-850b-7c80220097cc', true).then(
         x => {
             addLine(`read resolved to: ${stringify(x)}`);
         },
@@ -343,7 +470,7 @@ function readMicroBit() {
 
 function writeMicroBit() {
     const message = _encodeMessage('LINK');
-    Scratch.BLE.write(0xf005, '5261da02-fa7e-42ab-850b-7c80220097cc', message, 'base64').then(
+    return Scratch.BLE.write(0xf005, '5261da02-fa7e-42ab-850b-7c80220097cc', message, 'base64').then(
         x => {
             addLine(`write resolved to: ${stringify(x)}`);
         },
@@ -354,14 +481,14 @@ function writeMicroBit() {
 }
 
 function setServiceWeDo2() {
-    if (filtersBLE.length < 1) addFilterBLE();
+    if (filterInputsBLE.length < 1) addFilterBLE();
     filterInputsBLE[0].namePrefixInput.value = null;
     filterInputsBLE[0].exactNameInput.value = null;
     filterInputsBLE[0].servicesInput.value = '00001523-1212-efde-1523-785feabcd123';
 }
 
 function setGDXFOR() {
-    if (filtersBLE.length < 1) addFilterBLE();
+    if (filterInputsBLE.length < 1) addFilterBLE();
     const optionalServicesBLE = document.getElementById('optionalServicesBLE');
     optionalServicesBLE.value = 'd91714ef-28b9-4f91-ba16-f0d9a604f112';
     filterInputsBLE[0].namePrefixInput.value = 'GDX';
@@ -371,6 +498,9 @@ function setGDXFOR() {
 
 // micro:bit base64 encoding
 // https://github.com/LLK/scratch-microbit-firmware/blob/master/protocol.md
+/**
+ * @param {string} message
+ */
 function _encodeMessage(message) {
     const output = new Uint8Array(message.length);
     for (let i = 0; i < message.length; i++) {
@@ -386,7 +516,7 @@ function _encodeMessage(message) {
 
 attachFunctionToButton('initBLE', initBLE);
 attachFunctionToButton('getVersionBLE', () => getVersion(self.Scratch.BLE));
-attachFunctionToButton('pingBLE', pingBLE);
+attachFunctionToButton('pingBLE', () => pingMe(self.Scratch.BLE));
 attachFunctionToButton('discoverBLE', discoverBLE);
 attachFunctionToButton('connectBLE', connectBLE);
 attachFunctionToButton('getServicesBLE', getServicesBLE);
@@ -409,10 +539,11 @@ function initBT() {
     }
     addLine('Connecting...');
     self.Scratch.BT = new ScratchBT();
+    return self.Scratch.BT.open();
 }
 
 function discoverBT() {
-    Scratch.BT.requestDevice({
+    return Scratch.BT.requestDevice({
         majorDeviceClass: 8,
         minorDeviceClass: 1
     }).then(
@@ -426,7 +557,7 @@ function discoverBT() {
 }
 
 function connectBT() {
-    Scratch.BT.connectDevice({
+    return Scratch.BT.connectDevice({
         peripheralId: document.getElementById('peripheralId').value,
         pin: "1234"
     }).then(
@@ -439,8 +570,11 @@ function connectBT() {
     );
 }
 
+/**
+ * @param {any} message
+ */
 function sendMessage(message) {
-    Scratch.BT.sendMessage({
+    return Scratch.BT.sendMessage({
         message: document.getElementById('messageBody').value,
         encoding: 'base64'
     }).then(
@@ -454,7 +588,7 @@ function sendMessage(message) {
 }
 
 function beep() {
-    Scratch.BT.sendMessage({
+    return Scratch.BT.sendMessage({
         message: 'DwAAAIAAAJQBgQKC6AOC6AM=',
         encoding: 'base64'
     }).then(
@@ -466,19 +600,6 @@ function beep() {
         }
     );
 }
-
-function stringify(o) {
-    if (o instanceof Event) {
-        if (o instanceof ErrorEvent) {
-            return `${o.constructor.name} {error: ${stringify(o.error)}`;
-        }
-        return `${o.constructor.name} {type: "${o.type}"}`;
-    }
-    return JSON.stringify(o);//, o && Object.getOwnPropertyNames(o));
-}
-
-const follow = document.getElementById('follow');
-const log = document.getElementById('log');
 
 const closeButton = document.getElementById('closeBT');
 closeButton.onclick = () => {
@@ -492,37 +613,80 @@ attachFunctionToButton('connectBT', connectBT);
 attachFunctionToButton('send', sendMessage);
 attachFunctionToButton('beep', beep);
 
-class LogDisplay {
-    constructor (logElement, lineCount = 256) {
-        this._logElement = logElement;
-        this._lineCount = lineCount;
-        this._lines = [];
-        this._dirty = false;
-        this._follow = true;
+/**
+ * @param {string} type
+ */
+function makeStressTest(type) {
+    const goButton = document.getElementById(`stress${type}`);
+    if (!goButton) {
+        addLine(`Could not activate stress test button for ${type}`);
+        return;
     }
-
-    addLine (text) {
-        this._lines.push(text);
-        if (!this._dirty) {
-            this._dirty = true;
-            requestAnimationFrame(() => {
-                this._trim();
-                this._logElement.textContent = this._lines.join('\n');
-                if (this._follow) {
-                    this._logElement.scrollTop = this._logElement.scrollHeight;
-                }
-                this._dirty = false;
-            });
-        }
-    }
-
-    _trim () {
-        this._lines = this._lines.splice(-this._lineCount);
-    }
+    goButton.onclick = () => runStressTest(type);
 }
 
-const logDisplay = new LogDisplay(log);
-function addLine(text) {
-    logDisplay.addLine(text);
-    logDisplay._follow = follow.checked;
+makeStressTest('BLE');
+makeStressTest('BT');
+
+/**
+ * @param {number} seconds
+ * @param {any} [returnVal]
+ */
+function sleep(seconds, returnVal) {
+    return (new Promise(resolve => {
+        setTimeout(() => { resolve(returnVal); }, 1000*seconds);
+    }));
+}
+
+/**
+ * @param {string} type
+ */
+async function runStressTest(type) {
+    const doPingElement = document.getElementById(`stressPing${type}`);
+    const doGetVersionElement = document.getElementById(`stressGetVersion${type}`);
+    const doDiscoverElement = document.getElementById(`stressDiscover${type}`);
+    const doConnectElement = document.getElementById(`stressConnect${type}`);
+
+    const {init, connect, discover} = (() => {
+        switch (type) {
+            case 'BLE':
+                return {
+                    init: initBLE,
+                    discover: discoverBLE,
+                    connect: connectBLE,
+                };
+            case 'BT':
+                return {
+                    init: initBT,
+                    discover: discoverBT,
+                    connect: connectBT,
+                };
+            default:
+                const message = `Don't know how to run a stress test for ${type}`;
+                addLine(message);
+                throw new Error(message);
+        }
+    })();
+
+    while (true) {
+        const session = await init(); // also disconnects previous session
+        if (doPingElement.checked) await pingMe(session);
+        if (doGetVersionElement.checked) await getVersion(session);
+        if (doDiscoverElement.checked) {
+            const discoverPromise = discover();
+            const didDiscoverPromise = new Promise(resolve => {
+                /**
+                 * @param {Event} e
+                 */
+                function listener(e) {
+                    resolve(e.params);
+                    session._events.removeEventListener('didDiscoverPeripheral', listener);
+                }
+                session._events.addEventListener('didDiscoverPeripheral', listener);
+            });
+            await discoverPromise;
+            await didDiscoverPromise;
+        }
+        if (doConnectElement.checked) await connect();
+    }
 }
