@@ -108,6 +108,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
                 this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
                 this.connectedPeripheral = null;
             }
+            this.cbManager.Dispose();
         }
 
         base.Dispose(disposing);
