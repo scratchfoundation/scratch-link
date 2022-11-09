@@ -142,7 +142,7 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
             RSSI = rssi,
         };
 
-        await this.SendRequest("didDiscoverPeripheral", message);
+        await this.SendNotification("didDiscoverPeripheral", message);
     }
 
     /// <summary>
