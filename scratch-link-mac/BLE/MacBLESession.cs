@@ -48,7 +48,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     public MacBLESession(IWebSocketConnection webSocket)
         : base(webSocket)
     {
-        Trace.WriteLine("before cb");
+        Trace.WriteLine("before CBCM init");
 
         this.cbDelegate = new CBCentralManagerEventDelegate();
 
@@ -56,7 +56,6 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         {
             ShowPowerAlert = true,
         };
-        options.Dictionary[CBCentralManager.OptionRestoreIdentifierKey] = new NSString("Scratch Link");
 
 #if DEBUG
         this.cbDelegate.ConnectedPeripheralEvent += (o, e) => Trace.WriteLine("ConnectedPeripheral");
@@ -66,15 +65,16 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
         this.cbDelegate.RetrievedConnectedPeripheralsEvent += (o, e) => Trace.WriteLine("RetrievedConnectedPeripherals");
         this.cbDelegate.RetrievedPeripheralsEvent += (o, e) => Trace.WriteLine("RetrievedPeripherals");
         this.cbDelegate.UpdatedStateEvent += (o, e) => Trace.WriteLine($"UpdatedState {(o as CBCentralManager).State}");
-        this.cbDelegate.WillRestoreStateEvent += (o, e) => Trace.WriteLine("WillRestoreState");
+
+        // this.cbDelegate.WillRestoreStateEvent += (o, e) => Trace.WriteLine("WillRestoreState");
 #endif
 
         this.cbDelegate.UpdatedStateEvent += this.WrapEventHandler(this.CbManager_UpdatedState);
         this.cbDelegate.DiscoveredPeripheralEvent += this.WrapEventHandler<CBDiscoveredPeripheralEventArgs>(this.CbManager_DiscoveredPeripheral);
         this.cbDelegate.DisconnectedPeripheralEvent += this.WrapEventHandler<CBPeripheralErrorEventArgs>(this.CbManager_DisconnectedPeripheral);
 
-        this.cbManager = new (this.cbDelegate, DispatchQueue.MainQueue, options);
-        Trace.WriteLine("after cb");
+        this.cbManager = new (this.cbDelegate, null, options);
+        Trace.WriteLine("after CBCM init");
     }
 
     private event EventHandler<BluetoothState> BluetoothStateSettled;
@@ -108,6 +108,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
                 this.cbManager.CancelPeripheralConnection(this.connectedPeripheral);
                 this.connectedPeripheral = null;
             }
+
             this.cbManager.Dispose();
         }
 

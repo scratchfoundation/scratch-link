@@ -51,11 +51,6 @@ public class CBCentralManagerEventDelegate : CBCentralManagerDelegate
     /// </summary>
     public event EventHandler UpdatedStateEvent;
 
-    /// <summary>
-    /// Event indicating that the manager's state will be restored.
-    /// </summary>
-    public event EventHandler<CBWillRestoreEventArgs> WillRestoreStateEvent;
-
     /// <inheritdoc/>
     public override void ConnectedPeripheral(CBCentralManager central, CBPeripheral peripheral)
     {
@@ -122,13 +117,25 @@ public class CBCentralManagerEventDelegate : CBCentralManagerDelegate
         this.UpdatedStateEvent?.Invoke(central, EventArgs.Empty);
     }
 
-    /// <inheritdoc/>
-    public override void WillRestoreState(CBCentralManager central, NSDictionary dict)
+    /// <summary>
+    /// Version of <see cref="CBCentralManagerEventDelegate"/> which supports restoring state.
+    /// Use this when enabling <see cref="CBCentralManager.OptionRestoreIdentifierKey"/> in the options for <see cref="CBCentralManager"/>.
+    /// </summary>
+    public class WithRestoreState : CBCentralManagerEventDelegate
     {
-        var eventHandler = this.WillRestoreStateEvent;
-        if (eventHandler != null)
+        /// <summary>
+        /// Event indicating that the manager's state will be restored.
+        /// </summary>
+        public event EventHandler<CBWillRestoreEventArgs> WillRestoreStateEvent;
+
+        /// <inheritdoc/>
+        public override void WillRestoreState(CBCentralManager central, NSDictionary dict)
         {
-            eventHandler(central, new (dict));
+            var eventHandler = this.WillRestoreStateEvent;
+            if (eventHandler != null)
+            {
+                eventHandler(central, new (dict));
+            }
         }
     }
 }
