@@ -141,32 +141,21 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     /// <inheritdoc/>
     protected override async Task<object> DoConnect(CBPeripheral peripheral)
     {
-        using (await this.filterLock.WaitDisposableAsync(DefaultLockTimeout))
-        {
-            if (this.connectedPeripheral != null)
-            {
-                throw JsonRpc2Error.InvalidRequest("already connected or connecting").ToException();
-            }
-
-            this.cbManager.StopScan();
-            this.connectedPeripheral = peripheral;
-        }
-
 #if DEBUG
-        this.connectedPeripheral.DidOpenL2CapChannel += (o, e) => Trace.WriteLine("DidOpenL2CapChannel");
-        this.connectedPeripheral.DiscoveredCharacteristic += (o, e) => Trace.WriteLine("DiscoveredCharacteristic");
-        this.connectedPeripheral.DiscoveredDescriptor += (o, e) => Trace.WriteLine("DiscoveredDescriptor");
-        this.connectedPeripheral.DiscoveredIncludedService += (o, e) => Trace.WriteLine("DiscoveredIncludedService");
-        this.connectedPeripheral.DiscoveredService += (o, e) => Trace.WriteLine("DiscoveredService");
-        this.connectedPeripheral.IsReadyToSendWriteWithoutResponse += (o, e) => Trace.WriteLine("IsReadyToSendWriteWithoutResponse");
-        this.connectedPeripheral.ModifiedServices += (o, e) => Trace.WriteLine("ModifiedServices");
-        this.connectedPeripheral.RssiRead += (o, e) => Trace.WriteLine("RssiRead");
-        this.connectedPeripheral.RssiUpdated += (o, e) => Trace.WriteLine("RssiUpdated");
-        this.connectedPeripheral.UpdatedName += (o, e) => Trace.WriteLine("UpdatedName");
-        this.connectedPeripheral.UpdatedNotificationState += (o, e) => Trace.WriteLine("UpdatedNotificationState");
-        this.connectedPeripheral.UpdatedValue += (o, e) => Trace.WriteLine("UpdatedValue");
-        this.connectedPeripheral.WroteCharacteristicValue += (o, e) => Trace.WriteLine("WroteCharacteristicValue");
-        this.connectedPeripheral.WroteDescriptorValue += (o, e) => Trace.WriteLine("WroteDescriptorValue");
+        peripheral.DidOpenL2CapChannel += (o, e) => Trace.WriteLine("DidOpenL2CapChannel");
+        peripheral.DiscoveredCharacteristic += (o, e) => Trace.WriteLine("DiscoveredCharacteristic");
+        peripheral.DiscoveredDescriptor += (o, e) => Trace.WriteLine("DiscoveredDescriptor");
+        peripheral.DiscoveredIncludedService += (o, e) => Trace.WriteLine("DiscoveredIncludedService");
+        peripheral.DiscoveredService += (o, e) => Trace.WriteLine("DiscoveredService");
+        peripheral.IsReadyToSendWriteWithoutResponse += (o, e) => Trace.WriteLine("IsReadyToSendWriteWithoutResponse");
+        peripheral.ModifiedServices += (o, e) => Trace.WriteLine("ModifiedServices");
+        peripheral.RssiRead += (o, e) => Trace.WriteLine("RssiRead");
+        peripheral.RssiUpdated += (o, e) => Trace.WriteLine("RssiUpdated");
+        peripheral.UpdatedName += (o, e) => Trace.WriteLine("UpdatedName");
+        peripheral.UpdatedNotificationState += (o, e) => Trace.WriteLine("UpdatedNotificationState");
+        peripheral.UpdatedValue += (o, e) => Trace.WriteLine("UpdatedValue");
+        peripheral.WroteCharacteristicValue += (o, e) => Trace.WriteLine("WroteCharacteristicValue");
+        peripheral.WroteDescriptorValue += (o, e) => Trace.WriteLine("WroteDescriptorValue");
 
         // this one is especially noisy
         // this.connectedPeripheral.UpdatedCharacterteristicValue += (o, e) => Trace.WriteLine("UpdatedCharacterteristicValue");
@@ -177,34 +166,54 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             h => this.cbDelegate.ConnectedPeripheralEvent += h,
             h => this.cbDelegate.ConnectedPeripheralEvent -= h))
         {
-            this.cbManager.ConnectPeripheral(this.connectedPeripheral);
+            this.cbManager.ConnectPeripheral(peripheral);
 
             var connectArgs = await connectAwaiter.MakeTask(BluetoothTimeouts.Connection, CancellationToken.None);
 
-            if (this.connectedPeripheral != connectArgs.Peripheral)
+            if (peripheral != connectArgs.Peripheral)
             {
-                this.connectedPeripheral = null;
+                this.cbManager.CancelPeripheralConnection(peripheral);
                 throw JsonRpc2Error.InternalError("did not connect to correct peripheral").ToException();
             }
         }
 
-        using (var servieDiscoveryAwaiter = new EventAwaiter<NSErrorEventArgs>(
-            h => this.connectedPeripheral.DiscoveredService += h,
-            h => this.connectedPeripheral.DiscoveredService -= h))
+        try
         {
-            // discover services before we report that we're connected
-            // TODO: the documentation says "setting the parameter to nil is considerably slower and is not recommended"
-            // but if I provide `allowedServices` then `peripheral.services` doesn't get populated...
-            this.connectedPeripheral.DiscoverServices(null);
+            using (var servieDiscoveryAwaiter = new EventAwaiter<NSErrorEventArgs>(
+                h => peripheral.DiscoveredService += h,
+                h => peripheral.DiscoveredService -= h))
+            {
+                // discover services before we report that we're connected
+                // TODO: the documentation says "setting the parameter to nil is considerably slower and is not recommended"
+                // but if I provide `allowedServices` then `peripheral.services` doesn't get populated...
+                peripheral.DiscoverServices(null);
 
-            // Wait for the services to actually be discovered
-            // Note that while the C# name for this event is "DiscoveredService" (singular),
-            // the Obj-C / Swift name is "peripheral:didDiscoverServices:" (plural).
-            // In practice, this event actually means that `peripheral.services` is now populated.
-            await servieDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, CancellationToken.None);
+                // Wait for the services to actually be discovered
+                // Note that while the C# name for this event is "DiscoveredService" (singular),
+                // the Obj-C / Swift name is "peripheral:didDiscoverServices:" (plural).
+                // In practice, this event actually means that `peripheral.services` is now populated.
+                await servieDiscoveryAwaiter.MakeTask(BluetoothTimeouts.ServiceDiscovery, CancellationToken.None);
+            }
+
+            // the "connect" request is now complete and it's finally time to commit
+            using (await this.filterLock.WaitDisposableAsync(DefaultLockTimeout))
+            {
+                if (this.connectedPeripheral != null)
+                {
+                    throw JsonRpc2Error.InvalidRequest("already connected or connecting").ToException();
+                }
+
+                this.cbManager.StopScan();
+                this.connectedPeripheral = peripheral; // do this as late as possible on the success path
+            }
+        }
+        catch
+        {
+            // Something went wrong after we connected
+            this.cbManager.CancelPeripheralConnection(peripheral);
+            throw;
         }
 
-        // the "connect" request is now complete!
         return null;
     }
 
