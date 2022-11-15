@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 CACHE_ARCHIVE="$1"
-VS_INSTALLER="/usr/local/Caskroom/visual-studio/17.3.0.215/Install Visual Studio for Mac.app"
 VS_MANIFEST="$HOME/Library/Caches/VisualStudioInstaller/downloads/InstallationManifest.json"
 
 # This helps reduce log output from `tar -v` and similar without eliminating their output entirely.
@@ -33,6 +32,9 @@ function install_vs() {
     brew install -v visual-studio jq
 
     echo "Starting installer app..."
+    for F in "/usr/local/Caskroom/visual-studio"/17.*/"Install Visual Studio for Mac.app"; do
+        VS_INSTALLER="$F"
+    done
     sudo xattr -d -r com.apple.quarantine "$VS_INSTALLER"
     open "$VS_INSTALLER"
 
