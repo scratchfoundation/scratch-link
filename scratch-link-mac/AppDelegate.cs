@@ -21,7 +21,7 @@ using ScratchLink.Mac.BLE;
 public class AppDelegate : NSApplicationDelegate
 {
     // This identifier must match the PRODUCT_BUNDLE_IDENTIFIER setting for the extension's Xcode project
-    private const string ExtensionBundleIdentifier = "scratch.Scratch-Link-Safari-Helper.Extension";
+    private const string ExtensionBundleIdentifier = "scratch.Scratch-Link-Safari.Extension";
 
     private const string VersionItemSelected = "versionItemSelected:";
     private const string ExtensionItemSelected = "extensionItemSelected:";

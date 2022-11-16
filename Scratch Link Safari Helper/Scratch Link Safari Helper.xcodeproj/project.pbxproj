@@ -21,7 +21,7 @@
 		69E961D327E28B88008CF7C0 /* Scratch_Link_Safari_HelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961D227E28B88008CF7C0 /* Scratch_Link_Safari_HelperTests.swift */; };
 		69E961DD27E28B88008CF7C0 /* Scratch_Link_Safari_HelperUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961DC27E28B88008CF7C0 /* Scratch_Link_Safari_HelperUITests.swift */; };
 		69E961DF27E28B88008CF7C0 /* Scratch_Link_Safari_HelperUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961DE27E28B88008CF7C0 /* Scratch_Link_Safari_HelperUITestsLaunchTests.swift */; };
-		69E961E527E28B88008CF7C0 /* Scratch Link Safari Helper Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 69E961E427E28B88008CF7C0 /* Scratch Link Safari Helper Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		69E961E527E28B88008CF7C0 /* Scratch Link Safari Extension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 69E961E427E28B88008CF7C0 /* Scratch Link Safari Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		69E961EA27E28B88008CF7C0 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69E961E927E28B88008CF7C0 /* SafariWebExtensionHandler.swift */; };
 		69E961ED27E28B88008CF7C0 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 69E961EC27E28B88008CF7C0 /* _locales */; };
 		69E961EF27E28B88008CF7C0 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 69E961EE27E28B88008CF7C0 /* images */; };
@@ -50,7 +50,7 @@
 			containerPortal = 69E961AA27E28B86008CF7C0 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 69E961E327E28B88008CF7C0;
-			remoteInfo = "Scratch Link Safari Helper Extension";
+			remoteInfo = "Scratch Link Safari Extension";
 		};
 /* End PBXContainerItemProxy section */
 
@@ -61,7 +61,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				69E961E527E28B88008CF7C0 /* Scratch Link Safari Helper Extension.appex in Embed App Extensions */,
+				69E961E527E28B88008CF7C0 /* Scratch Link Safari Extension.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -98,7 +98,7 @@
 		69E961D827E28B88008CF7C0 /* Scratch Link Safari HelperUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Scratch Link Safari HelperUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		69E961DC27E28B88008CF7C0 /* Scratch_Link_Safari_HelperUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scratch_Link_Safari_HelperUITests.swift; sourceTree = "<group>"; };
 		69E961DE27E28B88008CF7C0 /* Scratch_Link_Safari_HelperUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scratch_Link_Safari_HelperUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		69E961E427E28B88008CF7C0 /* Scratch Link Safari Helper Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Scratch Link Safari Helper Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		69E961E427E28B88008CF7C0 /* Scratch Link Safari Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Scratch Link Safari Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		69E961E927E28B88008CF7C0 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		69E961EC27E28B88008CF7C0 /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _locales; sourceTree = "<group>"; };
 		69E961EE27E28B88008CF7C0 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = images; sourceTree = "<group>"; };
@@ -106,7 +106,7 @@
 		69E961F227E28B88008CF7C0 /* scratch-link-extension.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "scratch-link-extension.js"; sourceTree = "<group>"; };
 		69E961F427E28B88008CF7C0 /* scratch-link-extension-background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "scratch-link-extension-background.js"; sourceTree = "<group>"; };
 		69E961FC27E28B88008CF7C0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Helper_Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Scratch_Link_Safari_Helper_Extension.entitlements; sourceTree = "<group>"; };
+		69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Extension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Scratch_Link_Safari_Extension.entitlements; sourceTree = "<group>"; };
 		69FCB6DF28E750C400F753E6 /* ScratchLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScratchLog.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -164,7 +164,7 @@
 				69E961B427E28B86008CF7C0 /* Scratch Link Safari Helper */,
 				69E961D127E28B88008CF7C0 /* Scratch Link Safari HelperTests */,
 				69E961DB27E28B88008CF7C0 /* Scratch Link Safari HelperUITests */,
-				69E961E827E28B88008CF7C0 /* Scratch Link Safari Helper Extension */,
+				69E961E827E28B88008CF7C0 /* Scratch Link Safari Extension */,
 				69E961B327E28B86008CF7C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -175,7 +175,7 @@
 				69E961B227E28B86008CF7C0 /* Scratch Link Safari Helper.app */,
 				69E961CE27E28B88008CF7C0 /* Scratch Link Safari HelperTests.xctest */,
 				69E961D827E28B88008CF7C0 /* Scratch Link Safari HelperUITests.xctest */,
-				69E961E427E28B88008CF7C0 /* Scratch Link Safari Helper Extension.appex */,
+				69E961E427E28B88008CF7C0 /* Scratch Link Safari Extension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -222,7 +222,7 @@
 			path = "Scratch Link Safari HelperUITests";
 			sourceTree = "<group>";
 		};
-		69E961E827E28B88008CF7C0 /* Scratch Link Safari Helper Extension */ = {
+		69E961E827E28B88008CF7C0 /* Scratch Link Safari Extension */ = {
 			isa = PBXGroup;
 			children = (
 				69E1236228A3536800F6AAD5 /* Makefile */,
@@ -231,11 +231,11 @@
 				69FCB6DF28E750C400F753E6 /* ScratchLog.swift */,
 				69C52B2E27F502F2006A46F3 /* SessionDelegate.swift */,
 				69E961FC27E28B88008CF7C0 /* Info.plist */,
-				69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Helper_Extension.entitlements */,
+				69E961FD27E28B88008CF7C0 /* Scratch_Link_Safari_Extension.entitlements */,
 				69E961EB27E28B88008CF7C0 /* Resources */,
 				694C924028C90B2A00182C58 /* inject-version-info.sh */,
 			);
-			path = "Scratch Link Safari Helper Extension";
+			path = "Scratch Link Safari Extension";
 			sourceTree = "<group>";
 		};
 		69E961EB27E28B88008CF7C0 /* Resources */ = {
@@ -309,9 +309,9 @@
 			productReference = 69E961D827E28B88008CF7C0 /* Scratch Link Safari HelperUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
-		69E961E327E28B88008CF7C0 /* Scratch Link Safari Helper Extension */ = {
+		69E961E327E28B88008CF7C0 /* Scratch Link Safari Extension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 69E9620027E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari Helper Extension" */;
+			buildConfigurationList = 69E9620027E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari Extension" */;
 			buildPhases = (
 				69E961E027E28B88008CF7C0 /* Sources */,
 				69E961E127E28B88008CF7C0 /* Frameworks */,
@@ -322,9 +322,9 @@
 			);
 			dependencies = (
 			);
-			name = "Scratch Link Safari Helper Extension";
-			productName = "Scratch Link Safari Helper Extension";
-			productReference = 69E961E427E28B88008CF7C0 /* Scratch Link Safari Helper Extension.appex */;
+			name = "Scratch Link Safari Extension";
+			productName = "Scratch Link Safari Extension";
+			productReference = 69E961E427E28B88008CF7C0 /* Scratch Link Safari Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -369,7 +369,7 @@
 				69E961B127E28B86008CF7C0 /* Scratch Link Safari Helper */,
 				69E961CD27E28B88008CF7C0 /* Scratch Link Safari HelperTests */,
 				69E961D727E28B88008CF7C0 /* Scratch Link Safari HelperUITests */,
-				69E961E327E28B88008CF7C0 /* Scratch Link Safari Helper Extension */,
+				69E961E327E28B88008CF7C0 /* Scratch Link Safari Extension */,
 			);
 		};
 /* End PBXProject section */
@@ -492,7 +492,7 @@
 		};
 		69E961E727E28B88008CF7C0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 69E961E327E28B88008CF7C0 /* Scratch Link Safari Helper Extension */;
+			target = 69E961E327E28B88008CF7C0 /* Scratch Link Safari Extension */;
 			targetProxy = 69E961E627E28B88008CF7C0 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -627,11 +627,11 @@
 		696FF138289DAECB000D3C3F /* Release_MAS */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Helper Extension/Scratch_Link_Safari_Helper_Extension.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Scratch Link Safari Helper Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Helper Extension";
+				INFOPLIST_FILE = "Scratch Link Safari Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Extension";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -641,7 +641,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -758,11 +758,11 @@
 		696FF13D289DAED8000D3C3F /* Release_DevID */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Helper Extension/Scratch_Link_Safari_Helper_Extension.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Scratch Link Safari Helper Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Helper Extension";
+				INFOPLIST_FILE = "Scratch Link Safari Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Extension";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -772,7 +772,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -888,11 +888,11 @@
 		69E9620127E28B88008CF7C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Helper Extension/Scratch_Link_Safari_Helper_Extension.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Scratch Link Safari Helper Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Helper Extension";
+				INFOPLIST_FILE = "Scratch Link Safari Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Extension";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -902,7 +902,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -912,11 +912,11 @@
 		69E9620227E28B88008CF7C0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Helper Extension/Scratch_Link_Safari_Helper_Extension.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Scratch Link Safari Helper Extension/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Helper Extension";
+				INFOPLIST_FILE = "Scratch Link Safari Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Scratch Link Safari Extension";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -926,7 +926,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1055,7 +1055,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		69E9620027E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari Helper Extension" */ = {
+		69E9620027E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari Extension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				69E9620127E28B88008CF7C0 /* Debug */,

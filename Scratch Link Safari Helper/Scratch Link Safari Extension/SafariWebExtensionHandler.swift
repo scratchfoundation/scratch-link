@@ -1,6 +1,6 @@
 //
 //  SafariWebExtensionHandler.swift
-//  Scratch Link Safari Helper Extension
+//  Scratch Link Safari Extension
 //
 //  Created by Christopher Willis-Ford on 3/16/22.
 //
