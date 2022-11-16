@@ -125,7 +125,7 @@
     <ItemGroup>
       <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />
     </ItemGroup>
-    <Copy SourceFiles="@(SafariHelperFiles)" DestinationFolder="$(AppBundleDir)/Contents/Plugins/$(SafariHelperBundleName)/%(RecursiveDir)" />
+    <Copy SourceFiles="@(SafariHelperFiles)" DestinationFolder="$(AppBundleDir)/Contents/PlugIns/$(SafariHelperBundleName)/%(RecursiveDir)" />
   </Target>
   <ItemGroup>
     <Reference Include="System" />

@@ -32,5 +32,7 @@
 	<string>This will allow the app to find and communicate with Bluetooth peripheral devices.</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.education</string>
 </dict>
 </plist>

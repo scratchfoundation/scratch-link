@@ -593,7 +593,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -605,7 +605,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Scratch Link Safari Helper.app/Contents/MacOS/Scratch Link Safari Helper";
@@ -617,7 +617,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.uitests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_TARGET_NAME = "Scratch Link Safari Helper";
@@ -641,7 +641,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -724,7 +724,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -736,7 +736,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Scratch Link Safari Helper.app/Contents/MacOS/Scratch Link Safari Helper";
@@ -748,7 +748,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.uitests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_TARGET_NAME = "Scratch Link Safari Helper";
@@ -772,7 +772,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -902,7 +902,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -926,7 +926,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari.Extension";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-extension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -956,7 +956,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -985,7 +985,7 @@
 					"-framework",
 					WebKit,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-Helper";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
@@ -997,7 +997,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Scratch Link Safari Helper.app/Contents/MacOS/Scratch Link Safari Helper";
@@ -1010,7 +1010,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperTests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Scratch Link Safari Helper.app/Contents/MacOS/Scratch Link Safari Helper";
@@ -1022,7 +1022,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.uitests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_TARGET_NAME = "Scratch Link Safari Helper";
@@ -1034,7 +1034,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = "scratch.Scratch-Link-Safari-HelperUITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "edu.mit.scratch.scratch-link.safari-helper.uitests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TEST_TARGET_NAME = "Scratch Link Safari Helper";
