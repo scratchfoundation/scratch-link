@@ -41,7 +41,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
     public MacBTSession(IWebSocketConnection webSocket)
         : base(webSocket)
     {
-        ObjCRuntime.Dlfcn.dlopen("/System.Library/Frameworks/IOBluetooth.framework/IOBluetooth", 0);
+        ObjCRuntime.Dlfcn.dlopen("/System/Library/Frameworks/IOBluetooth.framework/IOBluetooth", 0);
 
 #if DEBUG
         this.inquiry.Completed += (o, e) => Trace.WriteLine($"Inquiry.Completed: Aborted={e.Aborted} Error={e.Error}");
