@@ -9,7 +9,7 @@ import Cocoa
 import SafariServices
 import WebKit
 
-let extensionBundleIdentifier = "scratch.Scratch-Link-Safari-Helper.Extension"
+let extensionBundleIdentifier = "scratch.Scratch-Link-Safari.Extension"
 
 class ViewController: NSViewController, WKNavigationDelegate, WKScriptMessageHandler {
 
