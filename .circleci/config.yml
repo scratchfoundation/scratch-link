@@ -73,15 +73,6 @@ jobs:
                   security -v set-keychain-settings -lut 600 circleci.keychain
                   security -v find-identity circleci.keychain
                   rm macos-certs-scratch-foundation.p12
-            - run:
-                name: Build and sign the Safari extension
-                command: |
-                  # clean both, then build both, in case their "clean" steps overlap
-                  for TASK in clean build; do
-                    for CONFIG in Release_DevID Release_MAS; do
-                      xcodebuild -configuration $CONFIG -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -target "Scratch Link Safari Extension" -destination "name=Any Mac" $TASK
-                    done
-                  done
             - do_mac_build:
                 configuration: Release_DevID
                 artifact_tag: notarizeMe # see below
