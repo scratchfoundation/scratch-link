@@ -25,6 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		TRADEMARK = TRADEMARK
 		.circleci\config.yml = .circleci\config.yml
 		.circleci\install-or-extract-vs-mac.sh = .circleci\install-or-extract-vs-mac.sh
+		GitVersion.yml = GitVersion.yml
 	EndProjectSection
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "scratch-link-common", "scratch-link-common\scratch-link-common.shproj", "{06B5D2A3-AD0A-4704-B00D-BCFF634E7709}"

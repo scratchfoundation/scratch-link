@@ -115,7 +115,19 @@
     <RemoveDir Directories="$(AppBundleDir)/Contents/Frameworks/IOBluetooth.framework" />
     <Exec WorkingDirectory="$(AppBundleDir)/Contents" Command="rmdir Frameworks || true" />
   </Target>
-  <Target Name="EmbedSafariHelper" AfterTargets="_CompileToNative">
+  <Target Name="EmbedVersion" BeforeTargets="CoreCompile" DependsOnTargets="GetVersion">
+    <!--
+    For more information on GitVersion, see:
+    * https://gitversion.net/docs/usage/msbuild
+    * https://gitversion.net/docs/reference/variables
+    You can also check obj/gitversion.json for available values
+    -->
+    <Message Text="GetVersion calculated: $(GitVersion_SemVer)" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(GitVersion_MajorMinorPatch)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(GitVersion_MajorMinorPatch)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(GitVersion_ShortSha)' '$(IntermediateOutputPath)AppManifest.plist'" />
+  </Target>
+  <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="GetVersion">
     <PropertyGroup>
       <SafariHelperSrcDir>$(SolutionDir)Scratch Link Safari Helper/build/$(Configuration)/</SafariHelperSrcDir>
       <SafariHelperBundleName>Scratch Link Safari Extension.appex</SafariHelperBundleName>
@@ -127,6 +139,8 @@
       <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />
     </ItemGroup>
     <Copy SourceFiles="@(SafariHelperFiles)" DestinationFolder="$(AppBundleDir)/Contents/PlugIns/$(SafariHelperBundleName)/%(RecursiveDir)" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(GitVersion_MajorMinorPatch)' '$(AppBundleDir)/Contents/PlugIns/$(SafariHelperBundleName)/Contents/Info.plist'" />
+    <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(GitVersion_MajorMinorPatch)' '$(AppBundleDir)/Contents/PlugIns/$(SafariHelperBundleName)/Contents/Info.plist'" />
   </Target>
   <ItemGroup>
     <Reference Include="System" />
@@ -206,6 +220,11 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection">
       <Version>6.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="GitVersion.MsBuild">
+      <Version>5.11.1</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
 </Project>
