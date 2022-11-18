@@ -133,20 +133,16 @@
       <SafariHelperBundleName>Scratch Link Safari Extension.appex</SafariHelperBundleName>
       <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
     </PropertyGroup>
-    <Exec
-        Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')"
-        Outputs="$(SafariHelperSrcPath)"
-        WorkingDirectory="$(SolutionDir)"
-        Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'CURRENT_PROJECT_VERSION=$(GitVersion_MajorMinorPatch)' 'MARKETING_VERSION=$(GitVersion_MajorMinorPatch)' build"
-    />
-    <Error
-        Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')"
-        Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)"
-    />
+    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'CURRENT_PROJECT_VERSION=$(GitVersion_MajorMinorPatch)' 'MARKETING_VERSION=$(GitVersion_MajorMinorPatch)' build" />
+    <Error Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)" />
     <ItemGroup>
       <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />
     </ItemGroup>
     <Copy SourceFiles="@(SafariHelperFiles)" DestinationFolder="$(AppBundleDir)/Contents/PlugIns/$(SafariHelperBundleName)/%(RecursiveDir)" />
+  </Target>
+  <Target Name="EmbedProvisioningProfile" BeforeTargets="_CompileToNative">
+    <Copy SourceFiles="$(SolutionDir)fastlane/output/Direct_edu.mit.scratch.scratch-link.provisionprofile" DestinationFiles="$(AppBundleDir)/Contents/embedded.provisionprofile" Condition=" '$(Configuration)|$(Platform)' == 'Release_DevID|AnyCPU' " />
+    <Copy SourceFiles="$(SolutionDir)fastlane/output/AppStore_edu.mit.scratch.scratch-link.provisionprofile" DestinationFiles="$(AppBundleDir)/Contents/embedded.provisionprofile" Condition=" '$(Configuration)|$(Platform)' == 'Release_MAS|AnyCPU' " />
   </Target>
   <ItemGroup>
     <Reference Include="System" />

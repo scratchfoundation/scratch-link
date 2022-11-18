@@ -10,3 +10,11 @@ xcuserdata/
 [._]DS_Store
 
 *.csproj.user
+
+# Fastlane
+**/fastlane/Matchfile
+**/fastlane/Preview.html
+**/fastlane/output
+**/fastlane/report.xml
+**/fastlane/screenshots
+**/fastlane/test_output
