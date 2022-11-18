@@ -140,6 +140,14 @@
     </ItemGroup>
     <Copy SourceFiles="@(SafariHelperFiles)" DestinationFolder="$(AppBundleDir)/Contents/PlugIns/$(SafariHelperBundleName)/%(RecursiveDir)" />
   </Target>
+  <Target Name="UpdateBuildPlatformInfo" AfterTargets="EmbedSafariHelper">
+    <!--
+    These values are usually injected by Xcode and are required by TestFlight.
+    Most of the advice I've found suggests hard-coding them to values that are known to work.
+    I'd rather copy the true values from the Xcode-built app extension...
+    -->
+    <Exec Command="for KEY in DTPlatformBuild DTPlatformName DTPlatformVersion DTSDKBuild DTSDKName DTXcode DTXcodeBuild NSHumanReadableCopyright; do plutil -replace $KEY -string &quot;`plutil -extract $KEY raw '$(SafariHelperSrcPath)Contents/Info.plist'`&quot; '$(AppBundleDir)/Contents/Info.plist'; done" />
+  </Target>
   <Target Name="EmbedProvisioningProfile" BeforeTargets="_CompileToNative">
     <Copy SourceFiles="$(SolutionDir)fastlane/output/Direct_edu.mit.scratch.scratch-link.provisionprofile" DestinationFiles="$(AppBundleDir)/Contents/embedded.provisionprofile" Condition=" '$(Configuration)|$(Platform)' == 'Release_DevID|AnyCPU' " />
     <Copy SourceFiles="$(SolutionDir)fastlane/output/AppStore_edu.mit.scratch.scratch-link.provisionprofile" DestinationFiles="$(AppBundleDir)/Contents/embedded.provisionprofile" Condition=" '$(Configuration)|$(Platform)' == 'Release_MAS|AnyCPU' " />
