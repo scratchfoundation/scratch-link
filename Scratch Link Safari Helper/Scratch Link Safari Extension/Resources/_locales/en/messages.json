@@ -1,0 +1,10 @@
+{
+    "extension_name": {
+        "message": "Scratch Link",
+        "description": "The display name for the extension."
+    },
+    "extension_description": {
+        "message": "This extension allows Safari to communicate with Scratch Link.",
+        "description": "Description of what the extension does."
+    }
+}

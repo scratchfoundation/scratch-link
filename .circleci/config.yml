@@ -1,48 +1,54 @@
 version: 2.1
-workflows:
-  macos:
-    jobs:
-      - build_for_mac:
-          context: scratch-desktop-and-link
-  windows:
-    jobs:
-      - build_for_windows:
-          context: scratch-desktop-and-link
-orbs:
-  windows: circleci/windows@2.2.0
-aliases:
+
+alias_anchors: # anchors must be defined in YAML before being used by an alias
   - &should_sign
     or:
       - equal: [ develop, << pipeline.git.branch >> ]
       - equal: [ main, << pipeline.git.branch >> ]
       - equal: [ master, << pipeline.git.branch >> ]
-commands:
-  build_windows_sln:
-    parameters:
-      SignedBuild:
-        type: boolean
-        default: false
-    steps:
-      - run:
-          name: Build scratch-link.sln using MS Build (SignedBuild=<<parameters.SignedBuild>>)
-          command: msbuild Windows/scratch-link.sln -p:Configuration=Release -p:Platform="Any CPU" -p:SignedBuild=<<parameters.SignedBuild>>
-          environment: # WiX fails with ICE errors if the environment is too big
-            CSC_MACOS: ""
-            SDM_CERT: ""
-            SDM_CERT_CA_BUNDLE: ""
-            SDM_CERT_KEY: ""
+      - equal: [ "ng-csharp-xamarin", << pipeline.git.branch >> ]
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-mac:
+          context: scratch-desktop-and-link
 jobs:
-  build_for_mac:
+  build-mac:
     macos:
-      xcode: "11.7.0"
+      xcode: 13.4
     steps:
       - checkout
+      - run:
+          name: Build Safari helper
+          command: |
+            xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
+      - restore_cache:
+          keys:
+            - visual-studio-mac-v3
+      - run:
+          name: Install/Extract Visual Studio for Mac
+          command: |
+            # CACHE_ARCHIVE must match the path in save_cache
+            CACHE_ARCHIVE="/tmp/visual-studio-mac-v3.tar.gz"
+            bash ./.circleci/install-or-extract-vs-mac.sh "$CACHE_ARCHIVE"
+      - save_cache:
+          key: visual-studio-mac-v3
+          paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
+            - /tmp/visual-studio-mac-v3.tar.gz
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - do_mac_build:
+                configuration: Debug
+                artifact_tag: Debug
       - when:
           condition:
             *should_sign
           steps:
             - run:
-                name: Set up code-signing keychain
+                name: Set up code-signing keychain # Keep this after long install steps to avoid keychain timeout
                 # DO NOT RUN THIS on your own computer unless you really know what you're doing!
                 command: |
                   function decodeToFile () {
@@ -67,116 +73,54 @@ jobs:
                   security -v set-keychain-settings -lut 600 circleci.keychain
                   security -v find-identity circleci.keychain
                   rm macos-certs-scratch-foundation.p12
-      - restore_cache:
-          name: Restore Homebrew cache
-          key: homebrew-cache-v3
-      - run:
-          name: Install Homebrew packages
-          command: brew install pngcrush
-      - save_cache:
-          name: Save Homebrew cache
-          paths:
-            - ~/Library/Caches/Homebrew
-            - /Library/Caches/Homebrew
-          key: homebrew-cache-v3 # bump this version (and the one above) if you change the list of paths
-      - restore_cache:
-          name: Restore Swift dependency cache
-          key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
-      - run:
-          name: Resolve Swift dependencies
-          command: make --directory=macOS resolve-dependencies
-      - save_cache:
-          name: Save Swift dependency cache
-          key: spm-cache-v2-{{ checksum "macOS/Package.resolved" }}
-          paths:
-            - macOS/.build
-      - run:
-          # Scratch Link determines its version number based on repository status and commit log.
-          # Print a basic status report to aid debugging.
-          name: Check git status
-          command: git status
-      - run:
-          name: Build the application
-          command: make --directory=macOS zip
-      - run:
-          name: Move ZIP to Artifacts directory
-          command: |
-            mkdir -p macOS/Artifacts/
-            mv -v macOS/dist/scratch-link-*.zip macOS/Artifacts/
-      - when:
-          condition:
-            *should_sign
-          steps:
             - run:
-                name: Sign the application
-                command: make --directory=macOS dist
-            - run:
-                name: Move signed build products to Artifacts directory
+                name: Build and sign the Safari extension
                 command: |
-                  mkdir -p macOS/Artifacts/
-                  mv -v macOS/dist/{scratch-link,mas-scratch-link}-*.pkg macOS/Artifacts/
+                  # clean both, then build both, in case their "clean" steps overlap
+                  for TASK in clean build; do
+                    for CONFIG in Release_DevID Release_MAS; do
+                      xcodebuild -configuration $CONFIG -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -target "Scratch Link Safari Extension" -destination "name=Any Mac" $TASK
+                    done
+                  done
+            - do_mac_build:
+                configuration: Release_DevID
+                artifact_tag: notarizeMe # see below
+            - do_mac_build:
+                configuration: Release_MAS
+                artifact_tag: MAS
+            - run:
+                name: Notarize Developer ID build
+                command: |
+                  for PKGPATH in Artifacts/"Scratch Link-notarizeMe"*.pkg; do
+                    PKGFILE="${PKGPATH##*/}"
+                    scratch-link-mac/notarize.sh edu.mit.scratch.scratch-link "${PKGPATH}" "${PKGPATH}" /tmp || rm -f "${PKGPATH}"
+                    mv -v "${PKGPATH}" "Artifacts/${PKGFILE/Scratch Link-notarizeMe/Scratch Link}"
+                  done
       - store_artifacts:
-          path: macOS/Artifacts/
-  build_for_windows:
-    executor: windows/default
+          path: Artifacts/
+commands:
+  do_mac_build:
+    parameters:
+      configuration:
+        default: "Release"
+        type: string
+      artifact_tag:
+        default: ""
+        type: string
     steps:
-      - checkout
-      - when:
-          condition:
-            *should_sign
-          steps:
-            - run:
-                # Because of the non-standard user configuration on CircleCI's Windows VM, attempting to import a
-                # certificate into the user's certificate store ("Cert:/LocalUser/My") will fail. Instead, this code
-                # imports the PFX into the machine certificate store. That usually requires Administrator permissions,
-                # but on CircleCI's setup it works just fine. See also: https://github.com/ShabadOS/desktop/issues/265
-                # and https://github.com/ShabadOS/desktop/pull/266
-                name: Import code-signing certificate
-                shell: powershell
-                command: |
-                  $ErrorActionPreference = "Stop"
-                  # TODO: is there a way to avoid creating a temporary file?
-                  $tempPfx = New-TemporaryFile
-                  try {
-                      $env:WIN_CSC_LINK | Set-Content $tempPfx
-                      $securePassword = (ConvertTo-SecureString -String $env:WIN_CSC_KEY_PASSWORD -AsPlainText -Force)
-                      Import-PfxCertificate -FilePath $tempPfx -Password $securePassword -CertStoreLocation "Cert:/LocalMachine/My"
-                  }
-                  finally {
-                      Remove-Item -Force $tempPfx
-                  }
-      - restore_cache:
-          keys:
-            - nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
       - run:
-          name: Install dependencies using NuGet
-          command: nuget restore Windows/
-      - save_cache:
-          paths:
-            - Windows/packages/
-          key: nuget-cache-{{ checksum "Windows/scratch-link/packages.config" }}-{{ checksum "Windows/ScratchLinkSetup/packages.config" }}
-      - run:
-          # Scratch Link determines its version number based on repository status and commit log.
-          # Print a basic status report to aid debugging.
-          name: Check git status
-          command: git status
-      - when:
-          condition:
-            *should_sign
-          steps:
-            - build_windows_sln:
-                SignedBuild: true
-      - unless:
-          condition:
-            *should_sign
-          steps:
-            - build_windows_sln:
-                SignedBuild: false
-      - run:
-          name: Move build products to artifacts directory
+          name: "Build for Mac: <<parameters.configuration>>"
           command: |
-            New-Item -Path Windows/ -Name Artifacts -ItemType directory
-            Move-Item -Path Windows/ScratchLinkAPPX/AppPackages/ScratchLinkAPPX_*_AnyCPU_bundle.appxupload -Destination Windows/Artifacts/
-            Move-Item -Path Windows/ScratchLinkSetup/bin/Release/ScratchLinkSetup-*.zip -Destination Windows/Artifacts/
-      - store_artifacts:
-          path: Windows/Artifacts/
+            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
+            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>> "${PWD}/scratch-link.sln"
+            # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "cp"
+            for PKGPATH in scratch-link-mac/bin/<<parameters.configuration>>/"Scratch Link"*.pkg; do
+              if [ -r "$PKGPATH" ]; then
+                PKGFILE="${PKGPATH##*/}"
+                if [ -n "<<parameters.artifact_tag>>" ]; then
+                  PKGFILE="${PKGFILE/Scratch Link/Scratch Link-<<parameters.artifact_tag>>}"
+                fi
+                mkdir -p Artifacts
+                cp -v "$PKGPATH" "Artifacts/${PKGFILE}"
+              fi
+            done

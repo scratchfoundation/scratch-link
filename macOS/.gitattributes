@@ -1,6 +1,0 @@
-# This .gitignore file has special eol behavior
-.gitignore -text
-
-# Prefer LF for these files
-*.swift text eol=lf
-*.ya?ml text eol=lf

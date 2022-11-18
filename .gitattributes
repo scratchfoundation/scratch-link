@@ -5,13 +5,30 @@
 # People who (for example) rsync between Windows and Linux need this.
 
 # File types which we know are binary
+*.ai binary
 *.png binary
+*.ttf binary
 
 # Prefer LF for most file types
+# if we need binary plist files we'll need to switch *.plist to binary!
+*.appxmanifest text eol=lf
+*.css text eol=lf
+*.entitlements text eol=lf
 *.html text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.manifest text eol=lf
 *.md text eol=lf
+*.pbxproj text eol=lf
+*.plist text eol=lf
 *.sh text eol=lf
+*.storyboard text eol=lf
 *.svg text eol=lf
+*.swift text eol=lf
+*.txt text eol=lf
+*.xcscheme text eol=lf
+*.xcworkspacedata text eol=lf
+*.xml text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
 
@@ -22,5 +39,12 @@
 .markdownlintrc text eol=lf
 LICENSE text eol=lf
 TRADEMARK text eol=lf
+app.config eol=lf
 
-# Use CRLF for Windows-specific file types
+# Use CRLF for Windows and Visual Studio file types
+*.cs text eol=crlf
+*.csproj text eol=crlf
+*.projitems eol=crlf
+*.shproj eol=crlf
+*.sln text eol=crlf
+*.xaml text eol=crlf

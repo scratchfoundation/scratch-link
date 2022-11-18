@@ -1,0 +1,13 @@
+//
+//  All Configurations.xcconfig
+//  Scratch Link Safari Helper
+//
+//  Created by Christopher Willis-Ford on 8/5/22.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+#include "Version.xcconfig"
+
+CODE_SIGN_IDENTITY = -; // Default to automatic; override in signing configs

@@ -1,0 +1,23 @@
+//
+//  Debug.xcconfig
+//  Scratch Link Safari Helper
+//
+//  Created by Christopher Willis-Ford on 8/5/22.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+#include "All Configurations.xcconfig"
+
+ONLY_ACTIVE_ARCH = YES;
+DEBUG_INFORMATION_FORMAT = dwarf;
+ENABLE_TESTABILITY = YES;
+GCC_DYNAMIC_NO_PIC = NO;
+GCC_OPTIMIZATION_LEVEL = 0;
+ENABLE_NS_ASSERTIONS = YES;
+GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1 $(inherited);
+SWIFT_COMPILATION_MODE = singlefile; // "Incremental"
+SWIFT_OPTIMIZATION_LEVEL = -Onone; // "No Optimization"
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;

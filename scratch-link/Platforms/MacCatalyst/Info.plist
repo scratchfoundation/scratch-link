@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>XSAppIconAssets</key>
+	<string>Assets.xcassets/appicon.appiconset</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>TODO: Info.plist NSBluetoothPeripheralUsageDescription</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>TODO: Info.plist NSBluetoothAlwaysUsageDescription</string>
+	<key>CFBundleIdentifier</key>
+	<string>edu.mit.scratch.scratch-link</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.15</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleName</key>
+	<string>Scratch Link</string>
+</dict>
+</plist>

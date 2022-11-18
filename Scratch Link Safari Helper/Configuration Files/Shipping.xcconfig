@@ -1,0 +1,16 @@
+//
+//  Shipping.xcconfig
+//  Scratch Link Safari Helper
+//
+//  Created by Christopher Willis-Ford on 8/5/22.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
+
+// Enable secure timestamp for code signing
+OTHER_CODE_SIGN_FLAGS = --timestamp $(inherited);
+
+// Setting this to NO will prevent injection of the "com.apple.security.get-task-allow" entitlement
+// That entitlement enables debugging on a SIP-enabled system, but is forbidden for shipping apps
+CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
