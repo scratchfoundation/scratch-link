@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;
@@ -46,8 +47,6 @@ namespace scratch_link
 
         private DeviceWatcher _watcher;
         private StreamSocket _connectedSocket;
-        private DataWriter _socketWriter;
-        private DataReader _socketReader;
 
         internal BTSession(IWebSocketConnection webSocket) : base(webSocket)
         {
@@ -64,8 +63,6 @@ namespace scratch_link
             }
             if (_connectedSocket != null)
             {
-                _socketReader.Dispose();
-                _socketWriter.Dispose();
                 _connectedSocket.Dispose();
             }
         }
@@ -160,8 +157,6 @@ namespace scratch_link
                 _connectedSocket = new StreamSocket();
                 await _connectedSocket.ConnectAsync(services.Services[0].ConnectionHostName,
                     services.Services[0].ConnectionServiceName);
-                _socketWriter = new DataWriter(_connectedSocket.OutputStream);
-                _socketReader = new DataReader(_connectedSocket.InputStream) { ByteOrder = ByteOrder.LittleEndian };
                 ListenForMessages();
             }
             else
@@ -191,7 +186,7 @@ namespace scratch_link
 
         private async Task<JToken> SendMessage(JObject parameters)
         {
-            if (_socketWriter == null)
+            if (_connectedSocket == null)
             {
                 throw JsonRpcException.InvalidRequest("Not connected to peripheral");
             }
@@ -199,8 +194,7 @@ namespace scratch_link
             var data = EncodingHelpers.DecodeBuffer(parameters);
             try
             {
-                _socketWriter.WriteBytes(data);
-                await _socketWriter.StoreAsync();
+                await _connectedSocket.OutputStream.WriteAsync(data.AsBuffer());
             }
             catch (ObjectDisposedException)
             {
@@ -211,23 +205,13 @@ namespace scratch_link
 
         private async void ListenForMessages()
         {
+            var buffer = new Windows.Storage.Streams.Buffer(1024);
             try
             {
                 while (true)
                 {
-                    await _socketReader.LoadAsync(sizeof(UInt16));
-                    var messageSize = _socketReader.ReadUInt16();
-                    var headerBytes = BitConverter.GetBytes(messageSize);
-
-                    var messageBytes = new byte[messageSize];
-                    await _socketReader.LoadAsync(messageSize);
-                    _socketReader.ReadBytes(messageBytes);
-
-                    var totalBytes = new byte[headerBytes.Length + messageSize];
-                    Array.Copy(headerBytes, totalBytes, headerBytes.Length);
-                    Array.Copy(messageBytes, 0, totalBytes, headerBytes.Length, messageSize);
-
-                    var parameters = EncodingHelpers.EncodeBuffer(totalBytes, "base64");
+                    await _connectedSocket.InputStream.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
+                    var parameters = EncodingHelpers.EncodeBuffer(buffer.ToArray(), "base64");
                     SendRemoteRequest("didReceiveMessage", parameters);
                 }
             }
