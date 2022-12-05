@@ -140,62 +140,36 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
 
-#if false // rely on the value returned by OpenRfcommChannel, like Scratch Link 1.x did: doesn't seem reliable on macOS 12
         Trace.WriteLine("about to openRfcommChannel");
         var openResult = (IOReturn)device.OpenRfcommChannelSync(out var channel, 1, rfcommDelegate);
         Trace.WriteLine($"openRfcommChannel result={openResult.ToDebugString()}");
-        if (openResult != IOReturn.Success)
-        {
-            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
-        }
-#elif false // ignore OpenRfcommChannel return value and wait for RfcommChannelOpenComplete event: doesn't seem reliable on macOS <12
-        RfcommChannel channel = null;
-        var openChannelResult = await EventAwaiter<RfcommChannelOpenCompleteEventArgs>.MakeTask(
-            h =>
-            {
-                rfcommDelegate.RfcommChannelOpenCompleteEvent += h;
-                Trace.WriteLine("hooked RfcommChannelOpenCompleteEvent");
-            },
-            h =>
-            {
-                rfcommDelegate.RfcommChannelOpenCompleteEvent -= h;
-                Trace.WriteLine("unhooked RfcommChannelOpenCompleteEvent");
-            },
-            TimeSpan.FromSeconds(30),
-            CancellationToken.None,
-            () =>
-            {
-                // OpenRfcommChannelSync sometimes returns "general error" even when the connection will succeed later.
-                // Ignore its return value and check for error status on the RfcommChannelOpenComplete event instead.
-                Trace.WriteLine("about to openRfcommChannel");
-                var openResult = (IOReturn)device.OpenRfcommChannelSync(out channel, 1, rfcommDelegate);
-                Trace.WriteLine($"Ignoring openRfcommChannel result={openResult.ToDebugString()}");
-            });
 
-        if (openChannelResult.Error != IOReturn.Success)
+        // Sometimes OpenRfcommChannel returns success but channel.IsOpen is false. It might become true later.
+        // Sometimes OpenRfcommChannel returns failure but channel.IsOpen will still become true later.
+        // This behavior seems to differ by macOS version: macOS 10, 11, and 12 are all slightly different.
+        // So:
+        // - ignore the return value of OpenRfcommChannel
+        // - if channel.IsOpen is false, try polling for a bit to see if it turns true
+        // - only fail if channel.IsOpen is still false after polling
+        if (!channel.IsOpen)
         {
-            Trace.WriteLine($"Opening RFCOMM channel failed: {openChannelResult.Error.ToDebugString()}");
-            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
-        }
-#else // ignore all secondary indicators and just poll to see if the channel becomes open
-        Trace.WriteLine("about to openRfcommChannel");
-        var openResult = (IOReturn)device.OpenRfcommChannelAsync(out var channel, 1, rfcommDelegate);
-        Trace.WriteLine($"ignoring openRfcommChannel result={openResult.ToDebugString()}");
+            Trace.WriteLine("polling in case openRfcommChannel just needs some time");
 
-        var connectionDidTimeout = false;
-        using (var connectionTimer = new Timer((_) => { connectionDidTimeout = true; }, null, TimeSpan.FromSeconds(30), Timeout.InfiniteTimeSpan))
-        {
-            while (!(channel.IsOpen || connectionDidTimeout))
+            var connectionDidTimeout = false;
+            using (var connectionTimer = new Timer((_) => { connectionDidTimeout = true; }, null, TimeSpan.FromSeconds(30), Timeout.InfiniteTimeSpan))
             {
-                await Task.Delay(100);
+                while (!(channel.IsOpen || connectionDidTimeout))
+                {
+                    await Task.Delay(100);
+                }
             }
         }
 
         if (!channel.IsOpen)
         {
+            Trace.WriteLine("RFCOMM channel is not open even after polling");
             throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
         }
-#endif
 
         Trace.WriteLine("RFCOMM channel is open");
 
