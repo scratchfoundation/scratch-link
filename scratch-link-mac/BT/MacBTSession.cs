@@ -141,17 +141,27 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         rfcommDelegate.RfcommChannelDataEvent += this.RfcommDelegate_RfcommChannelData;
 
         Trace.WriteLine("about to openRfcommChannel");
-        var openResult = (IOReturn)device.OpenRfcommChannelSync(out var channel, 1, rfcommDelegate);
-        Trace.WriteLine($"openRfcommChannel result={openResult.ToDebugString()}");
+
+        const byte channelNumber = 1; // TODO: support other channels? is it reasonable to query the peripheral?
 
         // Sometimes OpenRfcommChannel returns success but channel.IsOpen is false. It might become true later.
         // Sometimes OpenRfcommChannel returns failure but channel.IsOpen will still become true later.
+        // Sometimes OpenRfcommChannel returns an I/O timeout and doesn't make a channel object.
         // This behavior seems to differ by macOS version: macOS 10, 11, and 12 are all slightly different.
-        // So:
-        // - ignore the return value of OpenRfcommChannel
-        // - if channel.IsOpen is false, try polling for a bit to see if it turns true
-        // - only fail if channel.IsOpen is still false after polling
-        if (!channel.IsOpen)
+        var openResult = (IOReturn)device.OpenRfcommChannelSync(out var channel, channelNumber, rfcommDelegate);
+        Trace.WriteLine($"OpenRfcommChannelSync result={openResult.ToDebugString()}");
+
+        if (channel == null)
+        {
+            // this can work around timeouts, especially on macOS 12
+            Trace.WriteLine("Trying OpenRfcommChannelAsync instead");
+            openResult = (IOReturn)device.OpenRfcommChannelAsync(out channel, channelNumber, rfcommDelegate);
+            Trace.WriteLine($"OpenRfcommChannelAsync result={openResult.ToDebugString()}");
+        }
+
+        // if we have a channel but it's not open, give it some time to magically become open
+        // if channel is null, there's no point in polling
+        if (channel?.IsOpen == false)
         {
             Trace.WriteLine("polling in case openRfcommChannel just needs some time");
 
@@ -165,7 +175,8 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             }
         }
 
-        if (!channel.IsOpen)
+        // give up: either we never got a channel in the first place, or the channel we got never became open
+        if (channel?.IsOpen != true)
         {
             Trace.WriteLine("RFCOMM channel is not open even after polling");
             throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
@@ -184,7 +195,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         return null;
     }
 
-        /// <inheritdoc/>
+    /// <inheritdoc/>
     protected override async Task<int> DoSend(byte[] buffer)
     {
         ushort shortLength = (ushort)buffer.Length;
@@ -239,19 +250,18 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             var alert = new NSAlert
             {
                 AlertStyle = NSAlertStyle.Informational,
-                MessageText = "Please use Bluetooth Preferences to connect to this device for the first time.",
+                MessageText = "Please use Bluetooth Preferences to connect to this peripheral device for the first time.",
                 InformativeText = $"Selected peripheral device: {device.NameOrAddress}",
                 AccessoryView = NSTextField.CreateLabel(string.Join(
                     Environment.NewLine,
                     "1. Go to Bluetooth Preferences",
                     $"2. Find {device.NameOrAddress} and press 'Connect'",
-                    $"3. Follow the instructions on your computer and/or device",
-                    $"   until {device.NameOrAddress} displays 'Connected'",
-                    "   * Check 'Options' to make sure the PIN / Passkey / Code",
-                    "     matches on your computer and your device",
+                    $"3. Follow the instructions on your computer and/or peripheral until {device.NameOrAddress} displays 'Connected'",
+                    $"   * Make sure the PIN / Passkey / Code on {device.NameOrAddress} matches the one set on your computer",
+                    "   * Press 'Options' to check the PIN if necessary",
                     "4. Close Bluetooth Preferences",
                     "5. Press OK to continue",
-                    "6. You might need to retry the connection")),
+                    "6. You might need to turn the peripheral device off and back on, and/or retry the connection")),
             };
             alert.RunModal();
 
