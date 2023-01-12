@@ -27,17 +27,17 @@ jobs:
             xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
       - restore_cache:
           keys:
-            - visual-studio-mac-v3
+            - visual-studio-mac-{{ checksum ".circleci/install-or-extract-vs-mac.sh" }}
       - run:
           name: Install/Extract Visual Studio for Mac
           command: |
             # CACHE_ARCHIVE must match the path in save_cache
-            CACHE_ARCHIVE="/tmp/visual-studio-mac-v3.tar.gz"
+            CACHE_ARCHIVE="/tmp/visual-studio-mac.tar.gz"
             bash ./.circleci/install-or-extract-vs-mac.sh "$CACHE_ARCHIVE"
       - save_cache:
-          key: visual-studio-mac-v3
+          key: visual-studio-mac-{{ checksum ".circleci/install-or-extract-vs-mac.sh" }}
           paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
-            - /tmp/visual-studio-mac-v3.tar.gz
+            - /tmp/visual-studio-mac.tar.gz
       - unless:
           condition:
             *should_sign

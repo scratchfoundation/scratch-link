@@ -91,12 +91,11 @@ function install_vs() {
     # Make sure to collect the dependencies as well! This script doesn't currently respect the `dependsOn` field.
     #
     # Currently relevant dependencies:
-    #  - DotNet6Sdk depends on DotNetCoreOld
-    #  - macOS depends on DotNet6Sdk
-    #  - Xamarin.Mac depends on XProfiler and MONO
+    #  - macOS depends on DotNet7Sdk
+    #  - Xamarin.Mac (XAMMAC) depends on XProfiler and MONO
     # Note that the "macOS" item doesn't currently install anything itself. It's here in case that changes in the future.
     # Also, "brew install visual-studio" installs the Mono MDK as a dependency, so we can skip "MONO" here.
-    for NAME in DotNetCoreOld DotNet6Sdk XProfiler macOS XAMMAC VisualStudioMac; do
+    for NAME in DotNet7Sdk XProfiler macOS XAMMAC VisualStudioMac; do
       install_generic_name "$NAME"
     done
 
