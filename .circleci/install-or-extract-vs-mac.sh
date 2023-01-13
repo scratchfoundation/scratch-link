@@ -1,7 +1,17 @@
 #!/bin/bash
 set -e
+
+# To upgrade the version of Visual Studio being used, update this URL.
+# One way to find this installer URL is to run "brew install visual-studio" and inspect the output.
+# We used to use "brew install visual-studio" instead, but that doesn't let us control the VS version.
+# A new version of VS can mean potentially breaking SDK changes and the need for changes in this script,
+# so it's better to manually control the version of VS through this URL.
+VS_INSTALLER_URL="https://download.visualstudio.microsoft.com/download/pr/2d54b9b7-b1ca-46a5-b018-1e368bc5a574/ddadd52e7c6e8a15b6d7c57531bc1375/visualstudioformacinstaller-17.4.0.445.dmg"
+
 CACHE_ARCHIVE="$1"
 VS_MANIFEST="$HOME/Library/Caches/VisualStudioInstaller/downloads/InstallationManifest.json"
+VS_INSTALLER_DMG="/tmp/visual-studio-mac-installer.dmg"
+VS_INSTALLER_MOUNT="/Volumes/visual-studio-mac-installer/"
 
 # This helps reduce log output from `tar -v` and similar without eliminating their output entirely.
 # It converts a list of files into a list of directories, similar to `dirname`, then runs that list through `uniq`.
@@ -28,14 +38,22 @@ function install_vs() {
     VS_TMP="$(mktemp -d -t vs-installers)"
 
     echo "Installing Homebrew packages..."
-    brew tap -v homebrew/cask-versions
-    brew install -v visual-studio jq
+    brew install jq
+
+    echo "Downloading Visual Studio installer..."
+    # These curl parameters were inspired by "brew install visual-studio"
+    curl --disable --cookie /dev/null --globoff --show-error --fail --retry 3 --location --remote-time --output "$VS_INSTALLER_DMG" "$VS_INSTALLER_URL"
+    sudo xattr -d -r com.apple.quarantine "$VS_INSTALLER_DMG"
+
+    echo "Mounting installer DMG..."
+    sudo hdiutil attach -nobrowse -readonly -mountpoint "$VS_INSTALLER_MOUNT" "$VS_INSTALLER_DMG"
 
     echo "Starting installer app..."
-    for F in "/usr/local/Caskroom/visual-studio"/17.*/"Install Visual Studio for Mac.app"; do
-        VS_INSTALLER="$F"
-    done
-    sudo xattr -d -r com.apple.quarantine "$VS_INSTALLER"
+    # Use this if we go back to "brew install visual-studio"
+    #for F in "/usr/local/Caskroom/visual-studio"/17.*/"Install Visual Studio for Mac.app"; do
+    #    VS_INSTALLER="$F"
+    #done
+    VS_INSTALLER="$VS_INSTALLER_MOUNT/Install Visual Studio for Mac.app"
     open "$VS_INSTALLER"
 
     echo "Waiting for installer to download manifest..."
@@ -94,10 +112,13 @@ function install_vs() {
     #  - macOS depends on DotNet7Sdk
     #  - Xamarin.Mac (XAMMAC) depends on XProfiler and MONO
     # Note that the "macOS" item doesn't currently install anything itself. It's here in case that changes in the future.
-    # Also, "brew install visual-studio" installs the Mono MDK as a dependency, so we can skip "MONO" here.
-    for NAME in DotNet7Sdk XProfiler macOS XAMMAC VisualStudioMac; do
+    for NAME in DotNet7Sdk XProfiler MONO macOS XAMMAC VisualStudioMac; do
       install_generic_name "$NAME"
     done
+
+    # TODO: figure out a good way to close the installer app, then uncomment this
+    #echo "Detaching installer DMG..."
+    #sudo hdiutil detach "$VS_INSTALLER_MOUNT"
 
     # Using "find" and "sort" forces the files to be in sorted order, which helps "reduce_log" do a better job.
     echo "Caching for next time..."
