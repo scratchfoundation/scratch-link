@@ -1,12 +1,7 @@
-mode: MainLine
+mode: Mainline
 
-# We treat the "develop" branch the way GitVersion expects "main"
-branches:
-  develop:
-    tag: ''
-    is-release-branch: true
-    is-mainline: true
-    increment: none
+assembly-versioning-format: '{Major}.{Minor}.{Patch}.{WeightedPreReleaseNumber ?? 0}'
+assembly-file-versioning-format: '{Major}.{Minor}.{Patch}.{WeightedPreReleaseNumber ?? 0}'
 
 # Bump version according to Conventional Commits standard (ish)
 major-version-bump-message: "^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\\([\\w\\s-]*\\))?(!:|:.*\\n\\n((.+\\n)+\\n)?BREAKING CHANGE:\\s.+)"
