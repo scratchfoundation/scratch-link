@@ -23,7 +23,7 @@
     <DocumentationFile>bin\Debug\Scratch Link.xml</DocumentationFile>
     <EnableCodeSigning>false</EnableCodeSigning>
     <CodeSigningKey>Mac Developer</CodeSigningKey>
-    <CreatePackage>false</CreatePackage>
+    <CreatePackage>true</CreatePackage>
     <EnablePackageSigning>false</EnablePackageSigning>
     <IncludeMonoRuntime>false</IncludeMonoRuntime>
     <UseSGen>true</UseSGen>
