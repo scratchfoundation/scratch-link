@@ -1,11 +1,8 @@
 import Cocoa
-import Foundation
-import PerfectCrypto
 import PerfectHTTP
 import PerfectHTTPServer
-import PerfectWebSockets
 
-let SDMPort: Int = 20110
+let SDMPort: Int = 20111
 
 enum SDMRoute: String {
     case bluetoothLowEnergy = "/scratch/ble"
@@ -113,15 +110,11 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         sessionManagers[SDMRoute.bluetoothLowEnergy.rawValue] = SessionManager<BLESession>()
         sessionManagers[SDMRoute.bluetooth.rawValue] = SessionManager<BTSession>()
 
-        guard let certificate = getWssCertificate() else {
-            throw InitializationError.server("Failed to load certificate resource")
-        }
         var routes = Routes()
         routes.add(method: .get, uri: "/scratch/*", handler: requestHandler)
         print("Starting server...")
         do {
             try HTTPServer.launch(wait: false, HTTPServer.Server(
-                tlsConfig: TLSConfiguration(cert: certificate),
                 name: "device-manager.scratch.mit.edu",
                 port: SDMPort,
                 routes: routes
@@ -139,20 +132,6 @@ class ScratchLink: NSObject, NSApplicationDelegate {
         var bytes = [UInt8](repeating: 0, count: data.length)
         data.getBytes(&bytes, length: data.length)
         return bytes
-    }
-
-    func getWssCertificate() -> String? {
-        guard let decryptedBytes = ServerConstants.encodedPEM
-            .reversed()
-            .decrypt(Cipher.aes_256_cbc, key: ServerConstants.key, iv: ServerConstants.iv) else {
-            // This probably means a key or IV problem
-            return nil
-        }
-
-        guard let decryptedString = String(bytes: decryptedBytes, encoding: .utf8) else {
-            return nil
-        }
-        return decryptedString
     }
 
     func does(string text: String, match regex: NSRegularExpression) -> Bool {

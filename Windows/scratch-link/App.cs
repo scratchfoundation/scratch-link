@@ -2,19 +2,16 @@ using Fleck;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 
 namespace scratch_link
 {
     public class App : ApplicationContext
     {
-        public const int SDMPort = 20110;
+        public const int SDMPort = 20111;
 
         private static class SDMPath
         {
@@ -61,15 +58,9 @@ namespace scratch_link
                 sessionManager.ActiveSessionCountChanged += new EventHandler(UpdateIconText);
             }
 
-            var certificate = GetWssCertificate();
-            _server = new WebSocketServer($"wss://0.0.0.0:{SDMPort}", false)
+            _server = new WebSocketServer($"ws://0.0.0.0:{SDMPort}", false)
             {
-                RestartAfterListenError = true,
-                Certificate = certificate,
-                EnabledSslProtocols =
-                    System.Security.Authentication.SslProtocols.Tls |
-                    System.Security.Authentication.SslProtocols.Tls11 |
-                    System.Security.Authentication.SslProtocols.Tls12
+                RestartAfterListenError = true
             };
             _server.ListenerSocket.NoDelay = true;
 
@@ -90,45 +81,6 @@ namespace scratch_link
             }
 
             UpdateIconText(this, null);
-        }
-
-        private byte[] DecryptBuffer(byte[] encrypted)
-        {
-            const int bufferSize = 4096;
-
-            using (MemoryStream decrypted = new MemoryStream())
-            {
-                var aes = Aes.Create();
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
-                aes.Key = ServerConstants.Key;
-                aes.IV = ServerConstants.IV;
-
-                var decryptor = aes.CreateDecryptor();
-                using (var encryptedStream = new MemoryStream(encrypted.Reverse().ToArray()))
-                {
-                    using (var cryptoStream = new CryptoStream(encryptedStream, decryptor, CryptoStreamMode.Read))
-                    {
-                        using (var decryptedStream = new MemoryStream())
-                        {
-                            var buffer = new byte[bufferSize];
-                            int count;
-                            while ((count = cryptoStream.Read(buffer, 0, buffer.Length)) != 0)
-                            {
-                                decryptedStream.Write(buffer, 0, count);
-                            }
-                            return decryptedStream.ToArray();
-                        }
-                    }
-                }
-            }
-        }
-
-        private X509Certificate2 GetWssCertificate()
-        {
-            var certificateBytes = DecryptBuffer(ServerConstants.EncodedPFX);
-            var certificate = new X509Certificate2(certificateBytes, "Scratch");
-            return certificate;
         }
 
         private void OnAddressInUse()
