@@ -21,12 +21,17 @@ public static class BundleInfo
     public static string Title => GetMainBundleInfoString("CFBundleDisplayName") ?? defaultTitle;
 
     /// <summary>
-    /// Gets a basic version string for the app, as specified in the main bundle's <c>CFBundleVersion</c> property.
+    /// Gets a basic version string for the app, as specified in the main bundle's <c>CFBundleShortVersionString</c> property.
     /// </summary>
-    public static string Version => GetMainBundleInfoString("CFBundleVersion") ?? defaultVersion;
+    public static string Version => GetMainBundleInfoString("CFBundleShortVersionString") ?? defaultVersion;
 
     /// <summary>
-    /// Gets a string containing additional version detail for the app, as specified in the main bundle's <c>ScratchVersionDetail</c> property.
+    /// Gets a build number for the app, as specified in the main bundle's <c>CFBundleVersion</c> property.
+    /// </summary>
+    public static string BuildNumber => GetMainBundleInfoString("CFBundleVersion") ?? defaultVersion;
+
+    /// <summary>
+    /// Gets a string containing detailed version information for the app, as specified in the main bundle's <c>ScratchVersionDetail</c> property.
     /// </summary>
     public static string VersionDetail
     {

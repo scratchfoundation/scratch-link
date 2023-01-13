@@ -142,9 +142,10 @@ public class AppDelegate : NSApplicationDelegate
 
         var versionDetailLines = new[]
         {
-            $"{BundleInfo.Title} {BundleInfo.Version} {BundleInfo.VersionDetail}",
+            $"Title: {BundleInfo.Title}",
+            $"Version: {BundleInfo.VersionDetail}",
             $"Build type: {buildType}",
-            $"macOS {NSProcessInfo.ProcessInfo.OperatingSystemVersionString}",
+            $"OS: macOS {NSProcessInfo.ProcessInfo.OperatingSystemVersionString}",
         };
         var versionDetails = string.Join('\n', versionDetailLines);
 

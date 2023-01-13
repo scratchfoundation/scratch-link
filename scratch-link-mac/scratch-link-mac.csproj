@@ -122,10 +122,10 @@
     * https://gitversion.net/docs/reference/variables
     You can also check obj/gitversion.json for available values
     -->
-    <Message Text="GetVersion calculated: $(GitVersion_SemVer)" />
-    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(GitVersion_MajorMinorPatch)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Message Text="GetVersion calculated: $(GitVersion_FullSemVer)" />
     <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(GitVersion_MajorMinorPatch)' '$(IntermediateOutputPath)AppManifest.plist'" />
-    <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(GitVersion_ShortSha)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(GitVersion_WeightedPreReleaseNumber)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(GitVersion_FullSemVer).$(GitVersion_ShortSha)' '$(IntermediateOutputPath)AppManifest.plist'" />
   </Target>
   <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="GetVersion">
     <PropertyGroup>
@@ -133,7 +133,7 @@
       <SafariHelperBundleName>Scratch Link Safari Extension.appex</SafariHelperBundleName>
       <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
     </PropertyGroup>
-    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'CURRENT_PROJECT_VERSION=$(GitVersion_MajorMinorPatch)' 'MARKETING_VERSION=$(GitVersion_MajorMinorPatch)' build" />
+    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'MARKETING_VERSION=$(GitVersion_MajorMinorPatch)' 'CURRENT_PROJECT_VERSION=$(GitVersion_WeightedPreReleaseNumber)' build" />
     <Error Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)" />
     <ItemGroup>
       <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />

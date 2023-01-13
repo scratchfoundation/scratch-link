@@ -4,7 +4,8 @@
 
     "name": "__MSG_extension_name__",
     "description": "__MSG_extension_description__",
-    "version": "(version placeholder)",
+    "version": "(placeholder for the internal version number)",
+    "version_name": "(placeholder for the user-friendly version number)",
 
     "web_accessible_resources": [
         "web/scratch-link-safari-socket.mjs"
