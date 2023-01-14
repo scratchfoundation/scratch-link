@@ -123,6 +123,10 @@
     You can also check obj/gitversion.json for available values
     -->
     <Message Text="GetVersion calculated: $(GitVersion_FullSemVer)" />
+    <PropertyGroup>
+      <!-- The PkgPackagePath property seems undocumented. I found it with Structured Log Viewer. -->
+      <PkgPackagePath>$(OutputPath)$(AssemblyName)-$(GitVersion_FullSemVer).pkg</PkgPackagePath>
+    </PropertyGroup>
     <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(GitVersion_MajorMinorPatch)' '$(IntermediateOutputPath)AppManifest.plist'" />
     <Exec Command="plutil -replace 'CFBundleVersion' -string '$(GitVersion_WeightedPreReleaseNumber)' '$(IntermediateOutputPath)AppManifest.plist'" />
     <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(GitVersion_FullSemVer).$(GitVersion_ShortSha)' '$(IntermediateOutputPath)AppManifest.plist'" />
