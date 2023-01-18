@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CDF7978E-13C6-40A9-81F9-2A3B4F7E861C}</ProjectGuid>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ScratchLink.Mac</RootNamespace>
+    <AssemblyName>Scratch Link</AssemblyName>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkIdentifier>Xamarin.Mac</TargetFrameworkIdentifier>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\Scratch Link.xml</DocumentationFile>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <CreatePackage>true</CreatePackage>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <HttpClientHandler></HttpClientHandler>
+    <LangVersion>10.0</LangVersion>
+    <LinkMode>None</LinkMode>
+    <AOTMode>None</AOTMode>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\Scratch Link.xml</DocumentationFile>
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CreatePackage>true</CreatePackage>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
+    <LinkMode>SdkOnly</LinkMode>
+    <HttpClientHandler></HttpClientHandler>
+    <LangVersion>10.0</LangVersion>
+    <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
+    <EnableSGenConc>true</EnableSGenConc>
+    <AOTMode>None</AOTMode>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <CodeSignProvision></CodeSignProvision>
+    <UseHardenedRuntime>true</UseHardenedRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release_DevID|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release_DevID</OutputPath>
+    <DefineConstants>SIGNED_DEVID;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release_DevID\Scratch Link.xml</DocumentationFile>
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CreatePackage>true</CreatePackage>
+    <EnablePackageSigning>true</EnablePackageSigning>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
+    <LinkMode>SdkOnly</LinkMode>
+    <HttpClientHandler></HttpClientHandler>
+    <LangVersion>10.0</LangVersion>
+    <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
+    <EnableSGenConc>true</EnableSGenConc>
+    <AOTMode>None</AOTMode>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <CodeSignProvision></CodeSignProvision>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <UseHardenedRuntime>true</UseHardenedRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release_MAS|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release_MAS</OutputPath>
+    <DefineConstants>SIGNED_MAS;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release_MAS\Scratch Link.xml</DocumentationFile>
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CreatePackage>true</CreatePackage>
+    <EnablePackageSigning>true</EnablePackageSigning>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <CodeSignEntitlements>Entitlements.plist</CodeSignEntitlements>
+    <LinkMode>SdkOnly</LinkMode>
+    <HttpClientHandler></HttpClientHandler>
+    <LangVersion>10.0</LangVersion>
+    <MonoBundlingExtraArgs>--registrar=dynamic</MonoBundlingExtraArgs>
+    <EnableSGenConc>true</EnableSGenConc>
+    <AOTMode>None</AOTMode>
+    <CodeSigningKey>3rd Party Mac Developer Application</CodeSigningKey>
+    <CodeSignProvision></CodeSignProvision>
+    <PackageSigningKey>3rd Party Mac Developer Installer</PackageSigningKey>
+    <UseHardenedRuntime>true</UseHardenedRuntime>
+  </PropertyGroup>
+  <Target Name="DeleteIOBluetoothFramework" BeforeTargets="_CodesignAppBundle">
+    <!-- There's got to be a way to suppress copying this into the build in the first place...? -->
+    <RemoveDir Directories="$(AppBundleDir)/Contents/Frameworks/IOBluetooth.framework" />
+    <Exec WorkingDirectory="$(AppBundleDir)/Contents" Command="rmdir Frameworks || true" />
+  </Target>
+  <Target Name="EmbedVersion" BeforeTargets="CoreCompile" DependsOnTargets="GetVersion">
+    <!--
+    For more information on GitVersion, see:
+    * https://gitversion.net/docs/usage/msbuild
+    * https://gitversion.net/docs/reference/variables
+    You can also check obj/gitversion.json for available values
+    -->
+    <Message Text="GetVersion calculated: $(GitVersion_FullSemVer)" />
+    <PropertyGroup>
+      <!-- The PkgPackagePath property seems undocumented. I found it with Structured Log Viewer. -->
+      <PkgPackagePath>$(OutputPath)$(AssemblyName)-$(GitVersion_FullSemVer).pkg</PkgPackagePath>
+    </PropertyGroup>
+    <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(GitVersion_MajorMinorPatch)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(GitVersion_WeightedPreReleaseNumber)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(GitVersion_FullSemVer).$(GitVersion_ShortSha)' '$(IntermediateOutputPath)AppManifest.plist'" />
+  </Target>
+  <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="GetVersion">
+    <PropertyGroup>
+      <SafariHelperSrcDir>$(SolutionDir)Scratch Link Safari Helper/build/$(Configuration)/</SafariHelperSrcDir>
+      <SafariHelperBundleName>Scratch Link Safari Extension.appex</SafariHelperBundleName>
+      <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
+    </PropertyGroup>
+    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'MARKETING_VERSION=$(GitVersion_MajorMinorPatch)' 'CURRENT_PROJECT_VERSION=$(GitVersion_WeightedPreReleaseNumber)' build" />
+    <Error Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)" />
+    <ItemGroup>
+      <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(SafariHelperFiles)" DestinationFolder="$(AppBundleDir)/Contents/PlugIns/$(SafariHelperBundleName)/%(RecursiveDir)" />
+  </Target>
+  <Target Name="UpdateBuildPlatformInfo" AfterTargets="EmbedSafariHelper">
+    <!--
+    These values are usually injected by Xcode and are required by TestFlight.
+    Most of the advice I've found suggests hard-coding them to values that are known to work.
+    I'd rather copy the true values from the Xcode-built app extension...
+    -->
+    <Exec Command="for KEY in DTPlatformBuild DTPlatformName DTPlatformVersion DTSDKBuild DTSDKName DTXcode DTXcodeBuild NSHumanReadableCopyright; do plutil -replace $KEY -string &quot;`plutil -extract $KEY raw '$(SafariHelperSrcPath)Contents/Info.plist'`&quot; '$(AppBundleDir)/Contents/Info.plist'; done" />
+  </Target>
+  <Target Name="EmbedProvisioningProfile" BeforeTargets="_CompileToNative">
+    <Copy SourceFiles="$(SolutionDir)fastlane/output/Direct_edu.mit.scratch.scratch-link.provisionprofile" DestinationFiles="$(AppBundleDir)/Contents/embedded.provisionprofile" Condition=" '$(Configuration)|$(Platform)' == 'Release_DevID|AnyCPU' " />
+    <Copy SourceFiles="$(SolutionDir)fastlane/output/AppStore_edu.mit.scratch.scratch-link.provisionprofile" DestinationFiles="$(AppBundleDir)/Contents/embedded.provisionprofile" Condition=" '$(Configuration)|$(Platform)' == 'Release_MAS|AnyCPU' " />
+  </Target>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Xamarin.Mac" />
+  </ItemGroup>
+  <ItemGroup>
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\Contents.json" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-128.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-128%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-16.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-16%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-256.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-256%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-32.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-32%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-512.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcon.appiconset\AppIcon-512%402x.png" />
+    <ImageAsset Include="Assets.xcassets\Contents.json" />
+    <ImageAsset Include="Assets.xcassets\.DS_Store" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_128x128.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_128x128%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_16x16.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_16x16%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_256x256.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_256x256%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_32x32.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_32x32%402x.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_512x512.png" />
+    <ImageAsset Include="Assets.xcassets\StatusBarIcon.iconset\icon_512x512%402x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+    <None Include="Entitlements.plist" />
+    <None Include="Makefile" />
+    <None Include="app.config" />
+    <None Include="notarize.sh" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="AppDelegate.cs" />
+    <Compile Include="BLE\MacGattHelpers.cs" />
+    <Compile Include="BLE\MacBLESession.cs" />
+    <Compile Include="BLE\MacBLEEndpoint.cs" />
+    <Compile Include="BT\MacBTSession.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelDataEventArgs.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelEventDelegate.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelEventArgs.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelOpenCompleteEventArgs.cs" />
+    <Compile Include="BT\Rfcomm\RfcommChannelWriteCompleteEventArgs.cs" />
+    <Compile Include="BundleInfo.cs" />
+    <Compile Include="Extensions\NSExtensions.cs" />
+    <Compile Include="IOReturn.cs" />
+    <Compile Include="MacSessionManager.cs" />
+    <Compile Include="Extensions\DispatchQueueExtensions.cs" />
+    <Compile Include="OSLogTraceListener.cs" />
+    <Compile Include="BLE\CBCentralManagerEventDelegate.cs" />
+  </ItemGroup>
+  <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />
+  <ItemGroup>
+    <PackageReference Include="Fleck">
+      <Version>1.2.0</Version>
+    </PackageReference>
+    <PackageReference Include="InTheHand.IOBluetooth">
+      <Version>1.0.1</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <Version>6.0.5</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.Channels">
+      <Version>6.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection">
+      <Version>6.0.0</Version>
+    </PackageReference>
+    <PackageReference Include="GitVersion.MsBuild">
+      <Version>5.11.1</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

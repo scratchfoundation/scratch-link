@@ -1,0 +1,44 @@
+{
+    "manifest_version": 2,
+    "default_locale": "en",
+
+    "name": "__MSG_extension_name__",
+    "description": "__MSG_extension_description__",
+    "version": "(placeholder for the internal version number)",
+    "version_name": "(placeholder for the user-friendly version number)",
+
+    "web_accessible_resources": [
+        "web/scratch-link-safari-socket.mjs"
+    ],
+
+    "icons": {
+        "48": "images/icon-48.png",
+        "96": "images/icon-96.png",
+        "128": "images/icon-128.png",
+        "256": "images/icon-256.png",
+        "512": "images/icon-512.png"
+    },
+
+    "background": {
+        "scripts": [ "scratch-link-extension-background.js" ],
+        "persistent": false
+    },
+
+    "content_scripts": [{
+        "js": [ "scratch-link-extension.js" ],
+        "matches": [ "<all_urls>" ]
+    }],
+
+    "browser_action": {
+        "default_icon": {
+            "16": "images/toolbar-icon-16.png",
+            "19": "images/toolbar-icon-19.png",
+            "32": "images/toolbar-icon-32.png",
+            "38": "images/toolbar-icon-38.png",
+            "48": "images/toolbar-icon-48.png",
+            "72": "images/toolbar-icon-72.png"
+        }
+    },
+
+    "permissions": [ "nativeMessaging" ]
+}
