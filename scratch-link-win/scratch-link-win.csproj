@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <RootNamespace>ScratchLink.Mac</RootNamespace>
+    <AssemblyName>Scratch Link</AssemblyName>
+    <Nullable>disable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
+  <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
+  <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />
+
+</Project>
