@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
-    <RootNamespace>ScratchLink.Mac</RootNamespace>
+    <RootNamespace>ScratchLink.Win</RootNamespace>
     <AssemblyName>Scratch Link</AssemblyName>
     <Nullable>disable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
