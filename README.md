@@ -8,7 +8,7 @@ System Requirements:
 | | Minimum
 | --- | ---
 | macOS | 10.15 "Catalina"
-| Windows | Coming soon! Use Scratch Link 1.4.x for now.
+| Windows | Windows 10 build 17763
 
 ## Using Scratch Link with Scratch 3.0
 
