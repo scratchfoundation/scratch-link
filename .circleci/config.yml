@@ -41,7 +41,7 @@ jobs:
             *should_sign
           steps:
             - do_mac_build:
-                configuration: Debug
+                configuration: Debug_Mac
                 artifact_tag: Debug
       - when:
           condition:
@@ -52,10 +52,10 @@ jobs:
                 name: Import CI context
                 command: fastlane circleci
             - do_mac_build:
-                configuration: Release_DevID
+                configuration: Release_DevID_Mac
                 artifact_tag: notarizeMe # see below
             - do_mac_build:
-                configuration: Release_MAS
+                configuration: Release_MAS_Mac
                 artifact_tag: MAS
             - run:
                 name: Notarize Developer ID build
