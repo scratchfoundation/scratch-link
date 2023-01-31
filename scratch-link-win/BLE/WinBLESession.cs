@@ -61,7 +61,22 @@ internal class WinBLESession : BLESession<BluetoothLEAdvertisementReceivedEventA
     /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
-        // TODO
+        if (!this.DisposedValue)
+        {
+            if (this.watcher != null && this.watcher.Status != BluetoothLEAdvertisementWatcherStatus.Stopping)
+            {
+                // does nothing if already stopped
+                // overwrites existing advertisements if in the "Stopping" state
+                this.watcher.Stop();
+                this.watcher = null;
+            }
+
+            if (this.connectedPeripheral != null)
+            {
+                this.connectedPeripheral.Dispose();
+                this.connectedPeripheral = null;
+            }
+        }
 
         base.Dispose(disposing);
     }
