@@ -1,5 +1,7 @@
 version: 2.1
 
+orbs:
+  windows: circleci/windows@5.0
 alias_anchors: # anchors must be defined in YAML before being used by an alias
   - &should_sign
     or:
@@ -10,6 +12,8 @@ workflows:
   build:
     jobs:
       - build-mac:
+          context: scratch-desktop-and-link
+      - build-win:
           context: scratch-desktop-and-link
 jobs:
   build-mac:
@@ -67,11 +71,30 @@ jobs:
                   done
       - store_artifacts:
           path: Artifacts/
+  build-win:
+    executor: windows/server-2022 # Windows Server with Visual Studio 2022
+    steps:
+      - checkout
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - do_win_build:
+                configuration: Debug_Win
+                artifact_tag: Debug
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - do_win_build:
+                configuration: Release_Win
+      - store_artifacts:
+          path: Artifacts/
 commands:
   do_mac_build:
     parameters:
       configuration:
-        default: "Release"
+        default: "Release_Mac"
         type: string
       artifact_tag:
         default: ""
@@ -97,3 +120,18 @@ commands:
                 cp -v "$PKGPATH" "Artifacts/${PKGFILE}"
               fi
             done
+  do_win_build:
+    parameters:
+      configuration:
+        default: "Release_Win"
+        type: string
+      artifact_tag:
+        default: ""
+        type: string
+    steps:
+      - run:
+          name: "Build for Windows: <<parameters.configuration>>"
+          command: |
+            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
+            msbuild -m -t:Build -p:Configuration=<<parameters.configuration>> scratch-link.sln
+            # TODO: move scratch-link-win/.../something to Artifacts/something-<<parameters.artifact_tag>>
