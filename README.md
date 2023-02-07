@@ -58,3 +58,30 @@ certificate for Scratch Link.
 
 This change caused an incompatibility with some browsers, including Safari. The macOS version of Scratch Link 2.0
 includes a Safari extension to resolve this incompatibility.
+
+### Microsoft Store platforms
+
+In theory, the Windows version of this application could be built for 5 different "platform" values:
+
+- `x86`
+- `x64`
+- `ARM` (or `ARM32`)
+- `ARM64`
+- `AnyCPU` (displayed as `Any CPU`)
+
+In practice (checked with the `file` command):
+
+- `x86`, `x64`, and `ARM64` all work as expected
+- Building `ARM32` results in `x86` binaries so it seems like the wrong name for this platform (bug in VS2022?)
+- Building `ARM` results in `ARMv7 Thumb` binaries. Switching to this requires hand-editing the `csproj` file.
+- Building `AnyCPU` results in `x86` binaries, but maybe in "IL Only" mode? Needs more investigation.
+
+Also, trying to build an MSIX from `ARM`, `ARM32` or `AnyCPU` fails. This might be due to Scratch Link using the
+"Desktop Bridge" which appears to a) require native components (so no `AnyCPU`) and b) be unsupported by 32-bit ARM.
+
+Scratch Link 1.4 seemed to work in `AnyCPU` mode even though it also used the Desktop Bridge, so there's something
+missing here. Maybe the newer version of Desktop Bridge requires native components? Or maybe I just misconfigured
+something...
+
+Side note: as of Visual Studio 2022 version 17.4.4, the _project_ configuration name for the MSIX project must match
+the _solution_ configuration name used for building it, or bundle validation will fail.

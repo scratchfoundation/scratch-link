@@ -1,7 +1,9 @@
 .idea/
 .vs/
 .vscode/
+AppPackages/
 Artifacts/
+BundleArtifacts/
 bin/
 node_modules/
 obj/
