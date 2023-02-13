@@ -86,8 +86,10 @@ jobs:
           condition:
             *should_sign
           steps:
-            - do_win_build:
-                configuration: Release_Win
+            - run:
+                name: "Build MSIX upload package"
+                command: |
+                  msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -t:Build -restore -p:SolutionDir="$PWD\" -p:AppxPackageDir="$PWD\Artifacts\" -p:Configuration="Release_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=CI
       - store_artifacts:
           path: Artifacts/
 commands:
@@ -132,6 +134,5 @@ commands:
       - run:
           name: "Build for Windows: <<parameters.configuration>>"
           command: |
-            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
-            msbuild -m -t:Build -p:Configuration=<<parameters.configuration>> scratch-link.sln
+            msbuild -m -t:Build -restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
             # TODO: move scratch-link-win/.../something to Artifacts/something-<<parameters.artifact_tag>>
