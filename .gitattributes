@@ -38,6 +38,7 @@
 .gitignore text eol=lf
 .markdownlintrc text eol=lf
 LICENSE text eol=lf
+Makefile text eol=lf
 TRADEMARK text eol=lf
 app.config eol=lf
 
