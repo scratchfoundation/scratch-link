@@ -10,6 +10,10 @@ System Requirements:
 | macOS | 10.15 "Catalina"
 | Windows | Windows 10 build 17763
 
+The Windows version requires the Windows App Runtime version 1.2, and will install it automatically if possible.
+
+Manual installation is available here: https://apps.microsoft.com/store/detail/9P7VS8XHG9G5
+
 ## Using Scratch Link with Scratch 3.0
 
 To use Scratch Link with Scratch 3.0:
@@ -59,29 +63,38 @@ certificate for Scratch Link.
 This change caused an incompatibility with some browsers, including Safari. The macOS version of Scratch Link 2.0
 includes a Safari extension to resolve this incompatibility.
 
-### Microsoft Store platforms
+### Windows platforms and installer size
 
-In theory, the Windows version of this application could be built for 5 different "platform" values:
+The `PublishReadyToRun` (R2R) setting enables ahead-of-time (AOT) compilation, as opposed to just-in-time (JIT)
+compilation. This can improve performance, especially at startup. The drawback is [R2R binaries are larger because
+they contain both intermediate language (IL) code, which is still needed for some scenarios, and the native version
+of the same code.](https://learn.microsoft.com/en-us/dotnet/core/deploying/ready-to-run)
 
-- `x86`
-- `x64`
-- `ARM` (or `ARM32`)
-- `ARM64`
-- `AnyCPU` (displayed as `Any CPU`)
+Recent versions of .NET (5.0 and above) can build a "Framework-Dependent Application" or a "Self-Contained
+Application" depending on settings.
 
-In practice (checked with the `file` command):
+* A self-contained application includes the .NET runtime framework. This includes a platform-specific (x86, x64, or
+  ARM64) version of `dotnet.exe` to host the application.
+  * Cannot be built for "AnyCPU" because it must include the native portion of the runtime.
+  * The app can be "trimmed" to include only the portions of the framework needed by the application, but it'll
+    still be larger than a framework-dependent application.
+* A framework-dependent application does not include the framework at all; it must be installed separately.
+  * The generated MSIX will trigger automatic framework installation if necessary (requires Internet connection).
+  * Can be built for "AnyCPU" since it doesn't include the native portion (or any other portion) of the runtime.
+  * Can be built for a specific CPU if desired.
 
-- `x86`, `x64`, and `ARM64` all work as expected
-- Building `ARM32` results in `x86` binaries so it seems like the wrong name for this platform (bug in VS2022?)
-- Building `ARM` results in `ARMv7 Thumb` binaries. Switching to this requires hand-editing the `csproj` file.
-- Building `AnyCPU` results in `x86` binaries, but maybe in "IL Only" mode? Needs more investigation.
+When packaging an application:
 
-Also, trying to build an MSIX from `ARM`, `ARM32` or `AnyCPU` fails. This might be due to Scratch Link using the
-"Desktop Bridge" which appears to a) require native components (so no `AnyCPU`) and b) be unsupported by 32-bit ARM.
+* An MSIX file (`*.msix`) can contain exactly one platform (x86, x64, ARM64).
+* An MSIX Bundle (`*.msixbundle`) can contain more than one MSIX -- one for each platform, for example.
 
-Scratch Link 1.4 seemed to work in `AnyCPU` mode even though it also used the Desktop Bridge, so there's something
-missing here. Maybe the newer version of Desktop Bridge requires native components? Or maybe I just misconfigured
-something...
+Ideally, it would be possible to package a single "AnyCPU" build of the app with stub MSIX files to install each
+platform-specific copy of the framework, resulting in a Bundle that's only a little larger than a single copy of the
+app. More investigation needed.
 
-Side note: as of Visual Studio 2022 version 17.4.4, the _project_ configuration name for the MSIX project must match
-the _solution_ configuration name used for building it, or bundle validation will fail.
+However, it is possible to build a platform-specific MSIX containing an AnyCPU build of the app. That's much smaller
+than a platform-specific build of the app, so even with 3 full copies of the AnyCPU app -- one each packaged for x86,
+x64, and ARM64 -- the resulting bundle is significantly smaller.
+
+Disabling R2R and bundling AnyCPU builds of the app generated a bundle roughly 12% of the size of a bundle of
+self-contained apps for the same set of platforms.
