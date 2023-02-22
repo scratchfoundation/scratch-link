@@ -12,7 +12,11 @@ System Requirements:
 
 The Windows version requires the Windows App Runtime version 1.2, and will install it automatically if possible.
 
-Manual installation is available here: https://apps.microsoft.com/store/detail/9P7VS8XHG9G5
+Manual installation is available here (choose your platform):
+
+* https://aka.ms/windowsappsdk/1.2/latest/windowsappruntimeinstall-x64.exe
+* https://aka.ms/windowsappsdk/1.2/latest/windowsappruntimeinstall-x86.exe
+* https://aka.ms/windowsappsdk/1.2/latest/windowsappruntimeinstall-ARM64.exe
 
 ## Using Scratch Link with Scratch 3.0
 
@@ -82,6 +86,7 @@ Application" depending on settings.
   * The generated MSIX will trigger automatic framework installation if necessary (requires Internet connection).
   * Can be built for "AnyCPU" since it doesn't include the native portion (or any other portion) of the runtime.
   * Can be built for a specific CPU if desired.
+  * Debugging this requires setting `<WindowsPackageType>None</WindowsPackageType>` in the project file.
 
 When packaging an application:
 
