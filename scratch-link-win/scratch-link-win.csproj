@@ -8,10 +8,10 @@
     <AssemblyName>Scratch Link</AssemblyName>
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x86;x64;ARM64</Platforms>
+    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
