@@ -45,7 +45,7 @@ jobs:
             *should_sign
           steps:
             - do_mac_build:
-                configuration: Debug_Mac
+                configuration: Debug
                 artifact_tag: Debug
       - when:
           condition:
@@ -56,10 +56,10 @@ jobs:
                 name: Import CI context
                 command: fastlane circleci
             - do_mac_build:
-                configuration: Release_DevID_Mac
+                configuration: Release_DevID
                 artifact_tag: notarizeMe # see below
             - do_mac_build:
-                configuration: Release_MAS_Mac
+                configuration: Release_MAS
                 artifact_tag: MAS
             - run:
                 name: Notarize Developer ID build
@@ -80,21 +80,21 @@ jobs:
             *should_sign
           steps:
             - do_win_build:
-                configuration: Debug_Win
+                configuration: Debug
                 artifact_tag: Debug
       - when:
           condition:
             *should_sign
           steps:
             - do_win_build:
-                configuration: Release_Win
+                configuration: Release
       - store_artifacts:
           path: Artifacts/
 commands:
   do_mac_build:
     parameters:
       configuration:
-        default: "Release_Mac"
+        default: "Release"
         type: string
       artifact_tag:
         default: ""
@@ -107,8 +107,8 @@ commands:
             # some CircleCI images automatically load those new files for us, some don't
             # run `path_helper` here to make sure the path to `msbuild` is in $PATH
             eval `/usr/libexec/path_helper -s`
-            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
-            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>> "${PWD}/scratch-link.sln"
+            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>>_Mac scratch-link.sln
+            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>>_Mac "${PWD}/scratch-link.sln"
             # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
             for PKGPATH in scratch-link-mac/bin/<<parameters.configuration>>/"Scratch Link"*.pkg; do
               if [ -r "$PKGPATH" ]; then
@@ -124,7 +124,7 @@ commands:
   do_win_build:
     parameters:
       configuration:
-        default: "Release_Win"
+        default: "Release"
         type: string
       artifact_tag:
         default: ""
@@ -137,19 +137,19 @@ commands:
             # That means SolutionDir needs to be set artificially, though.
             # The `UapAppxPackageBuildMode=StoreAndSideload` means it'll build both MSIXUpload and MSIXBundle.
             # The StoreUpload mode does that too, but that might be a bug, and semantically "StoreAndSideload" is what we want.
-            msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="<<parameters.configuration>>" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
+            msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="<<parameters.configuration>>_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
       - run:
           name: "Move Windows artifacts: <<parameters.configuration>>"
           shell: bash
           command: |
             mkdir -p Artifacts
             # The store package is fine as is: no user will see this filename.
-            mv -v scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_<<parameters.configuration>>.msixupload Artifacts/
+            mv -v scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_<<parameters.configuration>>_Win.msixupload Artifacts/
             # Transform the bundle for a more user-friendly filename
-            for PKGPATH in scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_<<parameters.configuration>>_Test/scratch-link-win-msix_*_<<parameters.configuration>>.msixbundle; do
+            for PKGPATH in scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_<<parameters.configuration>>_Win_Test/scratch-link-win-msix_*_<<parameters.configuration>>_Win.msixbundle; do
               if [ -r "$PKGPATH" ]; then
                 PKGFILE="${PKGPATH##*/}"
-                [[ $PKGFILE =~ scratch-link-win-msix_([.0-9]+)_(.*)_<<parameters.configuration>>.msixbundle$ ]]
+                [[ $PKGFILE =~ scratch-link-win-msix_([.0-9]+)_(.*)_<<parameters.configuration>>_Win.msixbundle$ ]]
                 PKGVERSION=${BASH_REMATCH[1]}
                 PKGPLATFORMS=${BASH_REMATCH[2]}
               fi
