@@ -19,7 +19,7 @@ internal class WinSessionManager : SessionManager
         return requestPath switch
         {
             "/scratch/ble" => new WinBLESession(webSocket),
-            // "/scratch/bt" => new WinBTSession(webSocket),
+            "/scratch/bt" => new WinBTSession(webSocket),
 
             // for unrecognized paths, return a base Session for debugging
             _ => new Session(webSocket),
