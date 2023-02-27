@@ -44,14 +44,25 @@ MAC_IMAGES = \
 	Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-48.png \
 	Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-72.png
 
-.PHONY: all clean mac
+WINDOWS_IMAGES = \
+	scratch-link-win-msix/Images/LockScreenLogo.scale-200.png \
+	scratch-link-win-msix/Images/SplashScreen.scale-200.png \
+	scratch-link-win-msix/Images/Square150x150Logo.scale-200.png \
+	scratch-link-win-msix/Images/Square44x44Logo.scale-200.png \
+	scratch-link-win-msix/Images/Square44x44Logo.targetsize-24_altform-unplated.png \
+	scratch-link-win-msix/Images/StoreLogo.png \
+	scratch-link-win-msix/Images/Wide310x150Logo.scale-200.png
 
-all: mac
+.PHONY: all clean mac windows
+
+all: mac windows
 
 clean:
-	rm -vf $(MAC_IMAGES)
+	rm -vf $(MAC_IMAGES) $(WINDOWS_IMAGES)
 
 mac: $(MAC_IMAGES)
+
+windows: $(WINDOWS_IMAGES)
 
 # Assumes the input SVG is square and that pixel [0,0] is a good background color
 # Pads the output horizontally, using the background color, to match the requested size
@@ -104,3 +115,14 @@ $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Exten
 $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-38.png,Assets/glyph.svg,38,38,72))
 $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-48.png,Assets/glyph.svg,48,48,72))
 $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-72.png,Assets/glyph.svg,72,72,72))
+
+# Windows MSIX
+# TODO: does Microsoft really want DPI=72 for all of these?
+# See https://learn.microsoft.com/en-us/windows/apps/design/layout/screen-sizes-and-breakpoints-for-responsive-design#effective-pixels-and-scale-factor
+$(eval $(call svg2png,scratch-link-win-msix/Images/LockScreenLogo.scale-200.png,Assets/rounded.svg,48,48,72))
+$(eval $(call svg2png,scratch-link-win-msix/Images/SplashScreen.scale-200.png,Assets/rounded.svg,1240,600,72))
+$(eval $(call svg2png,scratch-link-win-msix/Images/Square44x44Logo.scale-200.png,Assets/rounded.svg,88,88,72))
+$(eval $(call svg2png,scratch-link-win-msix/Images/Square44x44Logo.targetsize-24_altform-unplated.png,Assets/rounded.svg,24,24,72))
+$(eval $(call svg2png,scratch-link-win-msix/Images/Square150x150Logo.scale-200.png,Assets/rounded.svg,300,300,72))
+$(eval $(call svg2png,scratch-link-win-msix/Images/StoreLogo.png,Assets/rounded.svg,50,50,72))
+$(eval $(call svg2png,scratch-link-win-msix/Images/Wide310x150Logo.scale-200.png,Assets/rounded.svg,620,300,72))

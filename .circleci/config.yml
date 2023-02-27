@@ -1,5 +1,7 @@
 version: 2.1
 
+orbs:
+  windows: circleci/windows@5.0
 alias_anchors: # anchors must be defined in YAML before being used by an alias
   - &should_sign
     or:
@@ -10,6 +12,8 @@ workflows:
   build:
     jobs:
       - build-mac:
+          context: scratch-desktop-and-link
+      - build-win:
           context: scratch-desktop-and-link
 jobs:
   build-mac:
@@ -41,7 +45,7 @@ jobs:
             *should_sign
           steps:
             - do_mac_build:
-                configuration: Debug_Mac
+                configuration: Debug
                 artifact_tag: Debug
       - when:
           condition:
@@ -52,10 +56,10 @@ jobs:
                 name: Import CI context
                 command: fastlane circleci
             - do_mac_build:
-                configuration: Release_DevID_Mac
+                configuration: Release_DevID
                 artifact_tag: notarizeMe # see below
             - do_mac_build:
-                configuration: Release_MAS_Mac
+                configuration: Release_MAS
                 artifact_tag: MAS
             - run:
                 name: Notarize Developer ID build
@@ -65,6 +69,25 @@ jobs:
                     scratch-link-mac/notarize.sh edu.mit.scratch.scratch-link "${PKGPATH}" "${PKGPATH}" /tmp || rm -f "${PKGPATH}"
                     mv -v "${PKGPATH}" "Artifacts/${PKGFILE/Scratch Link-notarizeMe/Scratch Link}"
                   done
+      - store_artifacts:
+          path: Artifacts/
+  build-win:
+    executor: windows/server-2022 # Windows Server with Visual Studio 2022
+    steps:
+      - checkout
+      - unless:
+          condition:
+            *should_sign
+          steps:
+            - do_win_build:
+                configuration: Debug
+                artifact_tag: Debug
+      - when:
+          condition:
+            *should_sign
+          steps:
+            - do_win_build:
+                configuration: Release
       - store_artifacts:
           path: Artifacts/
 commands:
@@ -84,9 +107,9 @@ commands:
             # some CircleCI images automatically load those new files for us, some don't
             # run `path_helper` here to make sure the path to `msbuild` is in $PATH
             eval `/usr/libexec/path_helper -s`
-            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>> scratch-link.sln
-            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>> "${PWD}/scratch-link.sln"
-            # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "cp"
+            msbuild -m -t:Restore -p:Configuration=<<parameters.configuration>>_Mac scratch-link.sln
+            "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:<<parameters.configuration>>_Mac "${PWD}/scratch-link.sln"
+            # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
             for PKGPATH in scratch-link-mac/bin/<<parameters.configuration>>/"Scratch Link"*.pkg; do
               if [ -r "$PKGPATH" ]; then
                 PKGFILE="${PKGPATH##*/}"
@@ -94,6 +117,46 @@ commands:
                   PKGFILE="${PKGFILE/Scratch Link/Scratch Link-<<parameters.artifact_tag>>}"
                 fi
                 mkdir -p Artifacts
-                cp -v "$PKGPATH" "Artifacts/${PKGFILE}"
+              fi
+              # this is outside the "if" to force an error if the file doesn't exist
+              mv -v "$PKGPATH" "Artifacts/${PKGFILE}"
+            done
+  do_win_build:
+    parameters:
+      configuration:
+        default: "Release"
+        type: string
+      artifact_tag:
+        default: ""
+        type: string
+    steps:
+      - run:
+          name: "Build for Windows: <<parameters.configuration>>"
+          command: |
+            # Build the MSIX project instead of the Solution because msbuild gets grumpy about the Mac project.
+            # That means SolutionDir needs to be set artificially, though.
+            # The `UapAppxPackageBuildMode=StoreAndSideload` means it'll build both MSIXUpload and MSIXBundle.
+            # The StoreUpload mode does that too, but that might be a bug, and semantically "StoreAndSideload" is what we want.
+            msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="<<parameters.configuration>>_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
+      - run:
+          name: "Move Windows artifacts: <<parameters.configuration>>"
+          shell: bash
+          command: |
+            mkdir -p Artifacts
+            # The store package is fine as is: no user will see this filename.
+            mv -v scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_<<parameters.configuration>>_Win.msixupload Artifacts/
+            # Transform the bundle for a more user-friendly filename
+            for PKGPATH in scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_<<parameters.configuration>>_Win_Test/scratch-link-win-msix_*_<<parameters.configuration>>_Win.msixbundle; do
+              if [ -r "$PKGPATH" ]; then
+                PKGFILE="${PKGPATH##*/}"
+                [[ $PKGFILE =~ scratch-link-win-msix_([.0-9]+)_(.*)_<<parameters.configuration>>_Win.msixbundle$ ]]
+                PKGVERSION=${BASH_REMATCH[1]}
+                PKGPLATFORMS=${BASH_REMATCH[2]}
+              fi
+              # do the move outside the "if" above to force an error if the file doesn't exist
+              if [ -z "<<parameters.artifact_tag>>" ]; then
+                mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION}.msixbundle"
+              else
+                mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION} <<parameters.artifact_tag>>.msixbundle"
               fi
             done
