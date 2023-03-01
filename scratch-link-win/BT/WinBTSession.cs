@@ -6,6 +6,7 @@ namespace ScratchLink.Win.BLE;
 
 using Fleck;
 using ScratchLink.BT;
+using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using System.Diagnostics;
 using Windows.Devices.Bluetooth;
@@ -14,25 +15,12 @@ using Windows.Devices.Enumeration;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
+/// <summary>
+/// Implements a classic Bluetooth (RFCOMM) session on Windows.
+/// </summary>
 internal class WinBTSession : BTSession<DeviceInformation, string>
 {
-    // Things we can look for are listed here:
-    // <a href="https://docs.microsoft.com/en-us/windows/uwp/devices-sensors/device-information-properties" />
-
-    /// <summary>
-    /// Signal strength property.
-    /// </summary>
-    private const string SignalStrengthPropertyName = "System.Devices.Aep.SignalStrength";
-
-    /// <summary>
-    /// Indicates that the device returned is actually available and not discovered from a cache.
-    /// </summary>
-    private const string IsPresentPropertyName = "System.Devices.Aep.IsPresent";
-
-    /// <summary>
-    /// Bluetooth MAC address.
-    /// </summary>
-    private const string BluetoothAddressPropertyName = "System.Devices.Aep.DeviceAddress";
+    private readonly Dictionary<string, DeviceInformation> deviceWatcherResults = new ();
 
     private DeviceWatcher watcher;
     private StreamSocket connectedSocket;
@@ -72,24 +60,22 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
     {
         var major = (BluetoothMajorClass)majorDeviceClass;
         var minor = (BluetoothMinorClass)minorDeviceClass;
-
-        var deviceClass = BluetoothClassOfDevice.FromParts(
-            major,
-            minor,
-            BluetoothServiceCapabilities.None);
-        var selector = BluetoothDevice.GetDeviceSelectorFromClassOfDevice(deviceClass);
+        var selector = BuildSelector(major, minor);
 
         try
         {
-            this.watcher = DeviceInformation.CreateWatcher(selector, new List<string>
-            {
-                SignalStrengthPropertyName,
-                IsPresentPropertyName,
-                BluetoothAddressPropertyName,
-            });
-            this.watcher.Added += this.PeripheralDiscovered;
-            this.watcher.EnumerationCompleted += this.EnumerationCompleted;
+            this.watcher = DeviceInformation.CreateWatcher(
+                selector,
+                new List<string>
+                {
+                    AQS.SignalStrength,
+                    AQS.IsPresent,
+                },
+                DeviceInformationKind.AssociationEndpoint);
+            this.watcher.Added += this.PeripheralAdded;
             this.watcher.Updated += this.PeripheralUpdated;
+            this.watcher.Removed += this.PeripheralRemoved;
+            this.watcher.EnumerationCompleted += this.EnumerationCompleted;
             this.watcher.Stopped += this.EnumerationStopped;
             this.watcher.Start();
         }
@@ -186,6 +172,26 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
         return buffer.Length;
     }
 
+    /// <summary>
+    /// Build an AQS string to find the Bluetooth peripheral devices that we're interested in.
+    /// Similar to <see cref="BluetoothDevice.GetDeviceSelectorFromClassOfDevice" /> but tuned for our use case.
+    /// </summary>
+    /// <param name="major">The major device class to search for.</param>
+    /// <param name="minor">The minor device class to search for.</param>
+    /// <returns>The query string, ready for <see cref="DeviceWatcher" />.
+    private static string BuildSelector(BluetoothMajorClass major, BluetoothMinorClass minor)
+    {
+        const string isBluetoothDevice = $"{AQS.ProtocolId}:=\"{AQS.BluetoothDeviceClassId}\"";
+        const string isPaired = $"{AQS.IsPaired}:={AQS.BooleanTrue}";
+        const string canPair = $"{AQS.CanPair}:={AQS.BooleanTrue}";
+
+        var hasCorrectMajorClass = $"{AQS.BluetoothMajorClass}:={(int)major}";
+        var hasCorrectMinorClass = $"{AQS.BluetoothMinorClass}:={(int)minor}";
+        var hasCorrectClasses = $"({hasCorrectMajorClass} AND {hasCorrectMinorClass})";
+
+        return $"{isBluetoothDevice} AND ({isPaired} OR {canPair}) AND {hasCorrectClasses}";
+    }
+
     private async void ListenForMessages()
     {
         try
@@ -223,24 +229,53 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
         this.connectedSocket.Dispose();
     }
 
-    private void PeripheralDiscovered(DeviceWatcher sender, DeviceInformation deviceInformation)
+    private void PeripheralAdded(DeviceWatcher sender, DeviceInformation deviceInformation)
     {
-        if (!deviceInformation.Properties.TryGetValue(IsPresentPropertyName, out var isPresent)
-            || isPresent == null || (bool)isPresent == false)
+        this.deviceWatcherResults[deviceInformation.Id] = deviceInformation;
+        this.ReportPeripheral(deviceInformation);
+    }
+
+    private void PeripheralUpdated(DeviceWatcher sender, DeviceInformationUpdate deviceInformationUpdate)
+    {
+        if (this.deviceWatcherResults.TryGetValue(deviceInformationUpdate.Id, out var deviceInformation))
         {
+            deviceInformation.Update(deviceInformationUpdate);
+            this.ReportPeripheral(deviceInformation);
+        }
+        else
+        {
+            Debug.Print($"Received update for unknown peripheral {deviceInformationUpdate.Id}");
+        }
+    }
+
+    private void ReportPeripheral(DeviceInformation deviceInformation)
+    {
+        // Warning: System.Devices.Aep.IsPresent can be true even if the device isn't actually present / turned on.
+        //
+        // For now, let's treat that false positive as OK. Possible future strategies:
+        // - only display devices that have received at least 2 updates
+        //   - on my system, paired-but-absent devices get an initial "Add" with isPresent=false, then an "Update"
+        //     with isPresent=true
+        // - find another property that indicates whether the device is truly present
+        //   - I can't find documentation on `System.DeviceInterface.Bluetooth.Flags` values but it looks like
+        //     `Flags & 128` might indicate presence.
+        if (!deviceInformation.Properties.TryGetValueAs(AQS.IsPresent, out bool? isPresent) || isPresent != true)
+        {
+            Debug.Print($"Ignoring absent device '{deviceInformation.Name}' with ID={deviceInformation.Id}");
             return;
         }
 
-        deviceInformation.Properties.TryGetValue(SignalStrengthPropertyName, out var rssi);
+        var properties = deviceInformation.Properties.ToDictionary(kv => kv.Key, kv => kv.Value);
 
-        _ = this.OnPeripheralDiscovered(deviceInformation, deviceInformation.Id, deviceInformation.Name, (int)rssi);
+        deviceInformation.Properties.TryGetValueAs(AQS.SignalStrength, out int? rssi);
+
+        _ = this.OnPeripheralDiscovered(deviceInformation, deviceInformation.Id, deviceInformation.Name, rssi);
     }
 
-    private void PeripheralUpdated(DeviceWatcher sender, DeviceInformationUpdate args)
+    private void PeripheralRemoved(DeviceWatcher sender, DeviceInformationUpdate deviceInformation)
     {
-        // This method does nothing, but having an event handler for <see cref="DeviceWatcher.Updated"/> seems to
-        // be necessary for timely "didDiscoverPeripheral" notifications. If there is no handler, all discovered
-        // peripherals are notified right before enumeration completes.
+        // This method does nothing, but having an event handler for <see cref="DeviceWatcher.Removed"/> is
+        // necessary according to the documentation:
         // See also: https://learn.microsoft.com/en-us/uwp/api/windows.devices.enumeration.devicewatcher.updated
     }
 
@@ -260,10 +295,75 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
             Debug.Print("Enumeration stopped.");
         }
 
-        this.watcher.Added -= this.PeripheralDiscovered;
-        this.watcher.EnumerationCompleted -= this.EnumerationCompleted;
+        this.watcher.Added -= this.PeripheralAdded;
         this.watcher.Updated -= this.PeripheralUpdated;
+        this.watcher.Removed -= this.PeripheralRemoved;
+        this.watcher.EnumerationCompleted -= this.EnumerationCompleted;
         this.watcher.Stopped -= this.EnumerationStopped;
         this.watcher = null;
+    }
+
+    /// <summary>
+    /// String constants used for building AQS queries. Also good for asking DeviceWatcher for additional properties.
+    /// Things we can look for are listed here:
+    /// <seealso href="https://docs.microsoft.com/en-us/windows/uwp/devices-sensors/device-information-properties"/>.
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/properties/devices-bumper" />
+    /// <seealso href="https://github.com/microsoft/Windows-universal-samples/blob/main/Samples/DeviceEnumerationAndPairing/cs/DisplayHelpers.cs" />
+    /// <seealso href="https://github.com/microsoft/Windows-universal-samples/blob/main/Samples/DeviceEnumerationAndPairing/cs/Scenario2_DeviceWatcher.xaml.cs" />
+    /// <seealso href="https://github.com/microsoft/Windows-universal-samples/blob/main/Samples/DeviceEnumerationAndPairing/cs/Scenario8_PairDevice.xaml.cs" />
+    private static class AQS
+    {
+        /// <summary>
+        /// Microsoft's Class ID for Bluetooth devices. Check this against Protocol ID.
+        /// </summary>
+        internal const string BluetoothDeviceClassId = "{E0CBF06C-CD8B-4647-BB8A-263B43F0F974}";
+
+        /// <summary>
+        /// A 16-bit integer property representing the major device class of a Bluetooth device.
+        /// </summary>
+        internal const string BluetoothMajorClass = "System.Devices.Aep.Bluetooth.Cod.Major";
+
+        /// <summary>
+        /// A 16-bit integer property representing the minor device class of a Bluetooth device.
+        /// </summary>
+        internal const string BluetoothMinorClass = "System.Devices.Aep.Bluetooth.Cod.Minor";
+
+        /// <summary>
+        /// The Boolean false value, typed for structured queries.
+        /// </summary>
+        internal const string BooleanFalse = "System.StructuredQueryType.Boolean#False";
+
+        /// <summary>
+        /// The Boolean true value, typed for structured queries.
+        /// </summary>
+        internal const string BooleanTrue = "System.StructuredQueryType.Boolean#True";
+
+        /// <summary>
+        /// A Boolean property indicating whether an Association Endpoint can be paired with the system.
+        /// </summary>
+        internal const string CanPair = "System.Devices.Aep.CanPair";
+
+        /// <summary>
+        /// A Boolean property indicating whether an Association Endpoint is paired with the system.
+        /// </summary>
+        internal const string IsPaired = "System.Devices.Aep.IsPaired";
+
+        /// <summary>
+        /// A Boolean property indicating whether or not the device is present.
+        /// Note that this can be <c>true</c> for a paired device even if it's not actually present.
+        /// See <see href="https://github.com/MicrosoftDocs/windows-dev-docs/issues/2881" />.
+        /// </summary>
+        internal const string IsPresent = "System.Devices.Aep.IsPresent";
+
+        /// <summary>
+        /// A GUID property for the identity of the protocol used to discover this device.
+        /// </summary>
+        internal const string ProtocolId = "System.Devices.Aep.ProtocolId";
+
+        /// <summary>
+        /// A 32-bit integer property representing relative signal strength.
+        /// </summary>
+        internal const string SignalStrength = "System.Devices.Aep.SignalStrength";
     }
 }
