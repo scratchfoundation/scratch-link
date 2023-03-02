@@ -259,6 +259,7 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
 
     private void ReportPeripheral(DeviceInformation deviceInformation)
     {
+        // Debugging hint: set a watch for deviceInformation.Properties.ToList()
         // Warning: System.Devices.Aep.IsPresent can be true even if the device isn't actually present / turned on.
         //
         // For now, let's treat that false positive as OK. Possible future strategies:
@@ -273,8 +274,6 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
             Debug.Print($"Ignoring absent device '{deviceInformation.Name}' with ID={deviceInformation.Id}");
             return;
         }
-
-        var properties = deviceInformation.Properties.ToDictionary(kv => kv.Key, kv => kv.Value);
 
         deviceInformation.Properties.TryGetValueAs(AQS.SignalStrength, out int? rssi);
 
