@@ -105,9 +105,10 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
         var servicesResult = await bluetoothDevice.GetRfcommServicesForIdAsync(
             RfcommServiceId.SerialPort,
             BluetoothCacheMode.Uncached);
-        var service = servicesResult.Services.FirstOrDefault();
-        if (service != null)
+
+        try
         {
+            var service = servicesResult.Services[0];
             this.connectedSocket = new StreamSocket();
             await this.connectedSocket.ConnectAsync(service.ConnectionHostName, service.ConnectionServiceName);
             this.socketWriter = new DataWriter(this.connectedSocket.OutputStream);
@@ -115,12 +116,15 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
             {
                 ByteOrder = ByteOrder.LittleEndian,
             };
-            this.ListenForMessages();
         }
-        else
+        catch (Exception e)
         {
+            Trace.WriteLine($"Encountered exception trying to connect: {e}");
+            this.CloseConnection();
             throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
         }
+
+        this.ListenForMessages();
 
         return null;
     }
@@ -224,9 +228,14 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
 
     private void CloseConnection()
     {
-        this.socketReader.Dispose();
-        this.socketWriter.Dispose();
-        this.connectedSocket.Dispose();
+        this.socketReader?.Dispose();
+        this.socketReader = null;
+
+        this.socketWriter?.Dispose();
+        this.socketWriter = null;
+
+        this.connectedSocket?.Dispose();
+        this.connectedSocket = null;
     }
 
     private void PeripheralAdded(DeviceWatcher sender, DeviceInformation deviceInformation)
