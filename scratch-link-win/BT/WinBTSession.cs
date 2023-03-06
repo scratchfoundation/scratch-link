@@ -49,6 +49,7 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
         {
             this.watcher.Stop();
         }
+
         if (this.connectedSocket != null)
         {
             this.CloseConnection();
@@ -81,7 +82,7 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
         }
         catch (ArgumentException)
         {
-            throw JsonRpc2Error.ServerError(-32500, "Device inquiry failed to start").ToException();
+            throw JsonRpc2Error.ApplicationError("Device inquiry failed to start").ToException();
         }
 
         return Task.FromResult<object>(null);
@@ -121,7 +122,7 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
         {
             Trace.WriteLine($"Encountered exception trying to connect: {e}");
             this.CloseConnection();
-            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
+            throw JsonRpc2Error.ApplicationError("Could not connect to RFCOMM channel.").ToException();
         }
 
         this.ListenForMessages();
@@ -182,7 +183,7 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
     /// </summary>
     /// <param name="major">The major device class to search for.</param>
     /// <param name="minor">The minor device class to search for.</param>
-    /// <returns>The query string, ready for <see cref="DeviceWatcher" />.
+    /// <returns>The query string, ready for <see cref="DeviceWatcher" />.</returns>
     private static string BuildSelector(BluetoothMajorClass major, BluetoothMinorClass minor)
     {
         const string isBluetoothDevice = $"{AQS.ProtocolId}:=\"{AQS.BluetoothDeviceClassId}\"";
@@ -260,7 +261,9 @@ internal class WinBTSession : BTSession<DeviceInformation, string>
     private void ReportPeripheral(DeviceInformation deviceInformation)
     {
         // Debugging hint: set a watch for deviceInformation.Properties.ToList()
+        //
         // Warning: System.Devices.Aep.IsPresent can be true even if the device isn't actually present / turned on.
+        // See https://github.com/MicrosoftDocs/windows-dev-docs/issues/2881 for details.
         //
         // For now, let's treat that false positive as OK. Possible future strategies:
         // - only display devices that have received at least 2 updates

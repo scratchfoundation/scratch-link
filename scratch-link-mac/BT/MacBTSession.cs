@@ -95,7 +95,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (inquiryStatus != IOReturn.Success)
         {
             Trace.WriteLine($"Failed to start inquiry: {inquiryStatus.ToDebugString()}");
-            throw JsonRpc2Error.ServerError(-32500, "Device inquiry failed to start").ToException();
+            throw JsonRpc2Error.ApplicationError("Device inquiry failed to start").ToException();
         }
 
         return Task.FromResult<object>(null);
@@ -179,7 +179,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (channel?.IsOpen != true)
         {
             Trace.WriteLine("RFCOMM channel is not open even after polling");
-            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
+            throw JsonRpc2Error.ApplicationError("Could not connect to RFCOMM channel.").ToException();
         }
 
         Trace.WriteLine("RFCOMM channel is open");
