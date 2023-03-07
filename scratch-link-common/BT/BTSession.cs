@@ -131,7 +131,7 @@ internal abstract class BTSession<TDiscoveredPeripheral, TPeripheralAddress> : P
     /// <param name="displayName">A user-friendly name, if possible.</param>
     /// <param name="rssi">A relative signal strength indicator.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    protected async Task OnPeripheralDiscovered(TDiscoveredPeripheral discoveredPeripheral, TPeripheralAddress peripheralAddress, string displayName, int rssi)
+    protected async Task OnPeripheralDiscovered(TDiscoveredPeripheral discoveredPeripheral, TPeripheralAddress peripheralAddress, string displayName, int? rssi)
     {
         var peripheralId = this.RegisterPeripheral(discoveredPeripheral, peripheralAddress);
 
@@ -166,7 +166,7 @@ internal abstract class BTSession<TDiscoveredPeripheral, TPeripheralAddress> : P
         /// Gets or sets the relative signal strength of the advertisement.
         /// </summary>
         [JsonPropertyName("rssi")]
-        public int RSSI { get; set; }
+        public int? RSSI { get; set; }
     }
 
     /// <summary>
