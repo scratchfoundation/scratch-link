@@ -5,6 +5,6 @@
   "author": "Scratch Foundation",
   "license": "BSD-3-Clause",
   "devDependencies": {
-    "scratch-vm": "0.2.0-prerelease.20220331115441"
+    "scratch-vm": "1.5.27"
   }
 }
