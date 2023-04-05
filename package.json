@@ -5,8 +5,7 @@
   "author": "Scratch Foundation",
   "license": "BSD-3-Clause",
   "scripts": {
-    "prepare": "husky install",
-    "semantic-release": "semantic-release"
+    "prepare": "husky install"
   },
   "config": {
     "commitizen": {
