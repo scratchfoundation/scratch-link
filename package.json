@@ -5,6 +5,7 @@
   "author": "Scratch Foundation",
   "license": "BSD-3-Clause",
   "scripts": {
+    "prepare": "husky install",
     "semantic-release": "semantic-release"
   },
   "devDependencies": {
@@ -15,6 +16,7 @@
     "@semantic-release/git": "10.0.1",
     "@semantic-release/github": "8.0.7",
     "@semantic-release/release-notes-generator": "10.0.3",
+    "husky": "8.0.3",
     "scratch-vm": "1.5.27",
     "semantic-release": "21.0.1"
   }
