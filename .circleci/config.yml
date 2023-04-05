@@ -1,24 +1,61 @@
 version: 2.1
-
+orbs:
+  node: circleci/node@5.1.0
 alias_anchors: # anchors must be defined in YAML before being used by an alias
-  - &should_sign
+  - &should-sign
     or:
       - equal: [ develop, << pipeline.git.branch >> ]
       - equal: [ main, << pipeline.git.branch >> ]
 workflows:
   version: 2
-  build:
+  version-build-release:
     jobs:
+      - semver
       - build-mac:
           context: scratch-desktop-and-link
+          requires:
+            - semver
+      - release:
+          requires:
+            - build-mac
+          filters:
+            branches:
+              only:
+                - develop
+                - main
 jobs:
+  semver:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install # will use .nvmrc
+      - node/install-packages
+      - make-semantic-release-remote
+      # In release branches, this will calculate the version and save that to package.json so the build can use it.
+      # In other branches, it'll just check the semantic-release config.
+      # Note that if semantic-release makes changes it will automatically push them.
+      # That's the whole reason for the weird "local remote" stuff.
+      # See also: https://github.com/semantic-release/semantic-release/issues/964
+      - run: npx --no -- semantic-release
+      - persist-semantic-release-remote
+  release:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install # will use .nvmrc
+      - checkout-semantic-release-remote
+      - run:
+          name: Pushing semantic-release changes for real
+          command: |
+            git push --tags origin << pipeline.git.branch >>
+            git push origin 'refs/notes/*' # semantic-release tracks channels with notes
   build-mac:
     macos:
       xcode: 14.2 # warning MM0079: The recommended Xcode version for Xamarin.Mac 9.0.0 is Xcode 14.1 or later.
     environment:
       HOMEBREW_NO_AUTO_UPDATE: 1 # save some time
     steps:
-      - checkout
+      - checkout-semantic-release-remote
       - run:
           name: Build Safari helper
           command: |
@@ -37,15 +74,13 @@ jobs:
           paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
             - /tmp/visual-studio-mac.tar.gz
       - unless:
-          condition:
-            *should_sign
+          condition: *should-sign
           steps:
             - do_mac_build:
                 configuration: Debug
                 artifact_tag: Debug
       - when:
-          condition:
-            *should_sign
+          condition: *should-sign
           steps:
             - add_ssh_keys
             - run:
@@ -68,6 +103,30 @@ jobs:
       - store_artifacts:
           path: Artifacts/
 commands:
+  make-semantic-release-remote:
+    steps:
+      - run:
+          name: Make local 'remote' for semantic-release
+          command: |
+            git fetch origin 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
+            git clone . --bare --mirror semantic-release-remote # mirror copies notes
+            git remote set-url origin "file://$(realpath semantic-release-remote)" # semantic-release needs a proper URL
+  persist-semantic-release-remote:
+    steps:
+      - persist_to_workspace:
+          root: .
+          paths: semantic-release-remote
+  checkout-semantic-release-remote:
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Pull semantic-release changes from local 'remote'
+          command: |
+            git remote add semantic-release semantic-release-remote
+            git pull --tags semantic-release << pipeline.git.branch >>
+            git fetch semantic-release 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
   do_mac_build:
     parameters:
       configuration:
