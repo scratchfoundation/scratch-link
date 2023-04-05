@@ -8,6 +8,11 @@
     "prepare": "husky install",
     "semantic-release": "semantic-release"
   },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
   "devDependencies": {
     "@commitlint/cli": "17.5.1",
     "@commitlint/config-conventional": "17.4.4",
