@@ -1,7 +1,8 @@
 version: 2.1
-
+orbs:
+  node: circleci/node@5.1.0
 alias_anchors: # anchors must be defined in YAML before being used by an alias
-  - &should_sign
+  - &should-sign
     or:
       - equal: [ develop, << pipeline.git.branch >> ]
       - equal: [ main, << pipeline.git.branch >> ]
@@ -11,7 +12,20 @@ workflows:
     jobs:
       - build-mac:
           context: scratch-desktop-and-link
+      - release: # don't filter
+          requires:
+            - build-mac
 jobs:
+  release:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install # will use .nvmrc
+      - node/install-packages
+      - attach_workspace:
+          at: .
+      # This won't do anything in non-release branches other than check the semantic-release config
+      - run: npm run semantic-release
   build-mac:
     macos:
       xcode: 14.2 # warning MM0079: The recommended Xcode version for Xamarin.Mac 9.0.0 is Xcode 14.1 or later.
@@ -37,15 +51,13 @@ jobs:
           paths: # Caching an archive instead of loose files works around CircleCI's issues with extracting links and permissions on macOS
             - /tmp/visual-studio-mac.tar.gz
       - unless:
-          condition:
-            *should_sign
+          condition: *should-sign
           steps:
             - do_mac_build:
                 configuration: Debug
                 artifact_tag: Debug
       - when:
-          condition:
-            *should_sign
+          condition: *should-sign
           steps:
             - add_ssh_keys
             - run:
@@ -67,6 +79,10 @@ jobs:
                   done
       - store_artifacts:
           path: Artifacts/
+      - persist_to_workspace:
+          root: .
+          paths:
+            - Artifacts
 commands:
   do_mac_build:
     parameters:
