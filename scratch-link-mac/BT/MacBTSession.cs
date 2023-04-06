@@ -8,7 +8,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using AppKit;
 using CoreFoundation;
@@ -16,7 +15,6 @@ using Fleck;
 using Foundation;
 using IOBluetooth;
 using ScratchLink.BT;
-using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.Mac.BT.Rfcomm;
 using ScratchLink.Mac.Extensions;
@@ -27,7 +25,7 @@ using ScratchLink.Mac.Extensions;
 internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 {
     private readonly DeviceInquiry inquiry = new ();
-    private readonly DispatchQueue rfcommQueue = new DispatchQueue("RFCOMM dispatch queue for MacBT session");
+    private readonly DispatchQueue rfcommQueue = new ("RFCOMM dispatch queue for MacBT session");
 
     private DeviceClassMajor searchClassMajor;
     private DeviceClassMinor searchClassMinor;
@@ -212,7 +210,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             }
 
             IOReturn writeResult;
-            GCHandle pinnedBuffer = default(GCHandle);
+            GCHandle pinnedBuffer = default;
 
             try
             {
