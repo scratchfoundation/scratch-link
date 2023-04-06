@@ -276,9 +276,11 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
     private async void Inquiry_DeviceFoundAsync(object sender, DeviceFoundEventArgs e)
     {
+        Trace.WriteLine($"BT evaluating device {e.Device.NameOrAddress} with class {e.Device.DeviceClassMajor}:{e.Device.DeviceClassMinor}");
+
         if (e.Device.DeviceClassMajor != this.searchClassMajor)
         {
-            // major class doesn't match
+            Trace.WriteLine($"BT discarding device {e.Device.NameOrAddress}: major class mismatch");
             return;
         }
 
@@ -286,7 +288,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if ((e.Device.DeviceClassMinor != this.searchClassMinor) &&
             (e.Device.DeviceClassMinor != 0))
         {
-            // minor class doesn't match
+            Trace.WriteLine($"BT discarding device {e.Device.NameOrAddress}: minor class mismatch");
             return;
         }
 
@@ -296,6 +298,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             return;
         }
 
+        Trace.WriteLine($"BT accepted device {e.Device.NameOrAddress}");
         await this.OnPeripheralDiscovered(e.Device, e.Device.Address, e.Device.NameOrAddress, e.Device.Rssi);
     }
 }

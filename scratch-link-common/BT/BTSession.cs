@@ -4,6 +4,7 @@
 
 namespace ScratchLink.BT;
 
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -53,6 +54,8 @@ internal abstract class BTSession<TDiscoveredPeripheral, TPeripheralAddress> : P
         {
             throw JsonRpc2Error.InvalidParams("majorDeviceClass and minorDeviceClass required").ToException();
         }
+
+        Trace.WriteLine($"received discover request for class {majorDeviceClass}:{minorDeviceClass}");
 
         this.ClearDiscoveredPeripherals();
         return this.DoDiscover((byte)majorDeviceClass, (byte)minorDeviceClass);
