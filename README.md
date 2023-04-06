@@ -43,26 +43,20 @@ a pull request.
 
 ### Version numbers
 
-Scratch Link 2.0 uses a new versioning scheme based on [GitVersion](https://gitversion.net/docs/). The major, minor,
-and patch versions are now determined by GitVersion analyzing `main` branch commit messages in "Conventional Commit"
-format. Only `main` branch builds bump the release version number. Builds from `develop` get a prerelease version
-number, with a build number calculated by GitVersion analyzing the number of commits since the last release.
+Scratch Link 2.0 uses [semantic-release](https://semantic-release.gitbook.io/semantic-release/) to control its version
+number. The `develop` branch is treated as a pre-release branch, and `main` is treated as a release branch. Each time
+a change is merged to either of those branches, `semantic-release` will calculate a new version number.
 
-For submission to app stores, the most interesting GitVersion properties are `Major`, `Minor`, `Patch`, and
-`WeightedPreReleaseNumber`.
-
-For Apple builds:
-* `CFBundleShortVersionString` should be `Major`.`Minor`.`Patch`
-* `CFBundleVersion` should be `WeightedPreReleaseNumber`
-
-This should satisfy Apple's requirements that `CFBundleShortVersionString` is unique for published releases, and the
-`(CFBundleShortVersionString,CFBundleVersion)` tuple is unique for uploaded builds.
+Apple requires that `CFBundleShortVersionString` is unique for published releases, and the
+`(CFBundleShortVersionString,CFBundleVersion)` tuple is unique for uploaded builds. The `CFBundleShortVersionString`
+is version calculated by `semantic-release`, and `CFBundleVersion` is calculated from the number of commits since the
+tag made by `semantic-release`. This information is available through `git describe`.
 
 ### Secure WebSockets
 
-Previous versions of Scratch Link used Secure WebSockets (`wss://`) to communicate with Scratch. This is no longer the
-case: new versions of Scratch Link use regular WebSockets (`ws://`). It is no longer necessary to prepare an SSL
-certificate for Scratch Link.
+Some previous versions of Scratch Link used Secure WebSockets (`wss://`) to communicate with Scratch. This is no
+longer the case: new versions of Scratch Link use regular WebSockets (`ws://`). It is no longer necessary to prepare
+an SSL certificate for Scratch Link.
 
 This change caused an incompatibility with some browsers, including Safari. The macOS version of Scratch Link 2.0
 includes a Safari extension to resolve this incompatibility.
