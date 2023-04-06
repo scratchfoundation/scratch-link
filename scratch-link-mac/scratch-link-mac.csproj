@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -115,39 +115,6 @@
     <RemoveDir Directories="$(AppBundleDir)/Contents/Frameworks/IOBluetooth.framework" />
     <Exec WorkingDirectory="$(AppBundleDir)/Contents" Command="rmdir Frameworks || true" />
   </Target>
-  <Target Name="ScratchVersion" DependsOnTargets="GitVersion">
-    <!--
-    <Message Text="GitInfo: GitRepositoryUrl = $(GitRepositoryUrl)" />
-    <Message Text="GitInfo: GitBranch = $(GitBranch)" />
-    <Message Text="GitInfo: GitCommit = $(GitCommit)" />
-    <Message Text="GitInfo: GitCommitDate = $(GitCommitDate)" />
-    <Message Text="GitInfo: GitCommits = $(GitCommits)" />
-    <Message Text="GitInfo: GitTag = $(GitTag)" />
-    <Message Text="GitInfo: GitBaseTag = $(GitBaseTag)" />
-    <Message Text="GitInfo: GitBaseVersionMajor = $(GitBaseVersionMajor)" />
-    <Message Text="GitInfo: GitBaseVersionMinor = $(GitBaseVersionMinor)" />
-    <Message Text="GitInfo: GitBaseVersionPatch = $(GitBaseVersionPatch)" />
-    <Message Text="GitInfo: GitSemVerMajor = $(GitSemVerMajor)" />
-    <Message Text="GitInfo: GitSemVerMinor = $(GitSemVerMinor)" />
-    <Message Text="GitInfo: GitSemVerPatch = $(GitSemVerPatch)" />
-    <Message Text="GitInfo: GitSemVerLabel = $(GitSemVerLabel)" />
-    <Message Text="GitInfo: GitSemVerDashLabel = $(GitSemVerDashLabel)" />
-    <Message Text="GitInfo: GitSemVerSource = $(GitSemVerSource)" />
-    <Message Text="GitInfo: GitIsDirty = $(GitIsDirty)" />
-    -->
-    <PropertyGroup>
-      <ScratchVersionTriplet>$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</ScratchVersionTriplet>
-      <ScratchVersionFull>$(ScratchVersionTriplet)$(GitSemVerDashLabel)</ScratchVersionFull>
-      <ScratchVersionHash>$(GitCommit)</ScratchVersionHash>
-      <ScratchVersionDetail>$(ScratchVersionFull).$(ScratchVersionHash)</ScratchVersionDetail>
-      <ScratchVersionBuildNumber>$([System.Text.RegularExpressions.Regex]::Match($(GitSemVerLabel), '\d+$'))</ScratchVersionBuildNumber>
-      <ScratchVersionBuildNumber Condition=" '$(ScratchVersionBuildNumber)' == '' ">$(GitCommits)</ScratchVersionBuildNumber>
-    </PropertyGroup>
-    <Message Text="ScratchVersionTriplet = $(ScratchVersionTriplet)" />
-    <Message Text="ScratchVersionFull = $(ScratchVersionFull)" />
-    <Message Text="ScratchVersionDetail = $(ScratchVersionDetail)" />
-    <Message Text="ScratchVersionBuildNumber = $(ScratchVersionBuildNumber)" />
-  </Target>
   <Target Name="EmbedVersion" BeforeTargets="CoreCompile" DependsOnTargets="ScratchVersion">
     <PropertyGroup>
       <!-- The PkgPackagePath property seems undocumented. I found it with Structured Log Viewer. -->
@@ -244,6 +211,7 @@
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
   <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
+  <Import Project="$(SolutionDir)SharedProps\ScratchVersion.targets" />
   <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />
   <ItemGroup>
     <PackageReference Include="InTheHand.IOBluetooth">

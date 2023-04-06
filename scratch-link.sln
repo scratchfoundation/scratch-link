@@ -35,6 +35,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedProps", "SharedProps", "{52974047-90CA-4584-811B-242220DB05AB}"
 	ProjectSection(SolutionItems) = preProject
 		SharedProps\CommonPackageRefs.props = SharedProps\CommonPackageRefs.props
+		SharedProps\ScratchVersion.targets = SharedProps\ScratchVersion.targets
 		SharedProps\StyleCop.props = SharedProps\StyleCop.props
 	EndProjectSection
 EndProject
