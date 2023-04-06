@@ -131,14 +131,17 @@ commands:
       - run:
           name: Make local 'remote' for semantic-release
           command: |
-            git fetch origin 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
+            # semantic-release tracks channels with notes, so we need to grab those from the real remote
+            # semantic-release also wants to inspect every branch listed in its "branches" setting
+            git fetch -uf origin main:main develop:develop 'refs/notes/*:refs/notes/*'
             git clone . --bare --mirror semantic-release-remote # mirror copies notes
             git remote set-url origin "file://$(realpath semantic-release-remote)" # semantic-release needs a proper URL
   persist-semantic-release-remote:
     steps:
       - persist_to_workspace:
           root: .
-          paths: semantic-release-remote
+          paths:
+            - semantic-release-remote
   checkout-semantic-release-remote:
     steps:
       - checkout
