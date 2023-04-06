@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0-develop.5](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.4...v2.0.0-develop.5) (2023-04-06)
+
+
+### Bug Fixes
+
+* generate icons directly from SVGs for better quality ([8d3b8ce](https:/home/circleci/project/semantic-release-remote/commit/8d3b8ce38a1000552d92bdce7da1cf98fbd9b134))
+* **mac:** fix CI artifact renaming ([7a05fdd](https:/home/circleci/project/semantic-release-remote/commit/7a05fdda50fc7a498bbdc6d4068cf305177669b7))
+* **win:** build framework-dependent AnyCPU for further install size reduction ([b1f776c](https:/home/circleci/project/semantic-release-remote/commit/b1f776c19f07652ea09c3152325a35578f9fdcf1))
+* **win:** discover both paired and unpaired BT devices ([23ff634](https:/home/circleci/project/semantic-release-remote/commit/23ff634560930041ebb66ae6476839825bb713ba))
+* **win:** don't crash if BT connect fails ([522f65f](https:/home/circleci/project/semantic-release-remote/commit/522f65f199741e2e704f716952a2db8c7508640f))
+* **windows:** fix *.msixupload generation ([3a1c172](https:/home/circleci/project/semantic-release-remote/commit/3a1c1727bcfbe46aa549a4c15b3b0f7e750b0527))
+* **windows:** fix incorrect root namespace ([e25a604](https:/home/circleci/project/semantic-release-remote/commit/e25a604be0238ef3501447df411c7816aea31f26))
+* **windows:** implement WinBLESession.Dispose ([9a0e1f7](https:/home/circleci/project/semantic-release-remote/commit/9a0e1f7ec1202ae24abc5ca988c4fa54c822bffd))
+* **win:** set WindowsPackageType=None to fix debugging ([4b151e1](https:/home/circleci/project/semantic-release-remote/commit/4b151e1884915a39f059d696a968557f04e4ff7b))
+
+
+### Features
+
+* **win:** convert BT session for Scratch Link 2.0 ([b2bc874](https:/home/circleci/project/semantic-release-remote/commit/b2bc874b7dea108b10fe2eaa4cd8cdd42a1b4f76))
+* **windows:** BLE session first draft ([224e694](https:/home/circleci/project/semantic-release-remote/commit/224e6948749997395102f2c2de2e12163627c37a))
+* **windows:** build and run ScratchApp, receive WS connections ([05d2866](https:/home/circleci/project/semantic-release-remote/commit/05d2866f2bca7f3bee8af67e0769458b7c4399e9))
+* **windows:** generate image assets for MSIX ([d77a006](https:/home/circleci/project/semantic-release-remote/commit/d77a0064a0cd25bac8b8b2b7e3c7d0b146ead69a))
+
 # [2.0.0-develop.4](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.3...v2.0.0-develop.4) (2023-04-06)
 
 
