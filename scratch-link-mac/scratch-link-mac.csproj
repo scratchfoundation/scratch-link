@@ -140,20 +140,21 @@
       <ScratchVersionFull>$(ScratchVersionTriplet)$(GitSemVerDashLabel)</ScratchVersionFull>
       <ScratchVersionHash>$(GitCommit)</ScratchVersionHash>
       <ScratchVersionDetail>$(ScratchVersionFull).$(ScratchVersionHash)</ScratchVersionDetail>
-      <ScratchVersionExtraCommits>$(GitCommits)</ScratchVersionExtraCommits>
+      <ScratchVersionBuildNumber>$([System.Text.RegularExpressions.Regex]::Match($(GitSemVerLabel), '\d+$'))</ScratchVersionBuildNumber>
+      <ScratchVersionBuildNumber Condition=" '$(ScratchVersionBuildNumber)' == '' ">$(GitCommits)</ScratchVersionBuildNumber>
     </PropertyGroup>
     <Message Text="ScratchVersionTriplet = $(ScratchVersionTriplet)" />
     <Message Text="ScratchVersionFull = $(ScratchVersionFull)" />
     <Message Text="ScratchVersionDetail = $(ScratchVersionDetail)" />
-    <Message Text="ScratchVersionExtraCommits = $(ScratchVersionExtraCommits)" />
+    <Message Text="ScratchVersionBuildNumber = $(ScratchVersionBuildNumber)" />
   </Target>
   <Target Name="EmbedVersion" BeforeTargets="CoreCompile" DependsOnTargets="ScratchVersion">
     <PropertyGroup>
       <!-- The PkgPackagePath property seems undocumented. I found it with Structured Log Viewer. -->
-      <PkgPackagePath>$(OutputPath)$(AssemblyName)-$(ScratchVersionString).pkg</PkgPackagePath>
+      <PkgPackagePath>$(OutputPath)$(AssemblyName)-$(ScratchVersionFull).pkg</PkgPackagePath>
     </PropertyGroup>
     <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(ScratchVersionTriplet)' '$(IntermediateOutputPath)AppManifest.plist'" />
-    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(ScratchVersionExtraCommits)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(ScratchVersionBuildNumber)' '$(IntermediateOutputPath)AppManifest.plist'" />
     <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(ScratchVersionDetail)' '$(IntermediateOutputPath)AppManifest.plist'" />
   </Target>
   <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="ScratchVersion">
