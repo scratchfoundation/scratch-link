@@ -1,7 +1,7 @@
 version: 2.1
 orbs:
   node: circleci/node@5.1.0
-  windows: circleci/windows@5.0
+  windows: circleci/windows@5.0.0
 alias_anchors: # anchors must be defined in YAML before being used by an alias
   - &should-sign
     or:
