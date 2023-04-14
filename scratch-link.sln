@@ -24,9 +24,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		playground.html = playground.html
 		README.md = README.md
 		release.config.js = release.config.js
+		renovate.json5 = renovate.json5
 		stylecop.json = stylecop.json
 		TRADEMARK = TRADEMARK
-		renovate.json5 = renovate.json5
 	EndProjectSection
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "scratch-link-common", "scratch-link-common\scratch-link-common.shproj", "{06B5D2A3-AD0A-4704-B00D-BCFF634E7709}"
@@ -38,6 +38,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedProps", "SharedProps"
 		SharedProps\CommonPackageRefs.props = SharedProps\CommonPackageRefs.props
 		SharedProps\ScratchVersion.targets = SharedProps\ScratchVersion.targets
 		SharedProps\StyleCop.props = SharedProps\StyleCop.props
+		SharedProps\WindowsSDK.props = SharedProps\WindowsSDK.props
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "fastlane", "fastlane", "{B8CCE705-64FD-4DA3-AF6D-BDC1028DD044}"
