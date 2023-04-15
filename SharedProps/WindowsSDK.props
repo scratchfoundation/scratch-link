@@ -2,7 +2,7 @@
   <!-- Shared build props for building the app & installer on Windows -->
   <!-- This makes it hard to get their dependencies out of sync -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.2.221109.1">
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.3.230331000">
       <!-- Let a .csproj include default assets, but installer projects (like .wapproj) only include build assets -->
       <IncludeAssets Condition="'$(MSBuildProjectExtension)' != '.csproj'">build</IncludeAssets>
     </PackageReference>
