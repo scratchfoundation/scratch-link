@@ -10,6 +10,8 @@ usage () {
 	echo "  The resulting PNG is optimized using optipng"
 	echo "ICO conversion:"
 	echo "  Assumes each desired size is square"
+	echo "  Sizes above 256 may not be supported"
+	echo "  List sizes in decreasing order to make sure the largest suitable icon size is used in every context"
 	echo "  Repeats PNG conversion once per desired size, then glues the results together into an ICO file"
 	echo "  PNG optimizations are performed in parallel so progress reporting will likely be garbled"
 }
@@ -45,7 +47,7 @@ svg2ico () {
 	OUTPUT_ICO="$1"
 	shift
 	SVG2ICO_TMP=$(mktemp -d -t svg2ico-XXXXXXXXXX)
-	trap 'echo "Cleaning up..." >&2; rm -rv "${SVG2ICO_TMP}"; exit' ERR EXIT HUP INT TERM
+	trap 'echo "Cleaning up..." >&2; rm -rv "${SVG2ICO_TMP}"; exit' EXIT HUP INT TERM
 	ICO_PNGS=()
 	for SIZE in "$@"; do
 		ICO_PNG="${SVG2ICO_TMP}/icon-${SIZE}.png"

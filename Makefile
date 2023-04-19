@@ -124,8 +124,8 @@ $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Exten
 # See also:
 #   https://stackoverflow.com/q/3236115
 #   https://iconhandbook.co.uk/reference/chart/windows/
-$(eval $(call svg2ico,scratch-link-win/scratch-link.ico,Assets/square.svg,16 24 32 48 64 96 128 256 512))
-$(eval $(call svg2ico,scratch-link-win/scratch-link-tray.ico,Assets/simplified.svg,16 24 32 48 64 96 128 256 512))
+$(eval $(call svg2ico,scratch-link-win/scratch-link.ico,Assets/square.svg,256 128 96 64 48 32 24 16))
+$(eval $(call svg2ico,scratch-link-win/scratch-link-tray.ico,Assets/simplified.svg,256 128 96 64 48 32 24 16))
 
 # Windows MSIX
 # TODO: does Microsoft really want DPI=72 for all of these?
