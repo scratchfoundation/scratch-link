@@ -11,10 +11,8 @@
                   Visibility="Visible"
                   ToolTipText="Scratch Link"
                   ContextMenuMode="SecondWindow"
+                  IconSource="scratch-link-tray.ico"
                   >
-    <tb:TaskbarIcon.IconSource>
-      <tb:GeneratedIconSource Text="S" Foreground="Orange" Background="Teal" FontSize="72" FontWeight="ExtraBold" />
-    </tb:TaskbarIcon.IconSource>
     <tb:TaskbarIcon.ContextFlyout>
       <MenuFlyout>
         <MenuFlyoutItem Command="{StaticResource CopyVersionCommand}" />
