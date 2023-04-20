@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Input;
 using ScratchLink;
 using ScratchLink.Win.BLE;
 using System.Diagnostics;
+using System.Reflection;
 using Windows.ApplicationModel.DataTransfer;
 
 /// <summary>
@@ -17,6 +18,10 @@ using Windows.ApplicationModel.DataTransfer;
 /// </summary>
 public partial class App : Application
 {
+    private readonly string appTitle;
+    private readonly string versionQuad;
+    private readonly string versionDetail;
+
     private ScratchLinkApp app;
     private TaskbarIcon trayIcon;
 
@@ -25,6 +30,16 @@ public partial class App : Application
     /// </summary>
     public App()
     {
+        // Project setting -> Assembly attribute -> "Details" tab of the EXE/DLL properties
+        // <AssemblyName> -> AssemblyTitleAttribute -> "File description" (and "Description" on the "General" tab)
+        // <FileVersion> -> AssemblyFileVersionAttribute -> "File version"
+        // <Product> -> AssemblyProductAttribute -> "Product name"
+        // <Version> -> AssemblyInformationalVersionAttribute -> "Product version"
+        var entryAssembly = Assembly.GetEntryAssembly();
+        this.appTitle = entryAssembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title;
+        this.versionQuad = entryAssembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version;
+        this.versionDetail = entryAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
         this.InitializeComponent();
     }
 
@@ -51,10 +66,8 @@ public partial class App : Application
 
     private void InitializeTrayIcon()
     {
-        var assemblyInfo = typeof(App).Assembly.GetName();
-
         var copyVersionCommand = (XamlUICommand)this.Resources["CopyVersionCommand"];
-        copyVersionCommand.Label = $"{AppDomain.CurrentDomain.FriendlyName} {assemblyInfo.Version}";
+        copyVersionCommand.Label = $"{this.appTitle} {this.versionQuad}";
         copyVersionCommand.ExecuteRequested += this.CopyVersionCommand_ExecuteRequested;
 
         var exitCommand = (XamlUICommand)this.Resources["ExitCommand"];
@@ -68,6 +81,7 @@ public partial class App : Application
 
     private void CopyVersionCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
     {
+        // TODO: signed/unsigned?
         var buildType =
 #if DEBUG
             "Debug";
@@ -75,13 +89,11 @@ public partial class App : Application
             "Release";
 #endif
 
-        var assemblyInfo = typeof(App).Assembly.GetName();
-
         var versionDetailLines = new[]
         {
-            $"Title: {AppDomain.CurrentDomain.FriendlyName}",
-            $"Version: {assemblyInfo.Version}",
-            $"Build type: {buildType}", // TODO: signed/unsigned
+            $"Title: {this.appTitle}",
+            $"Version: {this.versionDetail}",
+            $"Build type: {buildType}",
             $"OS: Windows {Environment.OSVersion.VersionString}",
         };
         var versionDetails = string.Join('\n', versionDetailLines);

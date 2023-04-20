@@ -6,6 +6,8 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>ScratchLink.Win</RootNamespace>
     <AssemblyName>Scratch Link</AssemblyName>
+    <Company>Scratch Foundation</Company>
+    <Authors>$(Company)</Authors>
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
@@ -20,6 +22,14 @@
   <Import Project="$(SolutionDir)SharedProps\ScratchVersion.targets" />
   <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />
   <Import Project="$(SolutionDir)SharedProps\WindowsSDK.props" />
+
+  <Target Name="SetAssemblyVersion" DependsOnTargets="ScratchVersion" BeforeTargets="GenerateTargetFrameworkMonikerAttribute">
+    <PropertyGroup>
+      <FileVersion>$(ScratchVersionQuad)</FileVersion>
+      <Version>$(ScratchVersionDetail)</Version>
+    </PropertyGroup>
+  </Target>
+
   <ItemGroup>
     <Content Include="scratch-link.ico" />
     <Content Include="scratch-link-tray.ico" />
