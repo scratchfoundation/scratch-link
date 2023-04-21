@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0-develop.12](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.11...v2.0.0-develop.12) (2023-04-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency scratch-vm to v1.5.37 ([79af6ab](https:/home/circleci/project/semantic-release-remote/commit/79af6ab191eb881c14e0403a5524c4da42e865d6))
+
 # [2.0.0-develop.11](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.10...v2.0.0-develop.11) (2023-04-20)
 
 
