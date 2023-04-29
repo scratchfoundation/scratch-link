@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0-develop.17](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.16...v2.0.0-develop.17) (2023-04-29)
+
+
+### Bug Fixes
+
+* **Win:** fix larger icon sizes being ignored sometimes ([e79252f](https:/home/circleci/project/semantic-release-remote/commit/e79252f2ddf2e15987aab8e2205a95aceaa80cb1))
+* **Win:** set assembly attributes including version info ([8379c15](https:/home/circleci/project/semantic-release-remote/commit/8379c153d9b4273bf0e2814a3ebf6be3f2d3e260))
+
+
+### Features
+
+* add Windows tray icon ([29b961b](https:/home/circleci/project/semantic-release-remote/commit/29b961b8bb86070fb67012def05f195b75438086))
+* **Win:** add proper Windows icon for app and tray ([e0e96c2](https:/home/circleci/project/semantic-release-remote/commit/e0e96c23e791eef77e136f4188a0fa621c1f0cb3))
+
+
+### Performance Improvements
+
+* **Win:** shrink tray icon, speed up svg-convert.sh ([adeaf1d](https:/home/circleci/project/semantic-release-remote/commit/adeaf1da6b1f48ce993391aa764a0acf53898f74))
+
 # [2.0.0-develop.16](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.15...v2.0.0-develop.16) (2023-04-24)
 
 
