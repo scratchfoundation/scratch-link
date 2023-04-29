@@ -26,6 +26,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		release.config.js = release.config.js
 		renovate.json5 = renovate.json5
 		stylecop.json = stylecop.json
+		svg-convert.sh = svg-convert.sh
 		TRADEMARK = TRADEMARK
 	EndProjectSection
 EndProject

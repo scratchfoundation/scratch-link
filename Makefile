@@ -45,6 +45,8 @@ MAC_IMAGES = \
 	Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-72.png
 
 WINDOWS_IMAGES = \
+	scratch-link-win/scratch-link.ico \
+	scratch-link-win/scratch-link-tray.ico \
 	scratch-link-win-msix/Images/LockScreenLogo.scale-200.png \
 	scratch-link-win-msix/Images/SplashScreen.scale-200.png \
 	scratch-link-win-msix/Images/Square150x150Logo.scale-200.png \
@@ -69,11 +71,13 @@ windows: $(WINDOWS_IMAGES)
 # Usage: $(eval $(call svg2png,outpath/outfile.png,Assets/infile.svg,width,height,dpi))
 define svg2png
 $(1): $(2)
-	BORDER_COLOR=`convert -background none -format '%[pixel:u.p{0,0}]' "$$<" info:` && \
-	echo "Detected border color: $$$${BORDER_COLOR}" && \
-	cairosvg --output-height "$(4)" -f png -o - "$$<" | \
-		convert -background none -bordercolor "$$$${BORDER_COLOR}" -gravity center -extent "$(3)x$(4)" -density "$(5)" - "$$@" && \
-	optipng -o7 -zm1-9 "$$@"
+	./svg-convert.sh "$$<" "$$@" "$(3)" "$(4)" "$(5)"
+endef
+
+# Usage: $(eval $(call svg2ico,outpath/outfile.ico,Assets/infile.svg,size1 size2...))
+define svg2ico
+$(1): $(2)
+	./svg-convert.sh "$$<" "$$@" $(3)
 endef
 
 # macOS app icon
@@ -115,6 +119,13 @@ $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Exten
 $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-38.png,Assets/glyph.svg,38,38,72))
 $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-48.png,Assets/glyph.svg,48,48,72))
 $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-72.png,Assets/glyph.svg,72,72,72))
+
+# Windows app & tray icons
+# See also:
+#   https://stackoverflow.com/q/3236115
+#   https://iconhandbook.co.uk/reference/chart/windows/
+$(eval $(call svg2ico,scratch-link-win/scratch-link.ico,Assets/square.svg,256 128 96 64 48 32 24 16))
+$(eval $(call svg2ico,scratch-link-win/scratch-link-tray.ico,Assets/simplified.svg,32 24 16))
 
 # Windows MSIX
 # TODO: does Microsoft really want DPI=72 for all of these?

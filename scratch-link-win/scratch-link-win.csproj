@@ -6,6 +6,8 @@
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>ScratchLink.Win</RootNamespace>
     <AssemblyName>Scratch Link</AssemblyName>
+    <Company>Scratch Foundation</Company>
+    <Authors>$(Company)</Authors>
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
@@ -13,6 +15,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>AnyCPU</Platforms>
+    <ApplicationIcon>scratch-link.ico</ApplicationIcon>
   </PropertyGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
@@ -20,7 +23,23 @@
   <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />
   <Import Project="$(SolutionDir)SharedProps\WindowsSDK.props" />
 
+  <Target Name="SetAssemblyVersion" DependsOnTargets="ScratchVersion" BeforeTargets="GenerateTargetFrameworkMonikerAttribute">
+    <PropertyGroup>
+      <FileVersion>$(ScratchVersionQuad)</FileVersion>
+      <Version>$(ScratchVersionDetail)</Version>
+    </PropertyGroup>
+  </Target>
+
+  <ItemGroup>
+    <Content Include="scratch-link.ico" />
+    <Content Include="scratch-link-tray.ico" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.0.108" />
   </ItemGroup>
 </Project>

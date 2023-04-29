@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 This file sets up version properties in our own Scratch way.
 -->
@@ -27,9 +27,10 @@ This file sets up version properties in our own Scratch way.
 			<ScratchVersionTriplet>$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</ScratchVersionTriplet>
 			<ScratchVersionFull>$(ScratchVersionTriplet)$(GitSemVerDashLabel)</ScratchVersionFull>
 			<ScratchVersionHash>$(GitCommit)</ScratchVersionHash>
-			<ScratchVersionDetail>$(ScratchVersionFull).$(ScratchVersionHash)</ScratchVersionDetail>
+			<ScratchVersionDetail>$(ScratchVersionFull)+$(ScratchVersionHash)</ScratchVersionDetail>
 			<ScratchVersionBuildNumber>$([System.Text.RegularExpressions.Regex]::Match($(GitSemVerLabel), '\d+$'))</ScratchVersionBuildNumber>
 			<ScratchVersionBuildNumber Condition=" '$(ScratchVersionBuildNumber)' == '' ">$(GitCommits)</ScratchVersionBuildNumber>
+			<ScratchVersionQuad>$(ScratchVersionTriplet).$(ScratchVersionBuildNumber)</ScratchVersionQuad>
 		</PropertyGroup>
 		<Message Text="ScratchVersionTriplet = $(ScratchVersionTriplet)" />
 		<Message Text="ScratchVersionFull = $(ScratchVersionFull)" />
