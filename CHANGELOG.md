@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.0.0-develop.18](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.17...v2.0.0-develop.18) (2023-05-24)
+
+
+### Bug Fixes
+
+* **build:** fix missing CFBundleVersion in Safari extension ([7a67ea1](https:/home/circleci/project/semantic-release-remote/commit/7a67ea18025396c26a359f435a2c1cb1ed7ab8c3))
+
 # [2.0.0-develop.17](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0-develop.16...v2.0.0-develop.17) (2023-04-29)
 
 
