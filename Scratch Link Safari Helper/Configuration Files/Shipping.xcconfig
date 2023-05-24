@@ -11,6 +11,9 @@
 // Enable secure timestamp for code signing
 OTHER_CODE_SIGN_FLAGS = --timestamp $(inherited);
 
+PRODUCT_BUNDLE_IDENTIFIER = edu.mit.scratch.scratch-link.safari-extension;
+DEVELOPMENT_TEAM = W7AR3WMP87;
+
 // Setting this to NO will prevent injection of the "com.apple.security.get-task-allow" entitlement
 // That entitlement enables debugging on a SIP-enabled system, but is forbidden for shipping apps
 CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;

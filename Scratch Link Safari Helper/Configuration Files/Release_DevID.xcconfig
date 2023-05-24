@@ -12,3 +12,4 @@
 #include "Shipping.xcconfig"
 
 CODE_SIGN_IDENTITY = Developer ID Application;
+PROVISIONING_PROFILE_SPECIFIER = match Direct edu.mit.scratch.scratch-link.safari-extension macos;
