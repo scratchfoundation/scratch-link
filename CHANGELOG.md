@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.1](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0...v2.0.1) (2023-05-25)
+
+
+### Bug Fixes
+
+* **mac:** even more versioning fixes ([07c035d](https:/home/circleci/project/semantic-release-remote/commit/07c035dea84a16ce02368cc1bb5f7f32ff1b3885))
+
 # [2.0.0](https:/home/circleci/project/semantic-release-remote/compare/v1.4.0...v2.0.0) (2023-05-25)
 
 
