@@ -47,10 +47,13 @@ Scratch Link 2.0 uses [semantic-release](https://semantic-release.gitbook.io/sem
 number. The `develop` branch is treated as a pre-release branch, and `main` is treated as a release branch. Each time
 a change is merged to either of those branches, `semantic-release` will calculate a new version number.
 
-Apple requires that `CFBundleShortVersionString` is unique for published releases, and the
-`(CFBundleShortVersionString,CFBundleVersion)` tuple is unique for uploaded builds. The `CFBundleShortVersionString`
-is version calculated by `semantic-release`, and `CFBundleVersion` is calculated from the number of commits since the
-tag made by `semantic-release`. This information is available through `git describe`.
+Apple requires that `CFBundleShortVersionString` is unique for published releases. The App Store will also reject an
+upload unless the `CFBundleVersion` tuple is greater than that of previously uploaded builds. To make this easy, we
+set both to the version calculated by `semantic-release`. The uniqueness requirement means we can't "try again" on
+the same version number, but that just enforces the semantic versioning so it's arguably a good thing.
+
+Extended version information is available within the application. This extended information is similar to `git
+describe`.
 
 ### Secure WebSockets
 

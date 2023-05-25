@@ -122,7 +122,7 @@
     </PropertyGroup>
     <!-- See README.md for details on these version identifiers -->
     <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(ScratchVersionTriplet)' '$(IntermediateOutputPath)AppManifest.plist'" />
-    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(ScratchVersionBuildNumber)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(ScratchVersionTriplet)' '$(IntermediateOutputPath)AppManifest.plist'" />
     <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(ScratchVersionDetail)' '$(IntermediateOutputPath)AppManifest.plist'" />
   </Target>
   <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="ScratchVersion">
