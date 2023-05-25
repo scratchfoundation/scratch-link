@@ -8,5 +8,8 @@
 // Configuration settings file format documentation can be found at:
 // https://help.apple.com/xcode/#/dev745c5c974
 
-CURRENT_PROJECT_VERSION = 1;
+// MARKETING_VERSION becomes CFBundleShortVersionString
 MARKETING_VERSION = 2.0;
+
+// CURRENT_PROJECT_VERSION becomes CFBundleVersion
+CURRENT_PROJECT_VERSION = 1;

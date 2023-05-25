@@ -18,11 +18,11 @@ using ScratchLink.JsonRpc;
 /// <summary>
 /// Implements the cross-platform portions of a BLE session.
 /// </summary>
-/// <typeparam name="TPeripheral">The platform-specific type for a BLE peripheral device.</typeparam>
+/// <typeparam name="TDiscoveredPeripheral">The type used to track discovered peripheral devices. Passed to <c>DoConnect</c>.</typeparam>
 /// <typeparam name="TPeripheralAddress">The platform-specific type for a BLE peripheral device's address.</typeparam>
 /// <typeparam name="TUUID">The platform-specific type which represents BLE UUIDs (like Guid or CBUUID).</typeparam>
-internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : PeripheralSession<TPeripheral, TPeripheralAddress>
-    where TPeripheral : class
+internal abstract class BLESession<TDiscoveredPeripheral, TPeripheralAddress, TUUID> : PeripheralSession<TDiscoveredPeripheral, TPeripheralAddress>
+    where TDiscoveredPeripheral : class
     where TUUID : IEquatable<TUUID>
 {
     /// <summary>
@@ -144,7 +144,7 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
             this.AllowedServices.UnionWith(filter.RequiredServices.OrEmpty());
         }
 
-        this.ClearPeripherals();
+        this.ClearDiscoveredPeripherals();
         return await this.DoDiscover(filters);
     }
 
@@ -158,14 +158,14 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     /// <summary>
     /// Track a discovered peripheral device and report it to the client.
     /// </summary>
-    /// <param name="peripheral">The platform-specific device reference or record.</param>
+    /// <param name="discoveredPeripheral">The platform-specific device reference or record.</param>
     /// <param name="peripheralAddress">The internal system address of this device.</param>
     /// <param name="displayName">A user-friendly name, if possible.</param>
     /// <param name="rssi">A relative signal strength indicator.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    protected async Task OnPeripheralDiscovered(TPeripheral peripheral, TPeripheralAddress peripheralAddress, string displayName, int rssi)
+    protected async Task OnPeripheralDiscovered(TDiscoveredPeripheral discoveredPeripheral, TPeripheralAddress peripheralAddress, string displayName, int rssi)
     {
-        var peripheralId = this.RegisterPeripheral(peripheral, peripheralAddress);
+        var peripheralId = this.RegisterPeripheral(discoveredPeripheral, peripheralAddress);
 
         var message = new BLEPeripheralDiscovered()
         {
@@ -177,17 +177,17 @@ internal abstract class BLESession<TPeripheral, TPeripheralAddress, TUUID> : Per
     }
 
     /// <inheritdoc/>
-    protected override Task<object> DoConnect(TPeripheral peripheral, JsonElement? args)
+    protected override Task<object> DoConnect(TDiscoveredPeripheral discoveredPeripheral, JsonElement? args)
     {
-        return this.DoConnect(peripheral);
+        return this.DoConnect(discoveredPeripheral);
     }
 
     /// <summary>
     /// Platform-specific implementation for connecting to a BLE peripheral device.
     /// </summary>
-    /// <param name="peripheral">The requested BLE peripheral device.</param>
+    /// <param name="discoveredPeripheral">The requested BLE peripheral device.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected abstract Task<object> DoConnect(TPeripheral peripheral);
+    protected abstract Task<object> DoConnect(TDiscoveredPeripheral discoveredPeripheral);
 
     /// <summary>
     /// Implement the JSON-RPC "write" request to write a value to a particular service characteristic.

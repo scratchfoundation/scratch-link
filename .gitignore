@@ -1,7 +1,9 @@
 .idea/
 .vs/
 .vscode/
+AppPackages/
 Artifacts/
+BundleArtifacts/
 bin/
 node_modules/
 obj/
@@ -10,6 +12,10 @@ xcuserdata/
 [._]DS_Store
 
 *.csproj.user
+*.wapproj.user
+
+# Regenerate this with Publish -> Associate App with the Store on the MSIX project
+Package.StoreAssociation.xml
 
 # Fastlane
 **/fastlane/Matchfile

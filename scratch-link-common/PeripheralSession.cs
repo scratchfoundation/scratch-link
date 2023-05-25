@@ -18,13 +18,13 @@ using ScratchLink.JsonRpc;
 /// One session can search for, connect to, and interact with one peripheral device.
 /// Handles address privacy.
 /// </summary>
-/// <typeparam name="TPeripheral">The type of peripheral device handled by this session.</typeparam>
+/// <typeparam name="TDiscoveredPeripheral">The type used to track discovered peripheral devices. Passed to <c>DoConnect</c>.</typeparam>
 /// <typeparam name="TPeripheralAddress">The type of address (UUID, path, etc.) used by this session to identify a peripheral device.</typeparam>
-public abstract class PeripheralSession<TPeripheral, TPeripheralAddress> : Session
-    where TPeripheral : class
+public abstract class PeripheralSession<TDiscoveredPeripheral, TPeripheralAddress> : Session
+    where TDiscoveredPeripheral : class
 {
     private readonly Dictionary<TPeripheralAddress, string> peripheralAddressToId = new ();
-    private readonly Dictionary<string, TPeripheral> discoveredPeripherals = new ();
+    private readonly Dictionary<string, TDiscoveredPeripheral> discoveredPeripherals = new ();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PeripheralSession{TPeripheral, TPeripheralAddress}"/> class.
@@ -64,34 +64,34 @@ public abstract class PeripheralSession<TPeripheral, TPeripheralAddress> : Sessi
             throw JsonRpc2Error.InvalidParams("connect request must include peripheralId").ToException();
         }
 
-        var peripheral = this.GetPeripheral(peripheralId);
+        var discoveredPeripheral = this.GetDiscoveredPeripheral(peripheralId);
 
-        if (peripheral == null)
+        if (discoveredPeripheral == null)
         {
             throw JsonRpc2Error.InvalidRequest(string.Format("peripheral {0} not available for connection", peripheralId)).ToException();
         }
 
-        return await this.DoConnect(peripheral, args);
+        return await this.DoConnect(discoveredPeripheral, args);
     }
 
     /// <summary>
     /// Platform-specific implementation for connecting to a peripheral device.
     /// </summary>
-    /// <param name="peripheral">The requested peripheral device.</param>
+    /// <param name="discoveredPeripheral">The requested peripheral device.</param>
     /// <param name="args">
     /// A JSON object containing the args passed by the client, in case the platform-specific implementation needs them.
     /// </param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected abstract Task<object> DoConnect(TPeripheral peripheral, JsonElement? args);
+    protected abstract Task<object> DoConnect(TDiscoveredPeripheral discoveredPeripheral, JsonElement? args);
 
     /// <summary>
     /// Store the peripheral in the "discovered peripherals" list using a session-specific peripheral ID.
     /// Storing a peripheral with the same address several times during the same session will result in the same ID each time.
     /// </summary>
-    /// <param name="peripheral">The peripheral being registered.</param>
+    /// <param name="discoveredPeripheral">The peripheral information being registered.</param>
     /// <param name="peripheralAddress">The peripheral device's address.</param>
     /// <returns>An anonymized, session-specific peripheral ID.</returns>
-    protected string RegisterPeripheral(TPeripheral peripheral, TPeripheralAddress peripheralAddress)
+    protected string RegisterPeripheral(TDiscoveredPeripheral discoveredPeripheral, TPeripheralAddress peripheralAddress)
     {
         if (!this.peripheralAddressToId.TryGetValue(peripheralAddress, out var peripheralId))
         {
@@ -99,26 +99,26 @@ public abstract class PeripheralSession<TPeripheral, TPeripheralAddress> : Sessi
             this.peripheralAddressToId[peripheralAddress] = peripheralId;
         }
 
-        this.discoveredPeripherals[peripheralId] = peripheral;
+        this.discoveredPeripherals[peripheralId] = discoveredPeripheral;
 
         return peripheralId;
     }
 
     /// <summary>
-    /// Retrieve a registered peripheral.
+    /// Retrieve a peripheral registered during discovery.
     /// </summary>
     /// <param name="peripheralId">The anonymized peripheral ID.</param>
     /// <returns>The peripheral if found, otherwise null.</returns>
-    protected TPeripheral GetPeripheral(string peripheralId)
+    protected TDiscoveredPeripheral GetDiscoveredPeripheral(string peripheralId)
     {
         return this.discoveredPeripherals.GetValueOrDefault(peripheralId, null);
     }
 
     /// <summary>
-    /// Clear all registered peripherals.
+    /// Clear all peripherals registered during discovery.
     /// The mapping of peripheral address to ID will not be cleared. To clear that, start a new session.
     /// </summary>
-    protected void ClearPeripherals()
+    protected void ClearDiscoveredPeripherals()
     {
         this.discoveredPeripherals.Clear();
     }

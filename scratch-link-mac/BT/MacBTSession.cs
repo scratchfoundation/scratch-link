@@ -8,7 +8,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using AppKit;
 using CoreFoundation;
@@ -16,7 +15,6 @@ using Fleck;
 using Foundation;
 using IOBluetooth;
 using ScratchLink.BT;
-using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using ScratchLink.Mac.BT.Rfcomm;
 using ScratchLink.Mac.Extensions;
@@ -27,7 +25,7 @@ using ScratchLink.Mac.Extensions;
 internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 {
     private readonly DeviceInquiry inquiry = new ();
-    private readonly DispatchQueue rfcommQueue = new DispatchQueue("RFCOMM dispatch queue for MacBT session");
+    private readonly DispatchQueue rfcommQueue = new ("RFCOMM dispatch queue for MacBT session");
 
     private DeviceClassMajor searchClassMajor;
     private DeviceClassMinor searchClassMinor;
@@ -95,7 +93,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (inquiryStatus != IOReturn.Success)
         {
             Trace.WriteLine($"Failed to start inquiry: {inquiryStatus.ToDebugString()}");
-            throw JsonRpc2Error.ServerError(-32500, "Device inquiry failed to start").ToException();
+            throw JsonRpc2Error.ApplicationError("Device inquiry failed to start").ToException();
         }
 
         return Task.FromResult<object>(null);
@@ -179,7 +177,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if (channel?.IsOpen != true)
         {
             Trace.WriteLine("RFCOMM channel is not open even after polling");
-            throw JsonRpc2Error.ServerError(-32500, "Could not connect to RFCOMM channel.").ToException();
+            throw JsonRpc2Error.ApplicationError("Could not connect to RFCOMM channel.").ToException();
         }
 
         Trace.WriteLine("RFCOMM channel is open");
@@ -212,7 +210,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             }
 
             IOReturn writeResult;
-            GCHandle pinnedBuffer = default(GCHandle);
+            GCHandle pinnedBuffer = default;
 
             try
             {
@@ -278,9 +276,11 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
 
     private async void Inquiry_DeviceFoundAsync(object sender, DeviceFoundEventArgs e)
     {
+        Trace.WriteLine($"BT evaluating device {e.Device.NameOrAddress} with class {e.Device.DeviceClassMajor}:{e.Device.DeviceClassMinor}");
+
         if (e.Device.DeviceClassMajor != this.searchClassMajor)
         {
-            // major class doesn't match
+            Trace.WriteLine($"BT discarding device {e.Device.NameOrAddress}: major class mismatch");
             return;
         }
 
@@ -288,7 +288,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
         if ((e.Device.DeviceClassMinor != this.searchClassMinor) &&
             (e.Device.DeviceClassMinor != 0))
         {
-            // minor class doesn't match
+            Trace.WriteLine($"BT discarding device {e.Device.NameOrAddress}: minor class mismatch");
             return;
         }
 
@@ -298,6 +298,7 @@ internal class MacBTSession : BTSession<BluetoothDevice, BluetoothDeviceAddress>
             return;
         }
 
+        Trace.WriteLine($"BT accepted device {e.Device.NameOrAddress}");
         await this.OnPeripheralDiscovered(e.Device, e.Device.Address, e.Device.NameOrAddress, e.Device.Rssi);
     }
 }

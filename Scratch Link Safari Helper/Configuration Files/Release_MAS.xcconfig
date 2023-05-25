@@ -12,3 +12,4 @@
 #include "Shipping.xcconfig"
 
 CODE_SIGN_IDENTITY = Apple Distribution;
+PROVISIONING_PROFILE_SPECIFIER = match AppStore edu.mit.scratch.scratch-link.safari-extension macos;

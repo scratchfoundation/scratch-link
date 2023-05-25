@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file sets up version properties in our own Scratch way.
+-->
+<Project>
+	<Target Name="ScratchVersion" DependsOnTargets="GitVersion">
+		<!--
+        <Message Text="GitInfo: GitRepositoryUrl = $(GitRepositoryUrl)" />
+        <Message Text="GitInfo: GitBranch = $(GitBranch)" />
+        <Message Text="GitInfo: GitCommit = $(GitCommit)" />
+        <Message Text="GitInfo: GitCommitDate = $(GitCommitDate)" />
+        <Message Text="GitInfo: GitCommits = $(GitCommits)" />
+        <Message Text="GitInfo: GitTag = $(GitTag)" />
+        <Message Text="GitInfo: GitBaseTag = $(GitBaseTag)" />
+        <Message Text="GitInfo: GitBaseVersionMajor = $(GitBaseVersionMajor)" />
+        <Message Text="GitInfo: GitBaseVersionMinor = $(GitBaseVersionMinor)" />
+        <Message Text="GitInfo: GitBaseVersionPatch = $(GitBaseVersionPatch)" />
+        <Message Text="GitInfo: GitSemVerMajor = $(GitSemVerMajor)" />
+        <Message Text="GitInfo: GitSemVerMinor = $(GitSemVerMinor)" />
+        <Message Text="GitInfo: GitSemVerPatch = $(GitSemVerPatch)" />
+        <Message Text="GitInfo: GitSemVerLabel = $(GitSemVerLabel)" />
+        <Message Text="GitInfo: GitSemVerDashLabel = $(GitSemVerDashLabel)" />
+        <Message Text="GitInfo: GitSemVerSource = $(GitSemVerSource)" />
+        <Message Text="GitInfo: GitIsDirty = $(GitIsDirty)" />
+        -->
+		<PropertyGroup>
+			<ScratchVersionTriplet>$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</ScratchVersionTriplet>
+			<ScratchVersionFull>$(ScratchVersionTriplet)$(GitSemVerDashLabel)</ScratchVersionFull>
+			<ScratchVersionHash>$(GitCommit)</ScratchVersionHash>
+			<ScratchVersionDetail>$(ScratchVersionFull)+$(ScratchVersionHash)</ScratchVersionDetail>
+			<ScratchVersionBuildNumber>$([System.Text.RegularExpressions.Regex]::Match($(GitSemVerLabel), '\d+$'))</ScratchVersionBuildNumber>
+			<ScratchVersionBuildNumber Condition=" '$(ScratchVersionBuildNumber)' == '' ">$(GitCommits)</ScratchVersionBuildNumber>
+			<ScratchVersionQuad>$(ScratchVersionTriplet).$(ScratchVersionBuildNumber)</ScratchVersionQuad>
+		</PropertyGroup>
+		<Message Text="ScratchVersionTriplet = $(ScratchVersionTriplet)" />
+		<Message Text="ScratchVersionFull = $(ScratchVersionFull)" />
+		<Message Text="ScratchVersionHash = $(ScratchVersionHash)" />
+		<Message Text="ScratchVersionDetail = $(ScratchVersionDetail)" />
+		<Message Text="ScratchVersionBuildNumber = $(ScratchVersionBuildNumber)" />
+	</Target>
+</Project>

@@ -115,29 +115,23 @@
     <RemoveDir Directories="$(AppBundleDir)/Contents/Frameworks/IOBluetooth.framework" />
     <Exec WorkingDirectory="$(AppBundleDir)/Contents" Command="rmdir Frameworks || true" />
   </Target>
-  <Target Name="EmbedVersion" BeforeTargets="CoreCompile" DependsOnTargets="GetVersion">
-    <!--
-    For more information on GitVersion, see:
-    * https://gitversion.net/docs/usage/msbuild
-    * https://gitversion.net/docs/reference/variables
-    You can also check obj/gitversion.json for available values
-    -->
-    <Message Text="GetVersion calculated: $(GitVersion_FullSemVer)" />
+  <Target Name="EmbedVersion" BeforeTargets="CoreCompile" DependsOnTargets="ScratchVersion">
     <PropertyGroup>
       <!-- The PkgPackagePath property seems undocumented. I found it with Structured Log Viewer. -->
-      <PkgPackagePath>$(OutputPath)$(AssemblyName)-$(GitVersion_FullSemVer).pkg</PkgPackagePath>
+      <PkgPackagePath>$(OutputPath)$(AssemblyName)-$(ScratchVersionFull).pkg</PkgPackagePath>
     </PropertyGroup>
-    <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(GitVersion_MajorMinorPatch)' '$(IntermediateOutputPath)AppManifest.plist'" />
-    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(GitVersion_WeightedPreReleaseNumber)' '$(IntermediateOutputPath)AppManifest.plist'" />
-    <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(GitVersion_FullSemVer).$(GitVersion_ShortSha)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <!-- See README.md for details on these version identifiers -->
+    <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(ScratchVersionTriplet)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(ScratchVersionBuildNumber)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(ScratchVersionDetail)' '$(IntermediateOutputPath)AppManifest.plist'" />
   </Target>
-  <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="GetVersion">
+  <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="ScratchVersion">
     <PropertyGroup>
       <SafariHelperSrcDir>$(SolutionDir)Scratch Link Safari Helper/build/$(Configuration)/</SafariHelperSrcDir>
       <SafariHelperBundleName>Scratch Link Safari Extension.appex</SafariHelperBundleName>
       <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
     </PropertyGroup>
-    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'MARKETING_VERSION=$(GitVersion_MajorMinorPatch)' 'CURRENT_PROJECT_VERSION=$(GitVersion_WeightedPreReleaseNumber)' build" />
+    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'MARKETING_VERSION=$(ScratchVersionTriplet)' 'CURRENT_PROJECT_VERSION=$(ScratchVersionBuildNumber)' build" />
     <Error Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)" />
     <ItemGroup>
       <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />
@@ -192,7 +186,6 @@
   <ItemGroup>
     <None Include="Info.plist" />
     <None Include="Entitlements.plist" />
-    <None Include="Makefile" />
     <None Include="app.config" />
     <None Include="notarize.sh" />
   </ItemGroup>
@@ -218,27 +211,18 @@
   </ItemGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
+  <Import Project="$(SolutionDir)SharedProps\ScratchVersion.targets" />
   <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />
   <ItemGroup>
-    <PackageReference Include="Fleck">
-      <Version>1.2.0</Version>
-    </PackageReference>
     <PackageReference Include="InTheHand.IOBluetooth">
       <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
-      <Version>6.0.5</Version>
+      <Version>6.0.7</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Channels">
       <Version>6.0.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection">
-      <Version>6.0.0</Version>
-    </PackageReference>
-    <PackageReference Include="GitVersion.MsBuild">
-      <Version>5.11.1</Version>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
 </Project>

@@ -44,7 +44,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
     /// <summary>
     /// Initializes a new instance of the <see cref="MacBLESession"/> class.
     /// </summary>
-    /// <param name="webSocket">The web socket.</param>
+    /// <param name="webSocket">The WebSocket connection for this session.</param>
     public MacBLESession(IWebSocketConnection webSocket)
         : base(webSocket)
     {
@@ -447,7 +447,7 @@ internal class MacBLESession : BLESession<CBPeripheral, NSUuid, CBUUID>
             }
         }
 
-        // the device must have passed the filter!
+        // the device must have passed a filter!
         await this.OnPeripheralDiscovered(peripheral, peripheral.Identifier, peripheral.Name, rssi.Int32Value);
     }
 

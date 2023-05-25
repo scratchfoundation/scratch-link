@@ -4,28 +4,29 @@ root = true
 end_of_line = lf
 insert_final_newline = true
 charset = utf-8
-indent_size = 4
 trim_trailing_whitespace = true
 
-[*.{cs,csproj,sln,xaml}]
-charset = utf-8-bom
+[*.{appxmanifest,csproj,props,pubxml,sln,targets,wapproj,xaml}]
+indent_size = 2
+indent_style = space
 end_of_line = crlf
 
 [*.cs]
+indent_size = 4
+indent_style = space
+end_of_line = crlf
 csharp_using_directive_placement = inside_namespace
 dotnet_style_qualification_for_event = true
 dotnet_style_qualification_for_field = true
 dotnet_style_qualification_for_method = true
 dotnet_style_qualification_for_property = true
 
-[*.csproj]
-indent_size = 2
-indent_style = space
-
 [*.{html,md}]
+indent_size = 4
 indent_style = space
 
 [*.sh]
+indent_size = 4
 indent_style = tab
 
 [*.{yaml,yml}]

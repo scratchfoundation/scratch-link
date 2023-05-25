@@ -4,6 +4,7 @@
 
 namespace ScratchLink.BT;
 
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -14,9 +15,9 @@ using ScratchLink.JsonRpc;
 /// <summary>
 /// Implements the cross-platform portions of a Bluetooth Classic (RFCOMM) session.
 /// </summary>
-/// <inheritdoc cref="PeripheralSession{TPeripheral, TPeripheralAddress}"/>
-internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralSession<TPeripheral, TPeripheralAddress>
-    where TPeripheral : class
+/// <inheritdoc cref="PeripheralSession{TDiscoveredPeripheral, TPeripheralAddress}"/>
+internal abstract class BTSession<TDiscoveredPeripheral, TPeripheralAddress> : PeripheralSession<TDiscoveredPeripheral, TPeripheralAddress>
+    where TDiscoveredPeripheral : class
 {
     /// <summary>
     /// PIN code for auto-pairing.
@@ -54,7 +55,9 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
             throw JsonRpc2Error.InvalidParams("majorDeviceClass and minorDeviceClass required").ToException();
         }
 
-        this.ClearPeripherals();
+        Trace.WriteLine($"received discover request for class {majorDeviceClass}:{minorDeviceClass}");
+
+        this.ClearDiscoveredPeripherals();
         return this.DoDiscover((byte)majorDeviceClass, (byte)minorDeviceClass);
     }
 
@@ -67,20 +70,20 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
     protected abstract Task<object> DoDiscover(byte majorDeviceClass, byte minorDeviceClass);
 
     /// <inheritdoc/>
-    protected override Task<object> DoConnect(TPeripheral peripheral, JsonElement? args)
+    protected override Task<object> DoConnect(TDiscoveredPeripheral discoveredPeripheral, JsonElement? args)
     {
         var pinString = args?.TryGetProperty("pin")?.GetString();
 
-        return this.DoConnect(peripheral, pinString);
+        return this.DoConnect(discoveredPeripheral, pinString);
     }
 
     /// <summary>
     /// Platform-specific implementation for connecting to a BT peripheral device.
     /// </summary>
-    /// <param name="peripheral">The requested BT peripheral device.</param>
+    /// <param name="discoveredPeripheral">The requested BT peripheral device.</param>
     /// <param name="pinString">The PIN code, if provided by the client. Otherwise, null.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
-    protected abstract Task<object> DoConnect(TPeripheral peripheral, string pinString);
+    protected abstract Task<object> DoConnect(TDiscoveredPeripheral discoveredPeripheral, string pinString);
 
     /// <summary>
     /// Implement the JSON-RPC "send" request to send data to the connected peripheral.
@@ -126,14 +129,14 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
     /// <summary>
     /// Track a discovered device and report it to the client.
     /// </summary>
-    /// <param name="peripheral">The platform-specific device reference or record.</param>
+    /// <param name="discoveredPeripheral">The platform-specific device reference or record.</param>
     /// <param name="peripheralAddress">The internal system address of this device.</param>
     /// <param name="displayName">A user-friendly name, if possible.</param>
     /// <param name="rssi">A relative signal strength indicator.</param>
     /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
-    protected async Task OnPeripheralDiscovered(TPeripheral peripheral, TPeripheralAddress peripheralAddress, string displayName, int rssi)
+    protected async Task OnPeripheralDiscovered(TDiscoveredPeripheral discoveredPeripheral, TPeripheralAddress peripheralAddress, string displayName, int? rssi)
     {
-        var peripheralId = this.RegisterPeripheral(peripheral, peripheralAddress);
+        var peripheralId = this.RegisterPeripheral(discoveredPeripheral, peripheralAddress);
 
         var message = new BTPeripheralDiscovered
         {
@@ -166,7 +169,7 @@ internal abstract class BTSession<TPeripheral, TPeripheralAddress> : PeripheralS
         /// Gets or sets the relative signal strength of the advertisement.
         /// </summary>
         [JsonPropertyName("rssi")]
-        public int RSSI { get; set; }
+        public int? RSSI { get; set; }
     }
 
     /// <summary>
