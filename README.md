@@ -49,8 +49,8 @@ a change is merged to either of those branches, `semantic-release` will calculat
 
 Apple requires that `CFBundleShortVersionString` is unique for published releases. The App Store will also reject an
 upload unless the `CFBundleVersion` tuple is greater than that of previously uploaded builds. To make this easy, we
-set both to the version calculated by `semantic-release`. The uniqueness requirement means we can't "try again" on
-the same version number, but that just enforces the semantic versioning so it's arguably a good thing.
+set `CFBundleShortVersionString` to the version calculated by `semantic-release`, and `CFBundleVersion` is calculated
+from the date and time of the build commit.
 
 Extended version information is available within the application. This extended information is similar to `git
 describe`.

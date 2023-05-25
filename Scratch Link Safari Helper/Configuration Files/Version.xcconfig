@@ -9,7 +9,7 @@
 // https://help.apple.com/xcode/#/dev745c5c974
 
 // MARKETING_VERSION becomes CFBundleShortVersionString
-MARKETING_VERSION = 2.0;
+MARKETING_VERSION = 2.0.0;
 
 // CURRENT_PROJECT_VERSION becomes CFBundleVersion
-CURRENT_PROJECT_VERSION = 2.0;
+CURRENT_PROJECT_VERSION = 1.0.0;

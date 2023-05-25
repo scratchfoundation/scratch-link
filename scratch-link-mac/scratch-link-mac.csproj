@@ -122,7 +122,7 @@
     </PropertyGroup>
     <!-- See README.md for details on these version identifiers -->
     <Exec Command="plutil -replace 'CFBundleShortVersionString' -string '$(ScratchVersionTriplet)' '$(IntermediateOutputPath)AppManifest.plist'" />
-    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(ScratchVersionTriplet)' '$(IntermediateOutputPath)AppManifest.plist'" />
+    <Exec Command="plutil -replace 'CFBundleVersion' -string '$(ScratchVersionBuildTime)' '$(IntermediateOutputPath)AppManifest.plist'" />
     <Exec Command="plutil -replace 'ScratchVersionDetail' -string '$(ScratchVersionDetail)' '$(IntermediateOutputPath)AppManifest.plist'" />
   </Target>
   <Target Name="EmbedSafariHelper" BeforeTargets="_CopyAppExtensionsToBundle" DependsOnTargets="ScratchVersion">
@@ -131,7 +131,7 @@
       <SafariHelperBundleName>Scratch Link Safari Extension.appex</SafariHelperBundleName>
       <SafariHelperSrcPath>$(SafariHelperSrcDir)$(SafariHelperBundleName)/</SafariHelperSrcPath>
     </PropertyGroup>
-    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'MARKETING_VERSION=$(ScratchVersionTriplet)' 'CURRENT_PROJECT_VERSION=$(ScratchVersionTriplet)' build" />
+    <Exec Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Outputs="$(SafariHelperSrcPath)" WorkingDirectory="$(SolutionDir)" Command="xcodebuild -configuration $(Configuration) -project 'Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj' -target 'Scratch Link Safari Extension' -destination 'name=Any Mac' 'MARKETING_VERSION=$(ScratchVersionTriplet)' 'CURRENT_PROJECT_VERSION=$(ScratchVersionBuildTime)' build" />
     <Error Condition="!Exists('$(SafariHelperSrcPath)Contents/Info.plist')" Text="Failed to build the $(Configuration) configuration of Scratch Link Safari Helper. Expected output bundle at:%0a$(SafariHelperSrcPath)" />
     <ItemGroup>
       <SafariHelperFiles Include="$(SafariHelperSrcPath)\**" />
