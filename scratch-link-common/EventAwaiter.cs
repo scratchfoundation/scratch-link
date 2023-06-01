@@ -1,4 +1,4 @@
-﻿// <copyright file="EventAwaiter.cs" company="Scratch Foundation">
+// <copyright file="EventAwaiter.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
@@ -47,10 +47,7 @@ public class EventAwaiter<T> : IDisposable
     {
         using (var awaiter = new EventAwaiter<T>(addHandler, removeHandler))
         {
-            if (action != null)
-            {
-                action();
-            }
+            action?.Invoke();
 
             return await awaiter.MakeTask(timeout, cancellationToken);
         }

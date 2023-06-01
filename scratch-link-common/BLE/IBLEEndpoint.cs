@@ -5,7 +5,6 @@
 namespace ScratchLink.BLE;
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>

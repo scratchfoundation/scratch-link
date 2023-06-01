@@ -1,4 +1,4 @@
-﻿// <copyright file="Session.cs" company="Scratch Foundation">
+// <copyright file="Session.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
@@ -45,8 +45,6 @@ public class Session : IDisposable
     /// </summary>
     protected static readonly TimeSpan DefaultLockTimeout = TimeSpan.FromMilliseconds(500);
 
-    private const int MessageSizeLimit = 1024 * 1024; // 1 MiB
-
     private readonly IWebSocketConnection webSocket;
 
     private readonly JsonSerializerOptions deserializerOptions = new ()
@@ -66,7 +64,7 @@ public class Session : IDisposable
     public Session(IWebSocketConnection webSocket)
     {
         this.webSocket = webSocket;
-        this.Handlers["getVersion"] = this.HandleGetVersion;
+        this.Handlers["getVersion"] = HandleGetVersion;
         this.Handlers["pingMe"] = this.HandlePingMe;
         Trace.WriteLine("session started");
     }
@@ -135,6 +133,20 @@ public class Session : IDisposable
     {
         this.webSocket.Close();
         Trace.WriteLine("session ended");
+    }
+
+    /// <summary>
+    /// Handle a "getVersion" request.
+    /// </summary>
+    /// <param name="methodName">The name of the method called (expected: "getVersion").</param>
+    /// <param name="args">Any arguments passed to the method by the caller (expected: none).</param>
+    /// <returns>A string representing the protocol version.</returns>
+    protected static Task<object> HandleGetVersion(string methodName, JsonElement? args)
+    {
+        return Task.FromResult<object>(new Dictionary<string, string>
+        {
+            { "protocol", NetworkProtocolVersion },
+        });
     }
 
     /// <summary>
@@ -242,20 +254,6 @@ public class Session : IDisposable
 #else
         return (object sender, T args) => { original(sender, args); };
 #endif
-    }
-
-    /// <summary>
-    /// Handle a "getVersion" request.
-    /// </summary>
-    /// <param name="methodName">The name of the method called (expected: "getVersion").</param>
-    /// <param name="args">Any arguments passed to the method by the caller (expected: none).</param>
-    /// <returns>A string representing the protocol version.</returns>
-    protected Task<object> HandleGetVersion(string methodName, JsonElement? args)
-    {
-        return Task.FromResult<object>(new Dictionary<string, string>
-        {
-            { "protocol", NetworkProtocolVersion },
-        });
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-﻿// <copyright file="WinSessionManager.cs" company="Scratch Foundation">
+// <copyright file="WinSessionManager.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
@@ -6,6 +6,7 @@ namespace ScratchLink.Win;
 
 using Fleck;
 using ScratchLink.Win.BLE;
+using ScratchLink.Win.BT;
 
 /// <summary>
 /// Implements the Windows-specific functionality of the SessionManager.

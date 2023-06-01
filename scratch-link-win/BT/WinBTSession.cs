@@ -1,8 +1,8 @@
-﻿// <copyright file="WinBTSession.cs" company="Scratch Foundation">
+// <copyright file="WinBTSession.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Win.BLE;
+namespace ScratchLink.Win.BT;
 
 using Fleck;
 using ScratchLink.BT;

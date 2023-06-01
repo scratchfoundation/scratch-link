@@ -16,6 +16,7 @@ indent_size = 4
 indent_style = space
 end_of_line = crlf
 csharp_using_directive_placement = inside_namespace
+dotnet_code_quality.CA1826.exclude_ordefault_methods = true
 dotnet_style_qualification_for_event = true
 dotnet_style_qualification_for_field = true
 dotnet_style_qualification_for_method = true

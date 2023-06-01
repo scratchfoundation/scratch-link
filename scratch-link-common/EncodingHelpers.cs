@@ -1,4 +1,4 @@
-﻿// <copyright file="EncodingHelpers.cs" company="Scratch Foundation">
+// <copyright file="EncodingHelpers.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
@@ -63,14 +63,11 @@ public static class EncodingHelpers
     /// <exception cref="JsonRpc2Exception">Thrown if the data could not be encoded, including if the encoding is not supported.</exception>
     public static string EncodeBuffer(byte[] data, string encoding)
     {
-        switch (encoding)
+        return encoding switch
         {
-            case "base64":
-                return Convert.ToBase64String(data);
-            case null:
-                return Encoding.UTF8.GetString(data);
-            default:
-                throw JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}").ToException();
-        }
+            "base64" => Convert.ToBase64String(data),
+            null => Encoding.UTF8.GetString(data),
+            _ => throw JsonRpc2Error.InvalidParams($"unsupported encoding: {encoding}").ToException(),
+        };
     }
 }

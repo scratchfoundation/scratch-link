@@ -1,4 +1,4 @@
-﻿// <copyright file="JsonRpc2MessageConverter.cs" company="Scratch Foundation">
+// <copyright file="JsonRpc2MessageConverter.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 

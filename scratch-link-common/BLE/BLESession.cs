@@ -1,4 +1,4 @@
-﻿// <copyright file="BLESession.cs" company="Scratch Foundation">
+// <copyright file="BLESession.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 

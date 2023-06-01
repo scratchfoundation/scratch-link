@@ -6,7 +6,6 @@ namespace ScratchLink.Win.BLE;
 
 using Fleck;
 using ScratchLink.BLE;
-using ScratchLink.Extensions;
 using ScratchLink.JsonRpc;
 using System;
 using System.Collections.Generic;
@@ -15,8 +14,6 @@ using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using Windows.Networking.Sockets;
-using Windows.Storage.Streams;
 
 /// <summary>
 /// Implements a BLE session on Windows.
