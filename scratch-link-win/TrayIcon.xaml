@@ -12,19 +12,18 @@
                   ToolTipText="Scratch Link"
                   ContextMenuMode="SecondWindow"
                   IconSource="scratch-link-tray.ico"
-                  >
-    <tb:TaskbarIcon.ContextFlyout>
-      <MenuFlyout>
-        <MenuFlyoutItem Command="{StaticResource CopyVersionCommand}" />
-        <MenuFlyoutSeparator />
-        <MenuFlyoutItem Command="{StaticResource ExitCommand}" />
-      </MenuFlyout>
-    </tb:TaskbarIcon.ContextFlyout>
-  </tb:TaskbarIcon>
+                  tb:TaskbarIcon.ContextFlyout="{StaticResource ContextFlyout}"
+  />
+
+  <MenuFlyout x:Key="ContextFlyout">
+    <MenuFlyoutItem Command="{StaticResource CopyVersionCommand}" />
+    <MenuFlyoutSeparator />
+    <MenuFlyoutItem Command="{StaticResource ExitCommand}" />
+  </MenuFlyout>
 
   <XamlUICommand
     x:Key="CopyVersionCommand"
-    Label="Scratch Link"
+    Label="Scratch Link 2.0.0.0"
     Description="Copy version to clipboard"
     >
     <XamlUICommand.IconSource>
