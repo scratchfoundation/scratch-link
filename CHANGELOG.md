@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.2-develop.1](https:/home/circleci/project/semantic-release-remote/compare/v2.0.1...v2.0.2-develop.1) (2023-06-08)
+
+
+### Bug Fixes
+
+* **WinBLE:** disconnect event handlers during session dispose ([3b15ac5](https:/home/circleci/project/semantic-release-remote/commit/3b15ac5e3988b6596eb1c3d6417dca89e68a38f8))
+
 ## [2.0.1](https:/home/circleci/project/semantic-release-remote/compare/v2.0.0...v2.0.1) (2023-05-25)
 
 
