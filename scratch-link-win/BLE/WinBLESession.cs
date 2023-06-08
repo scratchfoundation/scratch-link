@@ -1,4 +1,4 @@
-﻿// <copyright file="WinBLESession.cs" company="Scratch Foundation">
+// <copyright file="WinBLESession.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
@@ -62,14 +62,18 @@ internal class WinBLESession : BLESession<BluetoothLEAdvertisementReceivedEventA
         {
             if (this.watcher != null && this.watcher.Status != BluetoothLEAdvertisementWatcherStatus.Stopping)
             {
+                this.watcher.Received -= this.Watcher_AdvertisementReceived;
+
                 // does nothing if already stopped
                 // overwrites existing advertisements if in the "Stopping" state
                 this.watcher.Stop();
+
                 this.watcher = null;
             }
 
             if (this.connectedPeripheral != null)
             {
+                this.connectedPeripheral.ConnectionStatusChanged -= this.Peripheral_ConnectionStatusChanged;
                 this.connectedPeripheral.Dispose();
                 this.connectedPeripheral = null;
             }
