@@ -6,12 +6,14 @@ namespace ScratchLink.Win;
 
 using H.NotifyIcon;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using ScratchLink;
 using ScratchLink.Win.BLE;
 using System.Diagnostics;
 using System.Reflection;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Foundation;
 
 /// <summary>
 /// Provides application-specific behavior to supplement the default Application class.
@@ -69,6 +71,23 @@ public partial class App : Application
         var copyVersionCommand = (XamlUICommand)this.Resources["CopyVersionCommand"];
         copyVersionCommand.Label = $"{this.appTitle} {this.versionQuad}";
         copyVersionCommand.ExecuteRequested += this.CopyVersionCommand_ExecuteRequested;
+
+        // Without this code, the width gets set too small and the label gets cut off.
+        // This could be a different presentation of https://github.com/HavenDV/H.NotifyIcon/issues/73
+        // Note that the "loop" should handle exactly one item due to the `Where` clause.
+        var menuFlyout = (MenuFlyout)this.Resources["ContextFlyout"];
+        foreach (var menuItem in menuFlyout.Items.OfType<MenuFlyoutItem>()
+            .Where(item => (XamlUICommand)item.Command == copyVersionCommand))
+        {
+            var infiniteSize = new Size(double.PositiveInfinity, double.PositiveInfinity);
+            menuItem.Icon.Measure(infiniteSize);
+            menuItem.Measure(infiniteSize);
+            menuItem.Width =
+                menuItem.Icon.Margin.Left + menuItem.Icon.DesiredSize.Width + menuItem.Icon.Margin.Right +
+                menuItem.Margin.Left + menuItem.Padding.Left +
+                menuItem.DesiredSize.Width +
+                menuItem.Padding.Right + menuItem.Margin.Right;
+        }
 
         var exitCommand = (XamlUICommand)this.Resources["ExitCommand"];
         exitCommand.ExecuteRequested += this.ExitCommand_ExecuteRequested;
