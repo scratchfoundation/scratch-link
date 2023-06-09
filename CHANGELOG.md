@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.2-develop.2](https:/home/circleci/project/semantic-release-remote/compare/v2.0.2-develop.1...v2.0.2-develop.2) (2023-06-09)
+
+
+### Bug Fixes
+
+* **Win:** fix sizing problem in context menu ([c35c934](https:/home/circleci/project/semantic-release-remote/commit/c35c93496a58349c0fd9b0341a23a94cb4107e36))
+
 ## [2.0.2-develop.1](https:/home/circleci/project/semantic-release-remote/compare/v2.0.1...v2.0.2-develop.1) (2023-06-08)
 
 
