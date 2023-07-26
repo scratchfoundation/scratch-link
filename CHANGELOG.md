@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.2-develop.4](https:/home/circleci/project/semantic-release-remote/compare/v2.0.2-develop.3...v2.0.2-develop.4) (2023-07-26)
+
+
+### Bug Fixes
+
+* **win:** apply the calculated version number to packaging output ([57a6ebc](https:/home/circleci/project/semantic-release-remote/commit/57a6ebc1df4e7bf32e599e4b6a93b149f3f34053))
+
 ## [2.0.2-develop.3](https:/home/circleci/project/semantic-release-remote/compare/v2.0.2-develop.2...v2.0.2-develop.3) (2023-07-05)
 
 
