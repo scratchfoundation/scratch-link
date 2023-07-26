@@ -101,6 +101,37 @@
       <PublishProfile>Properties\PublishProfiles\win10-$(Platform).pubxml</PublishProfile>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="GitInfo" Version="2.3.0" />
+  </ItemGroup>
   <Import Project="$(SolutionDir)SharedProps\WindowsSDK.props" />
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
+  <Import Project="$(SolutionDir)SharedProps\ScratchVersion.targets" />
+  <Target Name="ScratchModifyAppxManifest" BeforeTargets="_ValidatePresenceOfAppxManifestItems" DependsOnTargets="ScratchVersion">
+    <Copy SourceFiles="@(AppxManifest)" DestinationFolder="$(IntermediateOutputPath)" />
+    <!-- Do a three-step swap to replace @AppxManifest with a version prefixed with the intermediate path -->
+    <!-- Note that '%' in MSBuild-speak causes a "for each"-style iteration -->
+    <!-- @(AppxManifest) should only ever have 1 item, but it's a list so we have to treat it that way -->
+    <ItemGroup>
+      <!-- Make a new prefixed item in a temporary list -->
+      <_ScratchAppxManifest Include="$(IntermediateOutputPath)%(AppxManifest.Identity)" />
+      <!-- Remove the old un-prefixed item from the original list -->
+      <AppxManifest Remove="%(AppxManifest.Identity)" />
+      <!-- Add the item from the temporary list into the official list -->
+      <AppxManifest Include="%(_ScratchAppxManifest.Identity)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <!-- XmlPoke doesn't support implicit namespacing -->
+      <_ScratchAppxManifestNamespaces>
+        <Namespace Prefix="am" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10" />
+      </_ScratchAppxManifestNamespaces>
+    </PropertyGroup>
+    <!-- Inject the correct version into the XML file in the intermediate path -->
+    <XmlPoke
+      XmlInputPath="%(AppxManifest.Identity)"
+      Query="/am:Package/am:Identity/@Version"
+      Value="$(ScratchVersionQuad)"
+      Namespaces="$(_ScratchAppxManifestNamespaces)"
+    />
+  </Target>
 </Project>

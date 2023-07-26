@@ -37,6 +37,8 @@ This file sets up version properties in our own Scratch way.
 		<Message Text="ScratchVersionFull = $(ScratchVersionFull)" />
 		<Message Text="ScratchVersionHash = $(ScratchVersionHash)" />
 		<Message Text="ScratchVersionDetail = $(ScratchVersionDetail)" />
+		<Message Text="ScratchVersionBuildNumber = $(ScratchVersionBuildNumber)" />
+		<Message Text="ScratchVersionQuad = $(ScratchVersionQuad)" />
 		<Message Text="ScratchVersionBuildTime = $(ScratchVersionBuildTime)" />
 	</Target>
 </Project>
