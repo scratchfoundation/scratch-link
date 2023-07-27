@@ -11,7 +11,7 @@ This file contains NuGet package references that are shared between the Mac and 
 		<Version>6.0.1</Version>
 	</PackageReference>
 	<PackageReference Include="GitInfo">
-		<Version>2.3.0</Version>
+		<Version>3.1.1</Version>
 		<PrivateAssets>all</PrivateAssets>
 	</PackageReference>
 </ItemGroup>
