@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [2.0.3-develop.1](https:/home/circleci/project/semantic-release-remote/compare/v2.0.2...v2.0.3-develop.1) (2023-07-27)
+
+
+### Bug Fixes
+
+* **deps:** update dependency scratch-vm to v1.5.43 ([b75b289](https:/home/circleci/project/semantic-release-remote/commit/b75b2896a580e76282344e8b5c6ee404de85adfa))
+* **deps:** update dependency scratch-vm to v1.5.91 ([524712f](https:/home/circleci/project/semantic-release-remote/commit/524712fa1716ac952f984511c18ab8d53f2155ae))
+* **win:** apply the calculated version number to packaging output ([57a6ebc](https:/home/circleci/project/semantic-release-remote/commit/57a6ebc1df4e7bf32e599e4b6a93b149f3f34053))
+* **WinBLE:** disconnect event handlers during session dispose ([3b15ac5](https:/home/circleci/project/semantic-release-remote/commit/3b15ac5e3988b6596eb1c3d6417dca89e68a38f8))
+* **Win:** fix sizing problem in context menu ([c35c934](https:/home/circleci/project/semantic-release-remote/commit/c35c93496a58349c0fd9b0341a23a94cb4107e36))
+
 ## [2.0.2-develop.4](https:/home/circleci/project/semantic-release-remote/compare/v2.0.2-develop.3...v2.0.2-develop.4) (2023-07-26)
 
 
