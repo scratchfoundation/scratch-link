@@ -1,6 +1,6 @@
 {
   "name": "scratch-link",
-  "version": "2.0.3-develop.6",
+  "version": "2.0.3-develop.7",
   "description": "Scratch Link is not published as an NPM package. This file only exists to facilitate installation of devDependencies.",
   "author": "Scratch Foundation",
   "license": "BSD-3-Clause",
