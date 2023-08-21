@@ -1,0 +1,152 @@
+name: CI build
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+permissions:
+  contents: read
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+jobs:
+  # Keep in mind:
+  # 60 seconds on Ubuntu = 1 minute charged to account
+  # 60 seconds on Windows = 2 minutes charged to account
+  # 60 seconds on macOS = 10 minutes charged to account
+  semver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'npm'
+          node-version-file: '.nvmrc'
+      - run: npm ci
+      - name: Make local 'remote' for semantic-release
+        run: |
+          # semantic-release tracks channels with notes, so we need to grab those from the real remote
+          # semantic-release also wants to inspect every branch listed in its "branches" setting
+          git fetch -uf origin main:main develop:develop 'refs/notes/*:refs/notes/*'
+          git clone . --bare --mirror semantic-release-remote # mirror copies notes
+          git remote set-url origin "file://$(realpath semantic-release-remote)" # semantic-release needs a proper URL
+      - name: Stage semantic-release version commit
+        # In release branches, this will calculate the version and save that to package.json so the build can use it.
+        # In other branches, it'll just check the semantic-release config.
+        # Note that if semantic-release makes changes it will automatically push them.
+        # That's the whole reason for the weird "local remote" stuff.
+        # See also: https://github.com/semantic-release/semantic-release/issues/964
+        run: npx --no -- semantic-release
+      - name: Create artifact for semantic-release 'remote'
+        run: tar czvf semantic-release-remote.tgz semantic-release-remote
+      - uses: actions/upload-artifact@v3
+        with:
+          name: semantic-release-remote
+          path: semantic-release-remote.tgz
+          retention-days: 1 # relevant if a failure prevents the delete step below
+  build:
+    needs: semver
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest] # [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      #- name: Setup upterm session
+      #  uses: lhotari/action-upterm@v1
+      #  with:
+      #    limit-access-to-users: cwillisf
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: semantic-release-remote
+          path: .
+      - name: Restore semantic-release 'remote'
+        shell: bash
+        run: |
+          # this `tar` command replaces the usual "checkout" step
+          tar xzvf semantic-release-remote.tgz
+          rm semantic-release-remote.tgz
+      - name: Pull semantic-release changes from local 'remote'
+        shell: bash
+        run: |
+          git remote add semantic-release semantic-release-remote
+          git pull --tags semantic-release ${{ github.ref_name }}
+          git fetch semantic-release 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
+
+      - name: Build Safari helper
+        if: runner.os == 'macOS'
+        env:
+          AC_USERNAME: ${{ secrets.AC_USERNAME }}
+          AC_PASSWORD: ${{ secrets.AC_USERNAME }}
+        run: xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
+      - env:
+          CONFIG: Debug
+          ARTIFACT_TAG: Debug
+        name: "Build for Mac: ${{ env.CONFIG }}"
+        if: runner.os == 'macOS'
+        run: |
+          msbuild -m -t:Restore -p:Configuration=${CONFIG}_Mac scratch-link.sln
+          "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:${CONFIG}_Mac "${PWD}/scratch-link.sln"
+          # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
+          for PKGPATH in scratch-link-mac/bin/${CONFIG}/"Scratch Link"*.pkg; do
+            if [ -r "$PKGPATH" ]; then
+              PKGFILE="${PKGPATH##*/}"
+              if [ -n "${ARTIFACT_TAG}" ]; then
+                PKGFILE="${PKGFILE/Scratch Link/Scratch Link-${ARTIFACT_TAG}}"
+              fi
+              mkdir -p Artifacts
+            fi
+            # this is outside the "if" to force an error if the file doesn't exist
+            mv -v "$PKGPATH" "Artifacts/${PKGFILE}"
+          done
+
+      - name: Add msbuild to PATH
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v1.1
+      - env:
+          CONFIG: Debug
+          ARTIFACT_TAG: Debug
+        name: "Build for Windows: ${{ env.CONFIG }}"
+        if: runner.os == 'Windows'
+        run: |
+            # Build the MSIX project instead of the Solution because msbuild gets grumpy about the Mac project.
+            # That means SolutionDir needs to be set artificially, though.
+            # The `UapAppxPackageBuildMode=StoreAndSideload` means it'll build both MSIXUpload and MSIXBundle.
+            # The StoreUpload mode does that too, but that might be a bug, and semantically "StoreAndSideload" is what we want.
+            msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="${env:CONFIG}_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
+      - env:
+          CONFIG: Debug
+          ARTIFACT_TAG: Debug
+        name: "Move Windows artifacts into place: ${{ env.CONFIG }}"
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+            mkdir -p Artifacts
+            # The store package is fine as is: no user will see this filename.
+            mv -v scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_${CONFIG}_Win.msixupload Artifacts/
+            # Transform the bundle for a more user-friendly filename
+            for PKGPATH in scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_${CONFIG}_Win_Test/scratch-link-win-msix_*_${CONFIG}_Win.msixbundle; do
+              if [ -r "$PKGPATH" ]; then
+                PKGFILE="${PKGPATH##*/}"
+                [[ $PKGFILE =~ scratch-link-win-msix_([.0-9]+)_(.*)_${CONFIG}_Win.msixbundle$ ]]
+                PKGVERSION=${BASH_REMATCH[1]}
+                PKGPLATFORMS=${BASH_REMATCH[2]}
+              fi
+              # do the move outside the "if" above to force an error if the file doesn't exist
+              if [ -z "${ARTIFACT_TAG}" ]; then
+                mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION}.msixbundle"
+              else
+                mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION} ${ARTIFACT_TAG}.msixbundle"
+              fi
+            done
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: Artifacts/
+  finish:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: geekyeggo/delete-artifact@v2
+        with:
+          name: semantic-release-remote
