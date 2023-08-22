@@ -16,14 +16,14 @@ workflows:
           context: scratch-desktop-and-link
           requires:
             - semver
-      - build-win:
-          context: scratch-desktop-and-link
-          requires:
-            - semver
+              #      - build-win:
+              #          context: scratch-desktop-and-link
+              #          requires:
+              #            - semver
       - release:
           requires:
             - build-mac
-            - build-win
+              #            - build-win
           filters:
             branches:
               only:
@@ -65,7 +65,8 @@ jobs:
       - run:
           name: Build Safari helper
           command: |
-            xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
+            xcodebuild -verbose -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
+            false
       - restore_cache:
           keys:
             - visual-studio-mac-{{ checksum ".circleci/install-or-extract-vs-mac.sh" }}
