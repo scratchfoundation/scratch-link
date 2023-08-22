@@ -1,0 +1,48 @@
+name: Build for macOS
+description: Core build steps for macOS
+inputs:
+  configuration:
+    description: The configuration to build, like "Debug"
+    required: true
+    default: Debug
+  artifact_tag:
+    description: A string to tag the build artifact, like "Debug" or "MAS"
+    required: false
+    default: ""
+  ac_username:
+    description: App Store Connect user name
+    required: true
+    default: ""
+  ac_password:
+    description: App Store Connect password
+    required: true
+    default: "secret"
+runs:
+  using: composite
+  steps:
+    - name: Build Safari helper
+      env:
+        AC_USERNAME: ${{ inputs.ac_username }}
+        AC_PASSWORD: ${{ inputs.ac_password }}
+      shell: bash
+      run: xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
+    - name: "Build for Mac: ${{ inputs.configuration }}"
+      env:
+        CONFIG: Debug
+        ARTIFACT_TAG: Debug
+      shell: bash
+      run: |
+        msbuild -m -t:Restore -p:Configuration=${{ inputs.configuration }}_Mac scratch-link.sln
+        "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:${{ inputs.configuration }}_Mac "${PWD}/scratch-link.sln"
+        # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
+        for PKGPATH in scratch-link-mac/bin/${{ inputs.configuration }}/"Scratch Link"*.pkg; do
+          if [ -r "$PKGPATH" ]; then
+            PKGFILE="${PKGPATH##*/}"
+            if [ -n "${{ inputs.artifact_tag }}" ]; then
+              PKGFILE="${PKGFILE/Scratch Link/Scratch Link-${{ inputs.artifact_tag }}"
+            fi
+            mkdir -p Artifacts
+          fi
+          # this is outside the "if" to force an error if the file doesn't exist
+          mv -v "$PKGPATH" "Artifacts/${PKGFILE}"
+        done

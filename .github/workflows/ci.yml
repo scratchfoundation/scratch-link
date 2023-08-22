@@ -73,72 +73,10 @@ jobs:
           git pull --tags semantic-release ${{ github.ref_name }}
           git fetch semantic-release 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
 
-      - name: Build Safari helper
+      - uses: ./.github/actions/macos-build
         if: runner.os == 'macOS'
-        env:
-          AC_USERNAME: ${{ secrets.AC_USERNAME }}
-          AC_PASSWORD: ${{ secrets.AC_USERNAME }}
-        run: xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
-      - env:
-          CONFIG: Debug
-          ARTIFACT_TAG: Debug
-        name: "Build for Mac: ${{ env.CONFIG }}"
-        if: runner.os == 'macOS'
-        run: |
-          msbuild -m -t:Restore -p:Configuration=${CONFIG}_Mac scratch-link.sln
-          "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:${CONFIG}_Mac "${PWD}/scratch-link.sln"
-          # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
-          for PKGPATH in scratch-link-mac/bin/${CONFIG}/"Scratch Link"*.pkg; do
-            if [ -r "$PKGPATH" ]; then
-              PKGFILE="${PKGPATH##*/}"
-              if [ -n "${ARTIFACT_TAG}" ]; then
-                PKGFILE="${PKGFILE/Scratch Link/Scratch Link-${ARTIFACT_TAG}}"
-              fi
-              mkdir -p Artifacts
-            fi
-            # this is outside the "if" to force an error if the file doesn't exist
-            mv -v "$PKGPATH" "Artifacts/${PKGFILE}"
-          done
-
-      - name: Add msbuild to PATH
+      - uses: ./.github/actions/windows-build
         if: runner.os == 'Windows'
-        uses: microsoft/setup-msbuild@v1.1
-      - env:
-          CONFIG: Debug
-          ARTIFACT_TAG: Debug
-        name: "Build for Windows: ${{ env.CONFIG }}"
-        if: runner.os == 'Windows'
-        run: |
-            # Build the MSIX project instead of the Solution because msbuild gets grumpy about the Mac project.
-            # That means SolutionDir needs to be set artificially, though.
-            # The `UapAppxPackageBuildMode=StoreAndSideload` means it'll build both MSIXUpload and MSIXBundle.
-            # The StoreUpload mode does that too, but that might be a bug, and semantically "StoreAndSideload" is what we want.
-            msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="${env:CONFIG}_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
-      - env:
-          CONFIG: Debug
-          ARTIFACT_TAG: Debug
-        name: "Move Windows artifacts into place: ${{ env.CONFIG }}"
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-            mkdir -p Artifacts
-            # The store package is fine as is: no user will see this filename.
-            mv -v scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_${CONFIG}_Win.msixupload Artifacts/
-            # Transform the bundle for a more user-friendly filename
-            for PKGPATH in scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_${CONFIG}_Win_Test/scratch-link-win-msix_*_${CONFIG}_Win.msixbundle; do
-              if [ -r "$PKGPATH" ]; then
-                PKGFILE="${PKGPATH##*/}"
-                [[ $PKGFILE =~ scratch-link-win-msix_([.0-9]+)_(.*)_${CONFIG}_Win.msixbundle$ ]]
-                PKGVERSION=${BASH_REMATCH[1]}
-                PKGPLATFORMS=${BASH_REMATCH[2]}
-              fi
-              # do the move outside the "if" above to force an error if the file doesn't exist
-              if [ -z "${ARTIFACT_TAG}" ]; then
-                mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION}.msixbundle"
-              else
-                mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION} ${ARTIFACT_TAG}.msixbundle"
-              fi
-            done
 
       - uses: actions/upload-artifact@v3
         with:

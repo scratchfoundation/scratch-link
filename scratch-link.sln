@@ -72,6 +72,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\ci.yml = .github\workflows\ci.yml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "actions", "actions", "{4B4A2E1C-2249-4246-A149-F6CB8BF73666}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "macos-build", "macos-build", "{D4F02497-7C96-4987-8F9C-7293FE3A4B1C}"
+	ProjectSection(SolutionItems) = preProject
+		.github\actions\macos-build\action.yml = .github\actions\macos-build\action.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "windows-build", "windows-build", "{EB90F542-2DCD-4832-9827-818A7C8980E9}"
+	ProjectSection(SolutionItems) = preProject
+		.github\actions\windows-build\action.yml = .github\actions\windows-build\action.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_Mac|Any CPU = Debug_Mac|Any CPU
@@ -207,6 +219,9 @@ Global
 		{172A147D-A614-4442-B600-BAC18EF8F1DF} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
 		{05F0C24B-4EA1-4B11-9F86-DB3F1EDEE785} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
 		{D5766652-E655-4726-8289-C45C43A14639} = {05F0C24B-4EA1-4B11-9F86-DB3F1EDEE785}
+		{4B4A2E1C-2249-4246-A149-F6CB8BF73666} = {05F0C24B-4EA1-4B11-9F86-DB3F1EDEE785}
+		{D4F02497-7C96-4987-8F9C-7293FE3A4B1C} = {4B4A2E1C-2249-4246-A149-F6CB8BF73666}
+		{EB90F542-2DCD-4832-9827-818A7C8980E9} = {4B4A2E1C-2249-4246-A149-F6CB8BF73666}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {61F7FB11-1E47-470C-91E2-47F8143E1572}
