@@ -73,18 +73,30 @@ jobs:
           git pull --tags semantic-release ${{ github.ref_name }}
           git fetch semantic-release 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
 
-      - uses: ./.github/actions/macos-build
-        if: runner.os == 'macOS'
-      - uses: ./.github/actions/windows-build
-        if: runner.os == 'Windows'
+      - if: runner.os == 'macOS'
+        uses: ./.github/actions/macos-build
+        with:
+          configuration: Debug
+          artifact_tag: Debug
+          AC_USERNAME: ${{ secrets.AC_USERNAME }}
+          AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      - if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-build
+        with:
+          configuration: Debug
+          artifact_tag: Debug
 
       - uses: actions/upload-artifact@v3
         with:
           path: Artifacts/
   finish:
+    if: always() # even if the build fails
     runs-on: ubuntu-latest
     needs: build
     steps:
       - uses: geekyeggo/delete-artifact@v2
         with:
           name: semantic-release-remote
+          failOnError: false

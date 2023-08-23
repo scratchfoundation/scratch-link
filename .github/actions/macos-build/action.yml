@@ -1,3 +1,9 @@
+#Xamarin.Mac -> 6.12
+#iOS 16.2 -> 16.4
+#macOS (Cocoa) 9.1 -> 9.3
+#.NET -> 6.0
+#.NET -> 7.0
+#Visual Studio 17.5 -> 17.6
 name: Build for macOS
 description: Core build steps for macOS
 inputs:
@@ -9,23 +15,65 @@ inputs:
     description: A string to tag the build artifact, like "Debug" or "MAS"
     required: false
     default: ""
-  ac_username:
+  AC_USERNAME:
     description: App Store Connect user name
-    required: true
+    required: false
     default: ""
-  ac_password:
+  AC_PASSWORD:
     description: App Store Connect password
-    required: true
-    default: "secret"
+    required: false
+    default: "not set"
+  MATCH_GIT_URL:
+    description: Git repository URL for Fastlane Match
+    required: false
+    default: ""
+  MATCH_PASSWORD:
+    description: Password for Fastlane Match storage
+    required: false
+    default: "not set"
+  MATCH_STORAGE_MODE:
+    description: Storage mode for Fastlane Match
+    required: false
+    default: "git"
 runs:
   using: composite
   steps:
-    - name: Build Safari helper
-      env:
-        AC_USERNAME: ${{ inputs.ac_username }}
-        AC_PASSWORD: ${{ inputs.ac_password }}
+    # Note that runs.env doesn't work in composite actions
+    - name: Setup environment variables
+      shell: bash
+      run: |
+        cat >> $GITHUB_ENV <<EOF
+        AC_USERNAME=${{ inputs.AC_USERNAME }}
+        AC_PASSWORD=${{ inputs.AC_PASSWORD }}
+        MATCH_GIT_URL=${{ inputs.MATCH_GIT_URL }}
+        MATCH_PASSWORD=${{ inputs.MATCH_PASSWORD }}
+        MATCH_STORAGE_MODE=${{ inputs.MATCH_STORAGE_MODE }}
+        EOF
+    - name: Set Xcode version
+      shell: bash
+      run: |
+        XCODE_ROOT=/Applications/Xcode_14.2.app
+        echo "MD_APPLE_SDK_ROOT=$XCODE_ROOT" >> $GITHUB_ENV
+        sudo xcode-select -s $XCODE_ROOT
+    - name: Build Safari helper # do this early to fail faster
       shell: bash
       run: xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
+    - name: Setup Xamarin
+      shell: bash
+      run: |
+        #cat "$VM_ASSETS/select-xamarin-sdk-v2.sh"
+        $VM_ASSETS/select-xamarin-sdk-v2.sh --mono=6.12 --mac=9.1 --ios=16.2
+    - name: Setup dotnet
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+    - uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        # Look to see if there is a cache hit for the corresponding requirements file
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget
     - name: "Build for Mac: ${{ inputs.configuration }}"
       env:
         CONFIG: Debug
