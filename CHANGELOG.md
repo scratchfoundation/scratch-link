@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file. See
 [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [2.1.0-develop.10](https:/home/circleci/project/semantic-release-remote/compare/v2.1.0-develop.9...v2.1.0-develop.10) (2023-09-25)
+
+
+### Bug Fixes
+
+* **deps:** update dependency scratch-vm to v1.6.10 ([911bbba](https:/home/circleci/project/semantic-release-remote/commit/911bbbab8a4ff484a450e688b5953a3fd3a4e7d3))
+* **deps:** update dependency scratch-vm to v1.6.11 ([5544897](https:/home/circleci/project/semantic-release-remote/commit/5544897487c66def49af50c1a07e65c75af86335))
+* **deps:** update dependency scratch-vm to v1.6.12 ([5948b02](https:/home/circleci/project/semantic-release-remote/commit/5948b02473773f33f581a9731a28f86a26612881))
+* **deps:** update dependency scratch-vm to v1.6.13 ([31bc061](https:/home/circleci/project/semantic-release-remote/commit/31bc061932429a387a607256d6a37355ea6bf6a2))
+* **deps:** update dependency scratch-vm to v1.6.14 ([1323ac0](https:/home/circleci/project/semantic-release-remote/commit/1323ac0d39ea4f68bcd0a39621cae87ce1e42507))
+* **deps:** update dependency scratch-vm to v1.6.15 ([9d9a801](https:/home/circleci/project/semantic-release-remote/commit/9d9a8014727aa23601e42292d3d6f423eb164f53))
+* **deps:** update dependency scratch-vm to v1.6.16 ([b2d429e](https:/home/circleci/project/semantic-release-remote/commit/b2d429e426416ebef6e32183df68fbae8dbb2c3c))
+* **deps:** update dependency scratch-vm to v1.6.17 ([239e35a](https:/home/circleci/project/semantic-release-remote/commit/239e35a28f27ce7686a36831cf8f098954e1a1be))
+* **deps:** update dependency scratch-vm to v1.6.18 ([9bb27fa](https:/home/circleci/project/semantic-release-remote/commit/9bb27fa0c5d5d74cc8d9e1486cb130fff27b7a74))
+* **deps:** update dependency scratch-vm to v1.6.19 ([8a72117](https:/home/circleci/project/semantic-release-remote/commit/8a7211749f93ad2b1b9f563dc19d8a109ab33090))
+
 # [2.1.0-develop.9](https:/home/circleci/project/semantic-release-remote/compare/v2.1.0-develop.8...v2.1.0-develop.9) (2023-09-09)
 
 
