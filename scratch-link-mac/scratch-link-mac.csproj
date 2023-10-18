@@ -219,10 +219,10 @@
       <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
-      <Version>6.0.7</Version>
+      <Version>7.0.3</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Channels">
-      <Version>6.0.0</Version>
+      <Version>7.0.0</Version>
     </PackageReference>
   </ItemGroup>
 </Project>
