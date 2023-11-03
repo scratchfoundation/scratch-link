@@ -6,7 +6,7 @@
       <!-- Let a .csproj include default assets, but installer projects (like .wapproj) only include build assets -->
       <IncludeAssets Condition="'$(MSBuildProjectExtension)' != '.csproj'">build</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756">
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.2428">
       <IncludeAssets>build</IncludeAssets>
     </PackageReference>
   </ItemGroup>
