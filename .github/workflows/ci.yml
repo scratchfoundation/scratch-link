@@ -84,6 +84,7 @@ jobs:
         with:
           configuration: Debug
           artifact_tag: Debug
+          sign: "NO" # TODO
           AC_USERNAME: ${{ secrets.AC_USERNAME }}
           AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
@@ -97,6 +98,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           path: Artifacts/
+
   finish:
     if: always() # even if the build fails
     runs-on: ubuntu-latest

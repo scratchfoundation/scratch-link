@@ -15,6 +15,10 @@ inputs:
     description: A string to tag the build artifact, like "Debug" or "MAS"
     required: false
     default: ""
+  sign:
+    description: Whether to sign the build artifact ("YES" or "NO")
+    required: false
+    default: "NO"
   AC_USERNAME:
     description: App Store Connect user name
     required: false
@@ -45,16 +49,12 @@ runs:
         cat >> $GITHUB_ENV <<EOF
         AC_USERNAME=${{ inputs.AC_USERNAME }}
         AC_PASSWORD=${{ inputs.AC_PASSWORD }}
+        CODE_SIGNING_REQUIRED=${{ inputs.sign }}
+        CODE_SIGNING_ALLOWED=${{ inputs.sign }}
         MATCH_GIT_URL=${{ inputs.MATCH_GIT_URL }}
         MATCH_PASSWORD=${{ inputs.MATCH_PASSWORD }}
         MATCH_STORAGE_MODE=${{ inputs.MATCH_STORAGE_MODE }}
         EOF
-    - name: Set Xcode version
-      shell: bash
-      run: |
-        XCODE_ROOT=/Applications/Xcode_14.2.app
-        echo "MD_APPLE_SDK_ROOT=$XCODE_ROOT" >> $GITHUB_ENV
-        sudo xcode-select -s $XCODE_ROOT
     - name: Build Safari helper # do this early to fail faster
       shell: bash
       run: xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
@@ -62,6 +62,9 @@ runs:
       shell: bash
       run: |
         #cat "$VM_ASSETS/select-xamarin-sdk-v2.sh"
+        #ls /Library/Frameworks/{Mono,Xamarin.Mac,Xamarin.iOS,Xamarin.Android}.framework/Versions/
+        # For Xcode 13.2 / macOS 11: --mono=6.12 --mac=8.8 --ios=15.8
+        # For Xcode 14.2 / macOS 12: --mono=6.12 --mac=9.1 --ios=16.2
         $VM_ASSETS/select-xamarin-sdk-v2.sh --mono=6.12 --mac=9.1 --ios=16.2
     - name: Setup dotnet
       uses: actions/setup-dotnet@v3
@@ -80,14 +83,17 @@ runs:
         ARTIFACT_TAG: Debug
       shell: bash
       run: |
+        set -x # debug trace
         msbuild -m -t:Restore -p:Configuration=${{ inputs.configuration }}_Mac scratch-link.sln
-        "/Applications/Visual Studio.app/Contents/MacOS/vstool" build -t:Build -c:${{ inputs.configuration }}_Mac "${PWD}/scratch-link.sln"
+        '/Applications/Visual Studio.app/Contents/MacOS/vstool' build -t:Build -c:'${{ inputs.configuration }}_Mac' "${PWD}/scratch-link.sln"
         # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
-        for PKGPATH in scratch-link-mac/bin/${{ inputs.configuration }}/"Scratch Link"*.pkg; do
+        for PKGPATH in scratch-link-mac/bin/"${{ inputs.configuration }}"/"Scratch Link"*.pkg; do
           if [ -r "$PKGPATH" ]; then
+            # Get filename without path
             PKGFILE="${PKGPATH##*/}"
             if [ -n "${{ inputs.artifact_tag }}" ]; then
-              PKGFILE="${PKGFILE/Scratch Link/Scratch Link-${{ inputs.artifact_tag }}"
+              # change "Scratch Link-1.2.3" to "Scratch Link-Debug-1.2.3"
+              PKGFILE="${PKGFILE/Scratch Link/Scratch Link-${{ inputs.artifact_tag }}}"
             fi
             mkdir -p Artifacts
           fi
