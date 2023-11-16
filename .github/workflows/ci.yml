@@ -1,13 +1,19 @@
 name: CI build
+
 on:
-  workflow_dispatch:
-  pull_request:
-  push:
-permissions:
-  contents: read
+  push: # Runs whenever a commit is pushed to the repository, including for a PR
+  workflow_call: # Runs when this workflow is called from another workflow
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: true
+
+permissions:
+  contents: write # publish a GitHub release
+  issues: write # comment on released issues
+  pull-requests: write # comment on released pull requests
+
 jobs:
   # Keep in mind:
   # 60 seconds on Ubuntu = 1 minute charged to account
