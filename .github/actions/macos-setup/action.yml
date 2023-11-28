@@ -1,0 +1,54 @@
+#Xamarin.Mac -> 6.12
+#iOS 16.2 -> 16.4
+#macOS (Cocoa) 9.1 -> 9.3
+#.NET -> 6.0
+#.NET -> 7.0
+#Visual Studio 17.5 -> 17.6
+name: Setup for macOS
+description: Setup steps before building on macOS
+inputs:
+  fastlane_deploy_key:
+    description: SSH private key for Fastlane Match
+    required: false
+    default: ""
+  MATCH_GIT_URL:
+    description: Git repository URL for Fastlane Match
+    required: false
+    default: ""
+  MATCH_PASSWORD:
+    description: Password for Fastlane Match storage
+    required: false
+    default: ""
+  MATCH_STORAGE_MODE:
+    description: Storage mode for Fastlane Match
+    required: false
+    default: "git"
+runs:
+  using: composite
+  steps:
+    # Note that runs.env doesn't work in composite actions
+    - name: Setup environment variables
+      shell: bash
+      run: |
+        cat >> $GITHUB_ENV <<EOF
+        MATCH_GIT_URL=${{ inputs.MATCH_GIT_URL }}
+        MATCH_PASSWORD=${{ inputs.MATCH_PASSWORD }}
+        MATCH_STORAGE_MODE=${{ inputs.MATCH_STORAGE_MODE }}
+        EOF
+    - name: Setup keys for Fastlane
+      if: ${{ inputs.fastlane_deploy_key != '' }}
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+          ssh-private-key: ${{ inputs.fastlane_deploy_key }}
+    - name: Fastlane Match
+      if: ${{ inputs.MATCH_PASSWORD != '' }}
+      shell: bash
+      run: fastlane circleci
+    - name: Setup Xamarin
+      shell: bash
+      run: |
+        #cat "$VM_ASSETS/select-xamarin-sdk-v2.sh"
+        #ls /Library/Frameworks/{Mono,Xamarin.Mac,Xamarin.iOS,Xamarin.Android}.framework/Versions/
+        # For Xcode 13.2 / macOS 11: --mono=6.12 --mac=8.8 --ios=15.8
+        # For Xcode 14.2 / macOS 12: --mono=6.12 --mac=9.1 --ios=16.2
+        $VM_ASSETS/select-xamarin-sdk-v2.sh --mono=6.12 --mac=9.1 --ios=16.2

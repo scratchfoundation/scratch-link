@@ -21,6 +21,9 @@ jobs:
   # 60 seconds on macOS = 10 minutes charged to account
   semver:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.semver.outputs.SCRATCH_VERSION }}
+      hash: ${{ steps.semver.outputs.SCRATCH_HASH }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -42,6 +45,13 @@ jobs:
         # That's the whole reason for the weird "local remote" stuff.
         # See also: https://github.com/semantic-release/semantic-release/issues/964
         run: npx --no -- semantic-release
+      - name: Output semantic-release version
+        id: semver
+        run: |
+          cat <<EOF > "$GITHUB_OUTPUT"
+          SCRATCH_VERSION=$(node -p "require('./package.json').version")
+          SCRATCH_HASH=$(git rev-parse --short HEAD)
+          EOF
       - name: Create artifact for semantic-release 'remote'
         run: tar czvf semantic-release-remote.tgz semantic-release-remote
       - uses: actions/upload-artifact@v3
@@ -51,11 +61,16 @@ jobs:
           retention-days: 1 # relevant if a failure prevents the delete step below
   build:
     needs: semver
+    defaults:
+      run:
+        shell: bash # even on Windows, unless otherwise specified
+    env:
+      SCRATCH_SHOULD_SIGN: "NO" # TODO
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest] # [windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+        image: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.image }}
     steps:
       #- name: Setup upterm session
       #  uses: lhotari/action-upterm@v1
@@ -67,36 +82,79 @@ jobs:
           name: semantic-release-remote
           path: .
       - name: Restore semantic-release 'remote'
-        shell: bash
         run: |
           # this `tar` command replaces the usual "checkout" step
           tar xzvf semantic-release-remote.tgz
           rm semantic-release-remote.tgz
       - name: Pull semantic-release changes from local 'remote'
-        shell: bash
         run: |
           git remote add semantic-release semantic-release-remote
           git pull --tags semantic-release ${{ github.ref_name }}
           git fetch semantic-release 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
 
       - if: runner.os == 'macOS'
+        uses: ./.github/actions/macos-setup
+        with:
+          fastlane_deploy_key: ${{ secrets.FASTLANE_DEPLOY_KEY }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      - if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-setup
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+      - uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: ${{ runner.os }}-nuget
+
+      - name: Build for macOS debug
+        if: runner.os == 'macOS' && env.SCRATCH_SHOULD_SIGN != 'YES'
         uses: ./.github/actions/macos-build
         with:
           configuration: Debug
           artifact_tag: Debug
-          sign: "NO" # TODO
+          sign: ${{ env.SCRATCH_SHOULD_SIGN }}
           AC_USERNAME: ${{ secrets.AC_USERNAME }}
           AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      - if: runner.os == 'Windows'
+      - name: Build for macOS direct download
+        if: runner.os == 'macOS' && env.SCRATCH_SHOULD_SIGN == 'YES'
+        uses: ./.github/actions/macos-build
+        with:
+          configuration: Release_DevID
+          artifact_tag: ''
+          sign: ${{ env.SCRATCH_SHOULD_SIGN }}
+          AC_USERNAME: ${{ secrets.AC_USERNAME }}
+          AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+      - name: Build for Mac App Store
+        if: runner.os == 'macOS' && env.SCRATCH_SHOULD_SIGN == 'YES'
+        uses: ./.github/actions/macos-build
+        with:
+          configuration: Release_MAS
+          artifact_tag: MAS
+          sign: ${{ env.SCRATCH_SHOULD_SIGN }}
+          AC_USERNAME: ${{ secrets.AC_USERNAME }}
+          AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+      - name: Build for Windows debug
+        if: runner.os == 'Windows' && env.SCRATCH_SHOULD_SIGN != 'YES'
         uses: ./.github/actions/windows-build
         with:
           configuration: Debug
           artifact_tag: Debug
+      - name: Build for Windows release
+        if: runner.os == 'Windows' && env.SCRATCH_SHOULD_SIGN == 'YES'
+        uses: ./.github/actions/windows-build
+        with:
+          configuration: Release
+          artifact_tag: ''
 
       - uses: actions/upload-artifact@v3
         with:
+          name: "Scratch ${{ needs.semver.outputs.version }} (${{ needs.semver.outputs.hash }})"
           path: Artifacts/
 
   finish:

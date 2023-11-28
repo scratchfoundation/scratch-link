@@ -12,12 +12,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
-    - env:
-        CONFIG: Debug
-        ARTIFACT_TAG: Debug
-      name: "Build for Windows: ${{ inputs.configuration }}"
+    - name: "Build for Windows: ${{ inputs.configuration }}"
       shell: pwsh
       run: |
           # Build the MSIX project instead of the Solution because msbuild gets grumpy about the Mac project.
@@ -25,10 +20,7 @@ runs:
           # The `UapAppxPackageBuildMode=StoreAndSideload` means it'll build both MSIXUpload and MSIXBundle.
           # The StoreUpload mode does that too, but that might be a bug, and semantically "StoreAndSideload" is what we want.
           msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="${{ inputs.configuration }}_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
-    - env:
-        CONFIG: Debug
-        ARTIFACT_TAG: Debug
-      name: "Move Windows artifacts into place: ${{ inputs.configuration }}"
+    - name: "Move Windows artifacts into place: ${{ inputs.configuration }}"
       shell: bash
       run: |
           mkdir -p Artifacts

@@ -19,6 +19,10 @@ inputs:
     description: Whether to sign the build artifact ("YES" or "NO")
     required: false
     default: "NO"
+  fastlane_deploy_key:
+    description: SSH private key for Fastlane Match
+    required: false
+    default: ""
   AC_USERNAME:
     description: App Store Connect user name
     required: false
@@ -43,40 +47,6 @@ runs:
   using: composite
   steps:
     # Note that runs.env doesn't work in composite actions
-    - name: Setup environment variables
-      shell: bash
-      run: |
-        cat >> $GITHUB_ENV <<EOF
-        AC_USERNAME=${{ inputs.AC_USERNAME }}
-        AC_PASSWORD=${{ inputs.AC_PASSWORD }}
-        CODE_SIGNING_REQUIRED=${{ inputs.sign }}
-        CODE_SIGNING_ALLOWED=${{ inputs.sign }}
-        MATCH_GIT_URL=${{ inputs.MATCH_GIT_URL }}
-        MATCH_PASSWORD=${{ inputs.MATCH_PASSWORD }}
-        MATCH_STORAGE_MODE=${{ inputs.MATCH_STORAGE_MODE }}
-        EOF
-    - name: Build Safari helper # do this early to fail faster
-      shell: bash
-      run: xcodebuild -project "Scratch Link Safari Helper/Scratch Link Safari Helper.xcodeproj" -scheme "Scratch Link Safari Helper" clean build
-    - name: Setup Xamarin
-      shell: bash
-      run: |
-        #cat "$VM_ASSETS/select-xamarin-sdk-v2.sh"
-        #ls /Library/Frameworks/{Mono,Xamarin.Mac,Xamarin.iOS,Xamarin.Android}.framework/Versions/
-        # For Xcode 13.2 / macOS 11: --mono=6.12 --mac=8.8 --ios=15.8
-        # For Xcode 14.2 / macOS 12: --mono=6.12 --mac=9.1 --ios=16.2
-        $VM_ASSETS/select-xamarin-sdk-v2.sh --mono=6.12 --mac=9.1 --ios=16.2
-    - name: Setup dotnet
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
-    - uses: actions/cache@v3
-      with:
-        path: ~/.nuget/packages
-        # Look to see if there is a cache hit for the corresponding requirements file
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget
     - name: "Build for Mac: ${{ inputs.configuration }}"
       env:
         CONFIG: Debug
@@ -100,3 +70,4 @@ runs:
           # this is outside the "if" to force an error if the file doesn't exist
           mv -v "$PKGPATH" "Artifacts/${PKGFILE}"
         done
+    # TODO: notarize
