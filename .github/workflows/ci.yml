@@ -66,6 +66,10 @@ jobs:
         shell: bash # even on Windows, unless otherwise specified
     env:
       SCRATCH_SHOULD_SIGN: "NO" # TODO
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_STORAGE_MODE: ${{ secrets.MATCH_STORAGE_MODE }}
+      FASTLANE_ACCESS_KEY: ${{ secrets.FASTLANE_ACCESS_KEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -96,16 +100,6 @@ jobs:
 
       ### macOS setup
 
-      - name: "macOS: Setup environment variables"
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          cat >> $GITHUB_ENV <<EOF
-          MATCH_GIT_URL=${{ secrets.MATCH_GIT_URL }}
-          MATCH_PASSWORD=${{ secrets.MATCH_PASSWORD }}
-          MATCH_STORAGE_MODE=${{ secrets.MATCH_STORAGE_MODE }}
-          FASTLANE_ACCESS_KEY=${{ secrets.FASTLANE_ACCESS_KEY }}
-          EOF
       - name: "macOS: Setup keys for Fastlane"
         if: runner.os == 'macOS' && env.FASTLANE_ACCESS_KEY != ''
         uses: webfactory/ssh-agent@v0.8.0
