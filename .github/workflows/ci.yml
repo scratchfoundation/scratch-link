@@ -72,6 +72,8 @@ jobs:
         image: [windows-latest, macos-latest]
     runs-on: ${{ matrix.image }}
     steps:
+      ### Shared prologue
+
       #- name: Setup upterm session
       #  uses: lhotari/action-upterm@v1
       #  with:
@@ -92,14 +94,44 @@ jobs:
           git pull --tags semantic-release ${{ github.ref_name }}
           git fetch semantic-release 'refs/notes/*:refs/notes/*' # semantic-release tracks channels with notes
 
-      - if: runner.os == 'macOS'
-        uses: ./.github/actions/macos-setup
+      ### macOS setup
+
+      - name: "macOS: Setup environment variables"
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          cat >> $GITHUB_ENV <<EOF
+          MATCH_GIT_URL=${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD=${{ secrets.MATCH_PASSWORD }}
+          MATCH_STORAGE_MODE=${{ secrets.MATCH_STORAGE_MODE }}
+          FASTLANE_DEPLOY_KEY=${{ secrets.FASTLANE_DEPLOY_KEY }}
+          EOF
+      - name: "macOS: Setup keys for Fastlane"
+        if: runner.os == 'macOS' && env.FASTLANE_DEPLOY_KEY != ''
+        uses: webfactory/ssh-agent@v0.8.0
         with:
-          fastlane_deploy_key: ${{ secrets.FASTLANE_DEPLOY_KEY }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      - if: runner.os == 'Windows'
-        uses: ./.github/actions/windows-setup
+            ssh-private-key: ${{ secrets.FASTLANE_DEPLOY_KEY }}
+      - name: "macOS: Fastlane Match"
+        if: runner.os == 'macOS' && env.MATCH_PASSWORD != ''
+        shell: bash
+        run: fastlane circleci
+      - name: "macOS: Setup Xamarin"
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          #cat "$VM_ASSETS/select-xamarin-sdk-v2.sh"
+          #ls /Library/Frameworks/{Mono,Xamarin.Mac,Xamarin.iOS,Xamarin.Android}.framework/Versions/
+          # For Xcode 13.2 / macOS 11: --mono=6.12 --mac=8.8 --ios=15.8
+          # For Xcode 14.2 / macOS 12: --mono=6.12 --mac=9.1 --ios=16.2
+          $VM_ASSETS/select-xamarin-sdk-v2.sh --mono=6.12 --mac=9.1 --ios=16.2
+
+      ### Windows setup
+
+      - name: "Windows: Add msbuild to PATH"
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v1.1
+
+      ### Shared setup
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
@@ -111,6 +143,8 @@ jobs:
           # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: ${{ runner.os }}-nuget
+
+      ### macOS build
 
       - name: Build for macOS debug
         if: runner.os == 'macOS' && env.SCRATCH_SHOULD_SIGN != 'YES'
@@ -139,6 +173,9 @@ jobs:
           sign: ${{ env.SCRATCH_SHOULD_SIGN }}
           AC_USERNAME: ${{ secrets.AC_USERNAME }}
           AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
+
+      ### Windows build
+
       - name: Build for Windows debug
         if: runner.os == 'Windows' && env.SCRATCH_SHOULD_SIGN != 'YES'
         uses: ./.github/actions/windows-build
@@ -151,6 +188,8 @@ jobs:
         with:
           configuration: Release
           artifact_tag: ''
+
+      ### Shared epilogue
 
       - uses: actions/upload-artifact@v3
         with:

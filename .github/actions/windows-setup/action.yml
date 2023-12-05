@@ -1,7 +1,0 @@
-name: Setup for Windows
-description: Setup steps before building on Windows
-runs:
-  using: composite
-  steps:
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
