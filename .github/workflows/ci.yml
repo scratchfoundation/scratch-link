@@ -104,13 +104,13 @@ jobs:
           MATCH_GIT_URL=${{ secrets.MATCH_GIT_URL }}
           MATCH_PASSWORD=${{ secrets.MATCH_PASSWORD }}
           MATCH_STORAGE_MODE=${{ secrets.MATCH_STORAGE_MODE }}
-          FASTLANE_DEPLOY_KEY=${{ secrets.FASTLANE_DEPLOY_KEY }}
+          FASTLANE_ACCESS_KEY=${{ secrets.FASTLANE_ACCESS_KEY }}
           EOF
       - name: "macOS: Setup keys for Fastlane"
-        if: runner.os == 'macOS' && env.FASTLANE_DEPLOY_KEY != ''
+        if: runner.os == 'macOS' && env.FASTLANE_ACCESS_KEY != ''
         uses: webfactory/ssh-agent@v0.8.0
         with:
-            ssh-private-key: ${{ secrets.FASTLANE_DEPLOY_KEY }}
+            ssh-private-key: ${{ secrets.FASTLANE_ACCESS_KEY }}
       - name: "macOS: Fastlane Match"
         if: runner.os == 'macOS' && env.MATCH_PASSWORD != ''
         shell: bash
