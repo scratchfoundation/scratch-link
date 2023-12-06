@@ -66,9 +66,9 @@ jobs:
         shell: bash # even on Windows, unless otherwise specified
     env:
       SCRATCH_SHOULD_SIGN: "NO" # TODO
-      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_STORAGE_MODE: git
+      MATCH_GIT_URL: ${{ secrets.FL_GIT_URL }}
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      MATCH_STORAGE_MODE: ${{ secrets.MATCH_STORAGE_MODE }}
       FASTLANE_ACCESS_KEY: ${{ secrets.FASTLANE_ACCESS_KEY }}
     strategy:
       fail-fast: false
