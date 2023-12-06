@@ -50,12 +50,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "fastlane", "fastlane", "{B8
 		fastlane\README.md = fastlane\README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".circleci", ".circleci", "{172A147D-A614-4442-B600-BAC18EF8F1DF}"
-	ProjectSection(SolutionItems) = preProject
-		.circleci\config-disabled.yml = .circleci\config-disabled.yml
-		.circleci\install-or-extract-vs-mac.sh = .circleci\install-or-extract-vs-mac.sh
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "scratch-link-win", "scratch-link-win\scratch-link-win.csproj", "{B21C2FCE-7670-402A-B8EE-958F3896F237}"
 EndProject
 Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "scratch-link-win-msix", "scratch-link-win-msix\scratch-link-win-msix.wapproj", "{265CA433-8639-4E8D-A7F3-09B1B3495D92}"
@@ -216,7 +210,6 @@ Global
 		{76FB6BC3-4F2E-46D1-97C2-60345B053C9C} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
 		{52974047-90CA-4584-811B-242220DB05AB} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
 		{B8CCE705-64FD-4DA3-AF6D-BDC1028DD044} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
-		{172A147D-A614-4442-B600-BAC18EF8F1DF} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
 		{05F0C24B-4EA1-4B11-9F86-DB3F1EDEE785} = {E37C17DD-8722-46CA-AB2F-B2A42845B3B1}
 		{D5766652-E655-4726-8289-C45C43A14639} = {05F0C24B-4EA1-4B11-9F86-DB3F1EDEE785}
 		{4B4A2E1C-2249-4246-A149-F6CB8BF73666} = {05F0C24B-4EA1-4B11-9F86-DB3F1EDEE785}
