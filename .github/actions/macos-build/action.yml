@@ -51,6 +51,8 @@ runs:
       env:
         CONFIG: Debug
         ARTIFACT_TAG: Debug
+        CODE_SIGNING_ALLOWED: ${{ inputs.sign }}
+        CODE_SIGNING_REQUIRED: ${{ inputs.sign }}
       shell: bash
       run: |
         set -x # debug trace
