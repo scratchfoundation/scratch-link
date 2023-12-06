@@ -19,10 +19,6 @@ inputs:
     description: Whether to sign the build artifact ("YES" or "NO")
     required: false
     default: "NO"
-  fastlane_deploy_key:
-    description: SSH private key for Fastlane Match
-    required: false
-    default: ""
   AC_USERNAME:
     description: App Store Connect user name
     required: false
@@ -31,28 +27,17 @@ inputs:
     description: App Store Connect password
     required: false
     default: "not set"
-  MATCH_GIT_URL:
-    description: Git repository URL for Fastlane Match
-    required: false
-    default: ""
-  MATCH_PASSWORD:
-    description: Password for Fastlane Match storage
-    required: false
-    default: "not set"
-  MATCH_STORAGE_MODE:
-    description: Storage mode for Fastlane Match
-    required: false
-    default: "git"
 runs:
   using: composite
   steps:
     # Note that runs.env doesn't work in composite actions
     - name: "Build for Mac: ${{ inputs.configuration }}"
       env:
-        CONFIG: Debug
-        ARTIFACT_TAG: Debug
+        AC_USERNAME: ${{ inputs.AC_USERNAME }}
+        AC_PASSWORD: ${{ inputs.AC_PASSWORD }}
         CODE_SIGNING_ALLOWED: ${{ inputs.sign }}
         CODE_SIGNING_REQUIRED: ${{ inputs.sign }}
+        ARTIFACT_TAG: ${{ inputs.configuration == 'Release_DevID' && 'notarizeMe' || inputs.artifact_tag }}
       shell: bash
       run: |
         set -x # debug trace
@@ -72,4 +57,12 @@ runs:
           # this is outside the "if" to force an error if the file doesn't exist
           mv -v "$PKGPATH" "Artifacts/${PKGFILE}"
         done
-    # TODO: notarize
+    - name: "Notarize build artifact"
+      if: env.ARTIFACT_TAG == 'notarizeMe'
+      shell: bash
+      run: |
+        for PKGPATH in Artifacts/"Scratch Link-notarizeMe"*.pkg; do
+          PKGFILE="${PKGPATH##*/}"
+          scratch-link-mac/notarize.sh edu.mit.scratch.scratch-link "${PKGPATH}" "${PKGPATH}" /tmp || rm -f "${PKGPATH}"
+          mv -v "${PKGPATH}" "Artifacts/${PKGFILE/Scratch Link-notarizeMe/Scratch Link}"
+        done
