@@ -1,0 +1,68 @@
+#Xamarin.Mac -> 6.12
+#iOS 16.2 -> 16.4
+#macOS (Cocoa) 9.1 -> 9.3
+#.NET -> 6.0
+#.NET -> 7.0
+#Visual Studio 17.5 -> 17.6
+name: Build for macOS
+description: Core build steps for macOS
+inputs:
+  configuration:
+    description: The configuration to build, like "Debug"
+    required: true
+    default: Debug
+  artifact_tag:
+    description: A string to tag the build artifact, like "Debug" or "MAS"
+    required: false
+    default: ""
+  sign:
+    description: Whether to sign the build artifact ("YES" or "NO")
+    required: false
+    default: "NO"
+  AC_USERNAME:
+    description: App Store Connect user name
+    required: false
+    default: ""
+  AC_PASSWORD:
+    description: App Store Connect password
+    required: false
+    default: "not set"
+runs:
+  using: composite
+  steps:
+    # Note that runs.env doesn't work in composite actions
+    - name: "Build for Mac: ${{ inputs.configuration }}"
+      env:
+        AC_USERNAME: ${{ inputs.AC_USERNAME }}
+        AC_PASSWORD: ${{ inputs.AC_PASSWORD }}
+        CODE_SIGNING_ALLOWED: ${{ inputs.sign }}
+        CODE_SIGNING_REQUIRED: ${{ inputs.sign }}
+        ARTIFACT_TAG: ${{ inputs.configuration == 'Release_DevID' && 'notarizeMe' || inputs.artifact_tag }}
+      shell: bash
+      run: |
+        set -x # debug trace
+        msbuild -m -t:Restore -p:Configuration=${{ inputs.configuration }}_Mac scratch-link.sln
+        '/Applications/Visual Studio.app/Contents/MacOS/vstool' build -t:Build -c:'${{ inputs.configuration }}_Mac' "${PWD}/scratch-link.sln"
+        # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
+        for PKGPATH in scratch-link-mac/bin/"${{ inputs.configuration }}"/"Scratch Link"*.pkg; do
+          if [ -r "$PKGPATH" ]; then
+            # Get filename without path
+            PKGFILE="${PKGPATH##*/}"
+            if [ -n "${{ inputs.artifact_tag }}" ]; then
+              # change "Scratch Link-1.2.3" to "Scratch Link-Debug-1.2.3"
+              PKGFILE="${PKGFILE/Scratch Link/Scratch Link-${{ inputs.artifact_tag }}}"
+            fi
+            mkdir -p Artifacts
+          fi
+          # this is outside the "if" to force an error if the file doesn't exist
+          mv -v "$PKGPATH" "Artifacts/${PKGFILE}"
+        done
+    - name: "Notarize build artifact"
+      if: env.ARTIFACT_TAG == 'notarizeMe'
+      shell: bash
+      run: |
+        for PKGPATH in Artifacts/"Scratch Link-notarizeMe"*.pkg; do
+          PKGFILE="${PKGPATH##*/}"
+          scratch-link-mac/notarize.sh edu.mit.scratch.scratch-link "${PKGPATH}" "${PKGPATH}" /tmp || rm -f "${PKGPATH}"
+          mv -v "${PKGPATH}" "Artifacts/${PKGFILE/Scratch Link-notarizeMe/Scratch Link}"
+        done

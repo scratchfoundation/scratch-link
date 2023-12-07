@@ -572,6 +572,7 @@
 		};
 		696FF135289DAECB000D3C3F /* Release_MAS */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DD289DA67700A46D3F /* Release_MAS.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -601,6 +602,7 @@
 		};
 		696FF136289DAECB000D3C3F /* Release_MAS */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DD289DA67700A46D3F /* Release_MAS.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -614,6 +616,7 @@
 		};
 		696FF137289DAECB000D3C3F /* Release_MAS */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DD289DA67700A46D3F /* Release_MAS.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -626,6 +629,7 @@
 		};
 		696FF138289DAECB000D3C3F /* Release_MAS */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DD289DA67700A46D3F /* Release_MAS.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -703,6 +707,7 @@
 		};
 		696FF13A289DAED8000D3C3F /* Release_DevID */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DC289DA65C00A46D3F /* Release_DevID.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -732,6 +737,7 @@
 		};
 		696FF13B289DAED8000D3C3F /* Release_DevID */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DC289DA65C00A46D3F /* Release_DevID.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -745,6 +751,7 @@
 		};
 		696FF13C289DAED8000D3C3F /* Release_DevID */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DC289DA65C00A46D3F /* Release_DevID.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -757,6 +764,7 @@
 		};
 		696FF13D289DAED8000D3C3F /* Release_DevID */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DC289DA65C00A46D3F /* Release_DevID.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -887,6 +895,7 @@
 		};
 		69E9620127E28B88008CF7C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401D9289DA5E600A46D3F /* Debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -911,6 +920,7 @@
 		};
 		69E9620227E28B88008CF7C0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DB289DA64100A46D3F /* Release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "Scratch Link Safari Extension/Scratch_Link_Safari_Extension.entitlements";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -935,6 +945,7 @@
 		};
 		69E9620527E28B88008CF7C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401D9289DA5E600A46D3F /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -964,6 +975,7 @@
 		};
 		69E9620627E28B88008CF7C0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DB289DA64100A46D3F /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -993,6 +1005,7 @@
 		};
 		69E9620827E28B88008CF7C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401D9289DA5E600A46D3F /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1006,6 +1019,7 @@
 		};
 		69E9620927E28B88008CF7C0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DB289DA64100A46D3F /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -1019,6 +1033,7 @@
 		};
 		69E9620B27E28B88008CF7C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401D9289DA5E600A46D3F /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1031,6 +1046,7 @@
 		};
 		69E9620C27E28B88008CF7C0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 699401DB289DA64100A46D3F /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1053,7 +1069,7 @@
 				696FF134289DAECB000D3C3F /* Release_MAS */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		69E9620027E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari Extension" */ = {
 			isa = XCConfigurationList;
@@ -1064,7 +1080,7 @@
 				696FF138289DAECB000D3C3F /* Release_MAS */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		69E9620427E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari Helper" */ = {
 			isa = XCConfigurationList;
@@ -1075,7 +1091,7 @@
 				696FF135289DAECB000D3C3F /* Release_MAS */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		69E9620727E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari HelperTests" */ = {
 			isa = XCConfigurationList;
@@ -1086,7 +1102,7 @@
 				696FF136289DAECB000D3C3F /* Release_MAS */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		69E9620A27E28B88008CF7C0 /* Build configuration list for PBXNativeTarget "Scratch Link Safari HelperUITests" */ = {
 			isa = XCConfigurationList;
@@ -1097,7 +1113,7 @@
 				696FF137289DAECB000D3C3F /* Release_MAS */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
