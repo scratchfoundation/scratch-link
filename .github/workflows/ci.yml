@@ -128,7 +128,7 @@ jobs:
       ### Shared setup
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '6.0.x'
       - uses: actions/cache@v3
