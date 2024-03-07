@@ -21,7 +21,7 @@
     "@semantic-release/npm": "10.0.3",
     "@semantic-release/release-notes-generator": "10.0.3",
     "husky": "8.0.3",
-    "scratch-vm": "3.0.14",
+    "scratch-vm": "3.0.15",
     "semantic-release": "21.0.1"
   }
 }
