@@ -222,7 +222,7 @@
       <Version>6.0.7</Version>
     </PackageReference>
     <PackageReference Include="System.Threading.Channels">
-      <Version>6.0.0</Version>
+      <Version>9.0.2</Version>
     </PackageReference>
   </ItemGroup>
 </Project>
