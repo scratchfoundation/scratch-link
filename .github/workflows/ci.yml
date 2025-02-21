@@ -54,7 +54,7 @@ jobs:
           EOF
       - name: Create artifact for semantic-release 'remote'
         run: tar czvf semantic-release-remote.tgz semantic-release-remote
-      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: semantic-release-remote
           path: semantic-release-remote.tgz
@@ -185,7 +185,7 @@ jobs:
 
       ### Shared epilogue
 
-      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: "Scratch ${{ needs.semver.outputs.version }} (${{ needs.semver.outputs.hash }})"
           path: Artifacts/
