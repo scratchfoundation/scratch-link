@@ -1,7 +1,9 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "github>LLK/scratch-renovate-config:conservative"
+    $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+    extends: [
+        'github>LLK/scratch-renovate-config:conservative',
     ],
-    "baseBranches": ["develop"]
+    baseBranchPatterns: [
+        'develop',
+    ],
 }
