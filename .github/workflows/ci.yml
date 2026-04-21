@@ -123,7 +123,7 @@ jobs:
 
       - name: "Windows: Add msbuild to PATH"
         if: runner.os == 'Windows'
-        uses: microsoft/setup-msbuild@34cfbaee7f672c76950673338facd8a73f637506 # v1.1
+        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3.0.0
 
       ### Shared setup
 
