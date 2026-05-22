@@ -57,7 +57,7 @@ Windows App Runtime 1.2가 필요하며 가능한 경우 자동 설치됩니다.
 
 ### 브랜드 자산
 
-앱/트레이/MSIX에 쓰이는 모든 아이콘은 [brand/alux-l.svg](brand/alux-l.svg) 하나에서 파생됩니다.
+앱/트레이/MSIX에 쓰이는 모든 아이콘은 [brand/labs-l.svg](brand/labs-l.svg) 하나에서 파생됩니다.
 SVG가 갱신되면 다음 명령으로 ICO/PNG를 재생성하세요:
 
 ```

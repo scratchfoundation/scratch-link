@@ -1,7 +1,7 @@
 """Rebuild Windows .ico + MSIX .png assets from the Alux brand SVG.
 
 Source of truth:
-    brand/alux-l.svg
+    brand/labs-l.svg
 
 Outputs (overwrites in place; all paths relative to repo root):
     scratch-link-win/scratch-link.ico        app icon, 16..256 sizes
@@ -13,13 +13,13 @@ How to run (from repo root):
     python brand/build_icons.py
 
 When to re-run:
-    Whenever brand/alux-l.svg changes, or when a new MSIX asset slot needs
+    Whenever brand/labs-l.svg changes, or when a new MSIX asset slot needs
     to be filled. Generated files are committed alongside the source so
     that builds work without running this script.
 
 How it works:
-    alux-l.svg is a thin SVG wrapper around a single base64-encoded PNG
-    (634x706, non-square). We extract that PNG once, then for each target
+    labs-l.svg is a thin SVG wrapper around a single base64-encoded PNG
+    (non-square). We extract that PNG once, then for each target
     slot fit it preserving aspect ratio onto a transparent canvas of the
     required size. No external SVG renderer (cairosvg, rsvg, etc.) is
     needed - Pillow is the only dependency.
@@ -41,7 +41,7 @@ from pathlib import Path
 from PIL import Image
 
 REPO = Path(__file__).resolve().parent.parent
-SVG = REPO / "brand" / "alux-l.svg"
+SVG = REPO / "brand" / "labs-l.svg"
 
 WIN = REPO / "scratch-link-win"
 MSIX = REPO / "scratch-link-win-msix" / "Images"
