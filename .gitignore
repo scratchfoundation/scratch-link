@@ -24,3 +24,8 @@ Package.StoreAssociation.xml
 **/fastlane/report.xml
 **/fastlane/screenshots
 **/fastlane/test_output
+
+# Visual Studio project upgrade artifacts
+UpgradeLog*.htm
+_UpgradeReport_Files/
+Backup*/
