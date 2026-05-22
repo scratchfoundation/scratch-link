@@ -45,5 +45,10 @@
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
     <DeviceCapability Name="bluetooth"/>
+    <DeviceCapability Name="serialcommunication">
+      <Device Id="vidpid:1A86 7523">
+        <Function Type="name:serialPort" />
+      </Device>
+    </DeviceCapability>
   </Capabilities>
 </Package>
