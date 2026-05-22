@@ -24,7 +24,14 @@ This file sets up version properties in our own Scratch way.
 		<Message Text="GitInfo: GitIsDirty = $(GitIsDirty)" />
 		-->
 		<PropertyGroup>
-			<ScratchVersionTriplet>$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</ScratchVersionTriplet>
+			<!--
+			Alux fork: when there's no semver git tag, GitInfo defaults to 0.0.0 and we'd ship
+			as "0.0.x" — bump the floor to 1.0.0 so we ship as "Alux Scratch Link 1.0.0.x".
+			To cut a real release later, tag the commit (e.g. `git tag v1.1.0`) and this guard
+			will yield automatically.
+			-->
+			<ScratchVersionTriplet Condition="'$(GitSemVerMajor)' == '0' AND '$(GitSemVerMinor)' == '0'">1.0.0</ScratchVersionTriplet>
+			<ScratchVersionTriplet Condition="'$(ScratchVersionTriplet)' == ''">$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</ScratchVersionTriplet>
 			<ScratchVersionFull>$(ScratchVersionTriplet)$(GitSemVerDashLabel)</ScratchVersionFull>
 			<ScratchVersionHash>$(GitCommit)</ScratchVersionHash>
 			<ScratchVersionDetail>$(ScratchVersionFull)+$(ScratchVersionHash)</ScratchVersionDetail>
