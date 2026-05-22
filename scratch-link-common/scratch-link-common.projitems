@@ -13,6 +13,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)BLE\BLESession.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BLE\GattHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)BT\BTSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Serial\SerialSession.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Serial\SerialDiscoveryFilter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Serial\SerialOpenParams.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\ContainerExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Extensions\JsonExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\JsonRpc2Request.cs" />

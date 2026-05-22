@@ -5,8 +5,8 @@
     <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>ScratchLink.Win</RootNamespace>
-    <AssemblyName>Scratch Link</AssemblyName>
-    <Company>Scratch Foundation</Company>
+    <AssemblyName>Alux Scratch Link</AssemblyName>
+    <Company>Alux (based on Scratch Foundation)</Company>
     <Authors>$(Company)</Authors>
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
@@ -41,5 +41,7 @@
 
   <ItemGroup>
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.0.108" />
+    <PackageReference Include="System.IO.Ports" Version="6.0.0" />
+    <PackageReference Include="System.Management" Version="6.0.2" />
   </ItemGroup>
 </Project>

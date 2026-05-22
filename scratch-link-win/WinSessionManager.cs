@@ -7,6 +7,7 @@ namespace ScratchLink.Win;
 using Fleck;
 using ScratchLink.Win.BLE;
 using ScratchLink.Win.BT;
+using ScratchLink.Win.Serial;
 
 /// <summary>
 /// Implements the Windows-specific functionality of the SessionManager.
@@ -21,6 +22,7 @@ internal class WinSessionManager : SessionManager
         {
             "/scratch/ble" => new WinBLESession(webSocket),
             "/scratch/bt" => new WinBTSession(webSocket),
+            "/scratch/serial" => new WinSerialSession(webSocket),
 
             // for unrecognized paths, return a base Session for debugging
             _ => new Session(webSocket),

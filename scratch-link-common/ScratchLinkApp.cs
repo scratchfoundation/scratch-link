@@ -14,7 +14,7 @@ using ScratchLink.BLE;
 /// </summary>
 public class ScratchLinkApp
 {
-    private const int WebSocketPort = 20111;
+    private const int WebSocketPort = 20211;
 
     private readonly SessionManager sessionManager;
     private readonly WebSocketListener webSocketListener;

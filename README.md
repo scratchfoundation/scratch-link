@@ -1,102 +1,100 @@
-# Scratch Link 2.0
+# Alux Scratch Link
 
-Scratch Link is a helper application which allows Scratch 3.0 to communicate with hardware peripherals. Scratch Link
-replaces the Scratch Device Manager and Scratch Device Plug-in.
+Alux Scratch Link는 Scratch 3.0과 PC에 연결된 하드웨어 주변기기를 중계하는 도우미 앱입니다.
+[scratchfoundation/scratch-link](https://github.com/scratchfoundation/scratch-link)의 **Windows 전용 포크**이며,
+원본의 AGPL-3.0-only 라이선스를 그대로 따릅니다.
 
-System Requirements:
+원본 Scratch Link와의 차이:
 
-| | Minimum
-| --- | ---
-| macOS | 10.15 "Catalina"
-| Windows | Windows 10 build 17763
+- **Windows 전용** — macOS 빌드와 Safari 확장은 빼고 Windows 패키징에 집중합니다.
+- **Serial 전송 추가** — 기존 BLE / Bluetooth Classic에 더해 USB 시리얼(CDC/CH340 등) 장치를
+  `/scratch/serial` JSON-RPC 엔드포인트로 지원합니다. 구현은 `scratch-link-common/Serial/`과
+  `scratch-link-win/Serial/`을 참고하세요.
+- **포트 20211 사용** — 원본 Scratch Link(20110/20111)와 한 PC에서 공존할 수 있도록 별도 포트를 씁니다.
 
-The Windows version requires the Windows App Runtime version 1.2, and will install it automatically if possible.
+## 시스템 요구사항
 
-Manual installation is available here (choose your platform):
+| | 최소 사양 |
+| --- | --- |
+| Windows | Windows 10 build 17763 |
+
+Windows App Runtime 1.2가 필요하며 가능한 경우 자동 설치됩니다. 수동 설치가 필요하면 아키텍처에 맞게 받으세요:
 
 * https://aka.ms/windowsappsdk/1.2/latest/windowsappruntimeinstall-x64.exe
 * https://aka.ms/windowsappsdk/1.2/latest/windowsappruntimeinstall-x86.exe
 * https://aka.ms/windowsappsdk/1.2/latest/windowsappruntimeinstall-ARM64.exe
 
-## Using Scratch Link with Scratch 3.0
+## Scratch 3.0과 함께 쓰기
 
-To use Scratch Link with Scratch 3.0:
+1. Alux Scratch Link 설치 후 실행
+2. [Scratch 3.0](https://scratch.mit.edu) 열기
+3. 블록 카테고리 아래쪽의 "확장 기능 추가" 버튼(블록 모양 + 아이콘) 선택
+4. micro:bit, LEGO EV3 같은 지원 확장 선택
+5. 안내에 따라 주변기기 연결
+6. 새 블록으로 프로젝트 작성. Alux Scratch Link가 Scratch와 하드웨어 사이의 통신을 중계합니다.
 
-1. Install and run Scratch Link
-2. Open [Scratch 3.0](https://scratch.mit.edu)
-3. Select the "Add Extension" button (looks like Scratch blocks with a `+` at the bottom of the block categories list)
-4. Select a compatible extension such as the micro:bit or LEGO EV3 extension.
-5. Follow the prompts to connect your peripheral.
-6. Build a project with the new extension blocks. Scratch Link will help Scratch communicate with your peripheral.
+## 개발
 
-## Development: Getting started
+### 문서
 
-### Documentation
+전반적인 네트워크 프로토콜과 지원 하드웨어 프로토콜은 `Documentation/` 아래에 마크다운으로 정리되어 있습니다
+(Architecture, Bluetooth, BluetoothLE, NetworkProtocol, TestPlans). 프로토콜 호환성/안정성은
+중요한 우선순위이므로, 프로토콜을 바꾸는 PR은 충분한 정당화와 문서 갱신이 동반되어야 합니다.
 
-The general network protocol and all supported hardware protocols are documented in Markdown files in the
-`Documentation` subdirectory. Please note that network protocol stability and compatibility are high priorities for
-this project. Changes to the protocol are unlikely to be accepted without very strong justification combined with
-thorough documentation.
+문서 PR을 보내기 전 [markdownlint](https://www.npmjs.com/package/markdownlint)로 점검해주세요.
 
-Please use [markdownlint](https://www.npmjs.com/package/markdownlint) to check documentation changes before submitting
-a pull request.
+### 버전 번호
 
-### Version numbers
+이 포크는 [SharedProps/ScratchVersion.targets](SharedProps/ScratchVersion.targets)에서 base 버전을
+`1.0.0`으로 고정해두고, 빌드 번호는 git commit 수에서 가져옵니다. 결과 4-part 버전은
+`1.0.0.<commits>` 형태로 EXE 파일 속성과 트레이 메뉴에 노출됩니다.
 
-Scratch Link 2.0 uses [semantic-release](https://semantic-release.gitbook.io/semantic-release/) to control its version
-number. The `develop` branch is treated as a pre-release branch, and `main` is treated as a release branch. Each time
-a change is merged to either of those branches, `semantic-release` will calculate a new version number.
+정식 릴리즈를 끊을 때는 `git tag v1.1.0`처럼 semver 태그를 찍으세요. GitInfo가 태그를 감지하면
+위의 1.0.0 고정 로직이 자동으로 비켜나 태그값을 따라갑니다.
 
-Apple requires that `CFBundleShortVersionString` is unique for published releases. The App Store will also reject an
-upload unless the `CFBundleVersion` tuple is greater than that of previously uploaded builds. To make this easy, we
-set `CFBundleShortVersionString` to the version calculated by `semantic-release`, and `CFBundleVersion` is calculated
-from the date and time of the build commit.
+확장 버전 정보(`git describe`와 유사한 상세 문자열)는 트레이 메뉴의 버전 항목을 클릭해
+클립보드로 복사할 수 있습니다.
 
-Extended version information is available within the application. This extended information is similar to `git
-describe`.
+### 브랜드 자산
 
-### Secure WebSockets
+앱/트레이/MSIX에 쓰이는 모든 아이콘은 [brand/labs-l.svg](brand/labs-l.svg) 하나에서 파생됩니다.
+SVG가 갱신되면 다음 명령으로 ICO/PNG를 재생성하세요:
 
-Some previous versions of Scratch Link used Secure WebSockets (`wss://`) to communicate with Scratch. This is no
-longer the case: new versions of Scratch Link use regular WebSockets (`ws://`). It is no longer necessary to prepare
-an SSL certificate for Scratch Link.
+```
+pip install Pillow            # 최초 1회
+python brand/build_icons.py
+```
 
-This change caused an incompatibility with some browsers, including Safari. The macOS version of Scratch Link 2.0
-includes a Safari extension to resolve this incompatibility.
+생성물은 모두 커밋되어 있어 일반 빌드 시에는 이 스크립트를 돌릴 필요가 없습니다.
 
-### Windows platforms and installer size
+### Windows 패키징과 설치 파일 크기
 
-The `PublishReadyToRun` (R2R) setting enables ahead-of-time (AOT) compilation, as opposed to just-in-time (JIT)
-compilation. This can improve performance, especially at startup. The drawback is [R2R binaries are larger because
-they contain both intermediate language (IL) code, which is still needed for some scenarios, and the native version
-of the same code.](https://learn.microsoft.com/en-us/dotnet/core/deploying/ready-to-run)
+`PublishReadyToRun`(R2R) 설정은 ahead-of-time(AOT) 컴파일을 활성화합니다(반대는 JIT). 시작 시간 등
+성능에는 유리하지만, [R2R 바이너리는 IL 코드와 네이티브 코드를 모두 포함하기 때문에
+크기가 더 커집니다](https://learn.microsoft.com/en-us/dotnet/core/deploying/ready-to-run).
 
-Recent versions of .NET (5.0 and above) can build a "Framework-Dependent Application" or a "Self-Contained
-Application" depending on settings.
+.NET 5.0 이상에서는 설정에 따라 "Framework-Dependent Application" 또는 "Self-Contained Application"으로
+빌드할 수 있습니다.
 
-* A self-contained application includes the .NET runtime framework. This includes a platform-specific (x86, x64, or
-  ARM64) version of `dotnet.exe` to host the application.
-  * Cannot be built for "AnyCPU" because it must include the native portion of the runtime.
-  * The app can be "trimmed" to include only the portions of the framework needed by the application, but it'll
-    still be larger than a framework-dependent application.
-* A framework-dependent application does not include the framework at all; it must be installed separately.
-  * The generated MSIX will trigger automatic framework installation if necessary (requires Internet connection).
-  * Can be built for "AnyCPU" since it doesn't include the native portion (or any other portion) of the runtime.
-  * Can be built for a specific CPU if desired.
-  * Debugging this requires setting `<WindowsPackageType>None</WindowsPackageType>` in the project file.
+* **Self-contained** — .NET 런타임을 함께 번들합니다. 플랫폼별(x86/x64/ARM64) `dotnet.exe`가
+  포함되어야 해서 빌드 결과가 커집니다.
+  * 네이티브 런타임 일부를 포함하므로 "AnyCPU"로는 빌드할 수 없습니다.
+  * 앱이 쓰는 부분만 남기는 "trimming"이 가능하지만, 그래도 framework-dependent보다는 큽니다.
+* **Framework-dependent** — 런타임을 포함하지 않으며 별도 설치가 필요합니다.
+  * 생성된 MSIX는 필요 시 자동 설치를 트리거합니다(인터넷 연결 필요).
+  * 네이티브 부분이 없으므로 "AnyCPU"로 빌드할 수 있습니다.
+  * 원하면 특정 CPU로도 빌드 가능합니다.
+  * 디버깅 시에는 프로젝트 파일에서 `<WindowsPackageType>None</WindowsPackageType>` 설정이 필요합니다.
 
-When packaging an application:
+패키징 시:
 
-* An MSIX file (`*.msix`) can contain exactly one platform (x86, x64, ARM64).
-* An MSIX Bundle (`*.msixbundle`) can contain more than one MSIX -- one for each platform, for example.
+* MSIX 파일(`*.msix`)은 한 번에 하나의 플랫폼(x86, x64, ARM64)만 담을 수 있습니다.
+* MSIX 번들(`*.msixbundle`)은 여러 MSIX를 묶을 수 있어 플랫폼별 MSIX를 한 번에 배포하기 좋습니다.
 
-Ideally, it would be possible to package a single "AnyCPU" build of the app with stub MSIX files to install each
-platform-specific copy of the framework, resulting in a Bundle that's only a little larger than a single copy of the
-app. More investigation needed.
+이상적으로는 단일 "AnyCPU" 빌드를 stub MSIX와 함께 묶어 플랫폼별 런타임을 설치하게 하면
+번들 크기를 최소화할 수 있습니다. 다만 이 구성은 추가 조사가 필요합니다.
 
-However, it is possible to build a platform-specific MSIX containing an AnyCPU build of the app. That's much smaller
-than a platform-specific build of the app, so even with 3 full copies of the AnyCPU app -- one each packaged for x86,
-x64, and ARM64 -- the resulting bundle is significantly smaller.
+대안으로, 플랫폼별 MSIX 안에 AnyCPU 빌드를 담을 수 있습니다. 이 경우 x86/x64/ARM64 세 카피를 묶어도
+플랫폼별 self-contained 번들보다 훨씬 작습니다.
 
-Disabling R2R and bundling AnyCPU builds of the app generated a bundle roughly 12% of the size of a bundle of
-self-contained apps for the same set of platforms.
+R2R을 끄고 AnyCPU 빌드를 묶은 결과는, 같은 플랫폼 세트의 self-contained 번들 대비 약 12% 크기였습니다.
