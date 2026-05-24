@@ -3,6 +3,24 @@
 This file sets up version properties in our own Scratch way.
 -->
 <Project>
+	<!--
+	Fallback GitVersion target for build environments where the GitInfo NuGet package targets
+	are not imported (e.g. VS 2026 MSBuild resolves NuGetPackageRoot differently than the CLI).
+	GitInfo's own GitVersion target is imported later via nuget.g.targets and will override this
+	definition when available ("last definition wins" in MSBuild).
+	-->
+	<Target Name="GitVersion">
+		<PropertyGroup>
+			<GitSemVerMajor     Condition="'$(GitSemVerMajor)'     == ''">0</GitSemVerMajor>
+			<GitSemVerMinor     Condition="'$(GitSemVerMinor)'     == ''">0</GitSemVerMinor>
+			<GitSemVerPatch     Condition="'$(GitSemVerPatch)'     == ''">0</GitSemVerPatch>
+			<GitSemVerDashLabel Condition="'$(GitSemVerDashLabel)' == ''"></GitSemVerDashLabel>
+			<GitCommit          Condition="'$(GitCommit)'          == ''">0000000</GitCommit>
+			<GitCommits         Condition="'$(GitCommits)'         == ''">0</GitCommits>
+			<GitCommitDate      Condition="'$(GitCommitDate)'      == ''">$([System.DateTime]::UtcNow.ToString("o"))</GitCommitDate>
+		</PropertyGroup>
+	</Target>
+
 	<Target Name="ScratchVersion" DependsOnTargets="GitVersion">
 		<!--
 		<Message Text="GitInfo: GitRepositoryUrl = $(GitRepositoryUrl)" />

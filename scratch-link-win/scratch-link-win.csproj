@@ -1,17 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows10.0.22621.0</TargetFramework>
-    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>ScratchLink.Win</RootNamespace>
     <AssemblyName>Alux Scratch Link</AssemblyName>
-    <Company>Alux (based on Scratch Foundation)</Company>
+    <Company>ALUX, Inc.</Company>
     <Authors>$(Company)</Authors>
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <!-- Self-contained when building with a specific platform (x64/x86/ARM64): bundles App Runtime DLLs -->
+    <!-- AnyCPU does not support self-contained; publish profiles also override to false for MSIX -->
+    <WindowsAppSDKSelfContained Condition="'$(Platform)'=='x64' Or '$(Platform)'=='x86' Or '$(Platform)'=='ARM64'">true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained Condition="'$(Platform)'=='AnyCPU' Or '$(Platform)'==''">false</WindowsAppSDKSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>AnyCPU</Platforms>
@@ -41,7 +44,7 @@
 
   <ItemGroup>
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.0.108" />
-    <PackageReference Include="System.IO.Ports" Version="6.0.0" />
-    <PackageReference Include="System.Management" Version="6.0.2" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
   </ItemGroup>
 </Project>
