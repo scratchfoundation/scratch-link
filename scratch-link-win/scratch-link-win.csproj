@@ -11,9 +11,10 @@
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
-    <!-- true by default: bundles Windows App Runtime DLLs so F5 works on any fresh dev machine -->
-    <!-- MSIX publish profiles each override this to false so packaged release builds stay lean -->
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Self-contained when building with a specific platform (x64/x86/ARM64): bundles App Runtime DLLs -->
+    <!-- AnyCPU does not support self-contained; publish profiles also override to false for MSIX -->
+    <WindowsAppSDKSelfContained Condition="'$(Platform)'=='x64' Or '$(Platform)'=='x86' Or '$(Platform)'=='ARM64'">true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained Condition="'$(Platform)'=='AnyCPU' Or '$(Platform)'==''">false</WindowsAppSDKSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>AnyCPU</Platforms>
