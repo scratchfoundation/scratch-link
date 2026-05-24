@@ -21,12 +21,14 @@ Windows App Runtime 1.8이 없는 경우 앱 실행 시 설치 안내가 표시�
 
 - [Windows App SDK 다운로드 페이지](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads)에서 1.8 런타임 설치 파일 다운로드
 
-## Scratch 3.0과 함께 쓰기
+## AluxLabs와 함께 쓰기
+
+AluxLabs는 Alux 전용 Scratch 3.0입니다.
 
 1. Alux Scratch Link 실행
-2. [Scratch 3.0](https://scratch.mit.edu) 열기
+2. AluxLabs 열기
 3. 블록 카테고리 아래 "확장 기능 추가" 선택
-4. micro:bit, LEGO EV3 등 지원 확장 선택
+4. CodeTinker, Connect, CodingDrone 등 지원 확장 선택
 5. 안내에 따라 주변기기 연결
 
 ## 저장소 구조
@@ -56,14 +58,7 @@ scratch-link/
 
 ## 개발 환경 구성
 
-[../documents/WindowsDevSetup-VS2026.md](../documents/WindowsDevSetup-VS2026.md) 참고.
-
-요약:
-
-1. Visual Studio 2026 워크로드: `.NET 데스크톱 개발`, `WinUI 애플리케이션 개발`, `C++ 데스크톱 개발`
-2. Solution Configuration: `Debug_Win`, Platform: `x64`
-3. Startup Project: `scratch-link-win`
-4. F5로 실행 → 트레이 아이콘 확인
+[Documentation/WindowsDevSetup-VS2026.md](Documentation/WindowsDevSetup-VS2026.md) 참고.
 
 ## 빌드 구성
 
