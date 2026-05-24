@@ -11,7 +11,10 @@
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <!-- Debug: self-contained so F5 works without pre-installing Windows App Runtime -->
+    <!-- Release (MSIX): publish profiles override this to false, runtime handled by MSIX dependency -->
+    <WindowsAppSDKSelfContained Condition="'$(Configuration)'=='Debug_Win'">true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained Condition="'$(Configuration)'!='Debug_Win'">false</WindowsAppSDKSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>AnyCPU</Platforms>
