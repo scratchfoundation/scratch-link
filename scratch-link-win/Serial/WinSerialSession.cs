@@ -22,6 +22,15 @@ using ScratchLink.Serial;
 /// </summary>
 internal class WinSerialSession : SerialSession<WinSerialPortInfo>
 {
+    // Serializes SerialPort.Read and SerialPort.Write so the two never run
+    // concurrently on the same handle. .NET 8 SerialPort + CH340/CP210x driver
+    // combinations produce a TimeoutException burst on the read side whenever
+    // a write fires during an active blocking Read, even with ReadTimeout=500
+    // and the synchronous Write API. Pairing this with BytesToRead polling
+    // (only call Read when data is actually available) keeps the lock held
+    // for a very short time, so keep-alive writes are not noticeably delayed.
+    private readonly object ioLock = new object();
+
     private SerialPort port;
     private CancellationTokenSource rxCts;
     private Task rxLoop;
@@ -114,13 +123,37 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
             throw JsonRpc2Error.InvalidRequest("cannot write when not connected").ToException();
         }
 
+        // Use the synchronous SerialPort.Write under ioLock so that it cannot
+        // overlap with a concurrent SerialPort.Read in ReadLoop. Mixing the
+        // two on the same handle (with any combination of sync/async APIs)
+        // causes the read side to throw TimeoutException bursts at the write
+        // cadence — observed at 33 ms with keep-alive enabled and the cause
+        // of DFU breakage on devices like Codetinker. ReadLoop only enters
+        // the lock when BytesToRead > 0 so this lock is held very briefly
+        // and keep-alive writes are not noticeably delayed.
         try
         {
-            await currentPort.BaseStream.WriteAsync(data, 0, data.Length);
+            await Task.Run(() =>
+            {
+                lock (this.ioLock)
+                {
+                    if (!currentPort.IsOpen)
+                    {
+                        throw new InvalidOperationException("port closed");
+                    }
+
+                    currentPort.Write(data, 0, data.Length);
+                }
+            }).ConfigureAwait(false);
         }
         catch (ObjectDisposedException)
         {
             throw JsonRpc2Error.InternalError("write failed: port was disposed").ToException();
+        }
+        catch (InvalidOperationException)
+        {
+            // Port was closed between the IsOpen check above and Write.
+            throw JsonRpc2Error.InvalidRequest("cannot write when not connected").ToException();
         }
         catch (IOException e)
         {
@@ -198,18 +231,76 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
                 break;
             }
 
+            // Poll BytesToRead instead of issuing a blocking Read with a timeout.
+            // A blocking Read holds the SerialPort I/O surface and races with any
+            // concurrent Write (e.g. the keep-alive timer), producing spurious
+            // TimeoutException bursts that look like the read loop is dying.
+            // BytesToRead is a cheap status query that does not hold the I/O
+            // surface, so the loop only enters the critical section (under
+            // ioLock) when data is actually available, and Read returns
+            // immediately because we know there's something to drain.
+            int available;
+            try
+            {
+                available = currentPort.BytesToRead;
+            }
+            catch (ObjectDisposedException)
+            {
+                // Derives from InvalidOperationException; catch first.
+                break;
+            }
+            catch (InvalidOperationException)
+            {
+                break;
+            }
+            catch (IOException) when (ct.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (IOException e)
+            {
+                Trace.WriteLine($"Serial BytesToRead IOException on {currentPort.PortName}: {e.Message}");
+                _ = this.DidDisconnect("device", e.Message);
+                this.CloseConnectionSilently();
+                break;
+            }
+
+            if (available <= 0)
+            {
+                // Idle. Sleep briefly so we don't spin the CPU; cancellation
+                // is observed via the token.
+                try
+                {
+                    if (ct.WaitHandle.WaitOne(10))
+                    {
+                        break;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
             int n;
             try
             {
-                // SerialPort.BaseStream.ReadAsync on .NET 6 reliably throws
-                // ERROR_OPERATION_ABORTED on the first call against CH340 ports
-                // (even without a CancellationToken, even with DTR/RTS pinned low).
-                // Use the synchronous Read with a finite ReadTimeout so the loop
-                // wakes periodically and shutdown can be observed via ct.
-                n = currentPort.Read(buf, 0, buf.Length);
+                lock (this.ioLock)
+                {
+                    if (!currentPort.IsOpen)
+                    {
+                        break;
+                    }
+
+                    n = currentPort.Read(buf, 0, Math.Min(available, buf.Length));
+                }
             }
             catch (TimeoutException)
             {
+                // Defensive: shouldn't happen now that we only Read when data is available,
+                // but keep the safety net.
                 continue;
             }
             catch (OperationCanceledException)
