@@ -5,10 +5,12 @@
 
 namespace ScratchLink.Serial;
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using Fleck;
 using ScratchLink.Extensions;
@@ -24,6 +26,24 @@ using ScratchLink.JsonRpc;
 internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     where TPort : class
 {
+    // Coordinates concurrent writes from HandleWrite and keep-alive ticks
+    // so that two DoWrite invocations never overlap and corrupt the stream.
+    private readonly SemaphoreSlim writeSemaphore = new SemaphoreSlim(1, 1);
+
+    // Guards keep-alive lifecycle state (timer, interval, lastSentData)
+    // so that Start/Stop/Reset and the timer callback observe a consistent view.
+    private readonly object stateLock = new object();
+
+    private byte[] lastSentData;
+    private Timer keepAliveTimer;
+    private int keepAliveIntervalMs;
+    private bool keepAliveActive;
+
+    // Wire-level TX/RX hex dump for diagnostic builds. Set from connect params.
+    // volatile so the flag is observed on any thread (HandleWrite, ReadLoop, ticks)
+    // without taking stateLock for the hot path.
+    private volatile bool wireTrace;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SerialSession{TPort}"/> class.
     /// </summary>
@@ -36,6 +56,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         this.Handlers["disconnect"] = this.HandleDisconnect;
         this.Handlers["startReading"] = this.HandleStartReading;
         this.Handlers["stopReading"] = this.HandleStopReading;
+        this.Handlers["setKeepAlive"] = this.HandleSetKeepAlive;
     }
 
     /// <summary>
@@ -67,6 +88,12 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     protected override Task<object> DoConnect(TPort port, JsonElement? args)
     {
         var openParams = ParseOpenParams(args);
+        this.wireTrace = openParams.WireTrace;
+        if (this.wireTrace)
+        {
+            Trace.WriteLine("wire-trace: enabled for this session");
+        }
+
         return this.DoConnect(port, openParams);
     }
 
@@ -82,7 +109,10 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
 
     /// <summary>
     /// Implement the JSON-RPC "write" request. Decodes the base64 payload and
-    /// forwards to the platform implementation.
+    /// forwards to the platform implementation. Serializes writes against the
+    /// keep-alive timer, caches the payload as the most recent TX packet, and
+    /// resets the keep-alive interval so that idle-only resends are not triggered
+    /// during active bursts (e.g. firmware updates).
     /// </summary>
     /// <param name="methodName">The name of the method being called ("write").</param>
     /// <param name="args">A JSON object containing <c>message</c> and <c>encoding</c>.</param>
@@ -95,7 +125,29 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         }
 
         var buffer = EncodingHelpers.DecodeBuffer(args.Value);
-        var sentBytes = await this.DoWrite(buffer);
+
+        await this.writeSemaphore.WaitAsync().ConfigureAwait(false);
+        int sentBytes;
+        try
+        {
+            lock (this.stateLock)
+            {
+                this.lastSentData = buffer;
+            }
+
+            this.ResetKeepAliveTimer();
+
+            if (this.wireTrace)
+            {
+                Trace.WriteLine($"wire-trace TX {buffer.Length}B {FormatHex(buffer)}");
+            }
+
+            sentBytes = await this.DoWrite(buffer).ConfigureAwait(false);
+        }
+        finally
+        {
+            this.writeSemaphore.Release();
+        }
 
         return new Dictionary<string, int> { ["sentBytes"] = sentBytes };
     }
@@ -152,6 +204,45 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     }
 
     /// <summary>
+    /// Implement the JSON-RPC "setKeepAlive" request. Lets the client toggle or
+    /// reconfigure keep-alive at runtime — e.g. disable before a firmware update
+    /// (via <c>intervalMs: null</c> or <c>0</c>) and re-enable afterwards.
+    /// Idempotent: calling with the same interval as the current one restarts the
+    /// timer cleanly; calling with null/0 while disabled is a no-op.
+    /// </summary>
+    /// <param name="methodName">The name of the method being called ("setKeepAlive").</param>
+    /// <param name="args">A JSON object with <c>intervalMs</c> (int or null). Null/0/negative disables.</param>
+    /// <returns>An object echoing the resulting <c>intervalMs</c> (or null when disabled).</returns>
+    protected Task<object> HandleSetKeepAlive(string methodName, JsonElement? args)
+    {
+        int? requested = null;
+        if (args != null)
+        {
+            var prop = args.Value.TryGetProperty("intervalMs");
+            if (prop.HasValue && prop.Value.ValueKind != JsonValueKind.Null)
+            {
+                requested = prop.Value.GetInt32();
+            }
+        }
+
+        // Always stop first so the request is fully idempotent — repeated calls
+        // with the same interval rebuild the timer cleanly, and calls with a
+        // different interval don't leave the old one running.
+        this.StopKeepAlive();
+
+        int? applied = null;
+        if (requested.HasValue && requested.Value > 0)
+        {
+            this.StartKeepAlive(requested.Value);
+            applied = requested.Value;
+        }
+
+        var appliedText = applied?.ToString() ?? "null";
+        Trace.WriteLine($"keep-alive: setKeepAlive applied intervalMs={appliedText}");
+        return Task.FromResult<object>(new Dictionary<string, object> { ["intervalMs"] = applied });
+    }
+
+    /// <summary>
     /// Report received bytes to the client as a <c>serialDidReceiveData</c>
     /// notification. The payload is base64-encoded.
     /// </summary>
@@ -159,6 +250,11 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected async Task DidReceiveData(byte[] data)
     {
+        if (this.wireTrace)
+        {
+            Trace.WriteLine($"wire-trace RX {data.Length}B {FormatHex(data)}");
+        }
+
         var encoded = EncodingHelpers.EncodeBuffer(data, "base64");
         await this.SendNotification("serialDidReceiveData", new SerialDataReceived
         {
@@ -210,6 +306,89 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         });
     }
 
+    /// <summary>
+    /// Start the keep-alive timer. When set, the most recently sent TX packet
+    /// is re-sent at the specified interval to satisfy devices that disconnect
+    /// on long idle periods (e.g. Codetinker requires &lt; 1s gaps).
+    /// </summary>
+    /// <param name="keepAliveIntervalMs">Interval in milliseconds. Null or non-positive values disable keep-alive.</param>
+    protected void StartKeepAlive(int? keepAliveIntervalMs)
+    {
+        if (keepAliveIntervalMs == null || keepAliveIntervalMs.Value <= 0)
+        {
+            return;
+        }
+
+        var interval = keepAliveIntervalMs.Value;
+
+        lock (this.stateLock)
+        {
+            if (this.keepAliveActive)
+            {
+                Trace.WriteLine("keep-alive: StartKeepAlive called while already active; ignoring");
+                return;
+            }
+
+            this.keepAliveIntervalMs = interval;
+            this.keepAliveActive = true;
+            this.keepAliveTimer = new Timer(this.OnKeepAliveTick, null, interval, interval);
+        }
+
+        Trace.WriteLine($"keep-alive: started ({interval}ms)");
+    }
+
+    /// <summary>
+    /// Stop the keep-alive timer and block until any in-flight callback completes.
+    /// Safe to call multiple times.
+    /// </summary>
+    protected void StopKeepAlive()
+    {
+        Timer toDispose;
+        lock (this.stateLock)
+        {
+            if (!this.keepAliveActive)
+            {
+                return;
+            }
+
+            this.keepAliveActive = false;
+            toDispose = this.keepAliveTimer;
+            this.keepAliveTimer = null;
+        }
+
+        if (toDispose != null)
+        {
+            // Block until any in-flight callback finishes so that no resend
+            // races against the platform disconnect / port disposal.
+            using var waitHandle = new ManualResetEvent(false);
+            if (toDispose.Dispose(waitHandle))
+            {
+                waitHandle.WaitOne();
+            }
+        }
+
+        Trace.WriteLine("keep-alive: stopped");
+    }
+
+    /// <summary>
+    /// Release keep-alive resources. Platform subclasses should still override
+    /// to release their port handles; this base implementation guarantees the
+    /// keep-alive timer is stopped and the write semaphore is disposed.
+    /// </summary>
+    /// <param name="disposing">True if called from <see cref="Session.Dispose()"/>.</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing && !this.DisposedValue)
+        {
+            // StopKeepAlive blocks on in-flight callbacks, so by the time we
+            // dispose the semaphore no tick can still be holding it.
+            this.StopKeepAlive();
+            this.writeSemaphore.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
     private static IReadOnlyList<SerialDiscoveryFilter> ParseFilters(JsonElement? args)
     {
         var result = new List<SerialDiscoveryFilter>();
@@ -253,7 +432,145 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             Parity = args?.TryGetProperty("parity")?.GetString() ?? "none",
             StopBits = args?.TryGetProperty("stopBits")?.GetString() ?? "one",
             FlowControl = args?.TryGetProperty("flowControl")?.GetString() ?? "none",
+            PeripheralType = args?.TryGetProperty("peripheralType")?.GetString(),
+            KeepAliveIntervalMs = args?.TryGetProperty("keepAliveIntervalMs")?.GetInt32(),
+            WireTrace = args?.TryGetProperty("wireTrace")?.GetBoolean() ?? false,
         };
+    }
+
+    /// <summary>
+    /// Format a byte buffer as a space-separated, lowercase hex string for diagnostic
+    /// logs. Long buffers are truncated to the first <paramref name="maxBytes"/> bytes
+    /// with a tail marker indicating how many bytes were elided, so trace lines stay
+    /// bounded even on large transfers (e.g. firmware update chunks).
+    /// </summary>
+    /// <param name="data">Buffer to format. May be empty; must not be null.</param>
+    /// <param name="maxBytes">Maximum number of bytes to render verbatim before truncation.</param>
+    /// <returns>Hex preview suitable for <see cref="Trace.WriteLine(string)"/>.</returns>
+    private static string FormatHex(byte[] data, int maxBytes = 256)
+    {
+        if (data == null || data.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        var take = data.Length <= maxBytes ? data.Length : maxBytes;
+        var sb = new System.Text.StringBuilder(take * 3);
+        for (var i = 0; i < take; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append(' ');
+            }
+
+            sb.Append(data[i].ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        if (data.Length > take)
+        {
+            sb.Append($" …(+{data.Length - take}B)");
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Reset the keep-alive timer to fire one full interval from now.
+    /// Called from <see cref="HandleWrite"/> so that bursts of writes
+    /// (e.g. firmware update chunks) suppress the resend until the line goes idle.
+    /// </summary>
+    private void ResetKeepAliveTimer()
+    {
+        Timer timer;
+        int interval;
+        lock (this.stateLock)
+        {
+            if (!this.keepAliveActive || this.keepAliveTimer == null)
+            {
+                return;
+            }
+
+            timer = this.keepAliveTimer;
+            interval = this.keepAliveIntervalMs;
+        }
+
+        try
+        {
+            timer.Change(interval, interval);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Raced with StopKeepAlive; the timer is gone, nothing to do.
+        }
+    }
+
+    /// <summary>
+    /// Timer callback that resends the last TX packet. Skips silently if another
+    /// write is already in progress, if the session is no longer connected, or
+    /// if no packet has been sent yet.
+    /// </summary>
+    private async void OnKeepAliveTick(object state)
+    {
+        byte[] data;
+        lock (this.stateLock)
+        {
+            if (!this.keepAliveActive)
+            {
+                return;
+            }
+
+            data = this.lastSentData;
+        }
+
+        if (data == null || data.Length == 0 || !this.IsConnected)
+        {
+            return;
+        }
+
+        // Skip if a real write (or another tick) holds the semaphore. This is
+        // what makes keep-alive idle-only: during a write burst the semaphore
+        // is busy and ticks no-op.
+        if (!await this.writeSemaphore.WaitAsync(0).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        try
+        {
+            // Re-check after acquiring the lock; state may have changed while waiting.
+            if (!this.keepAliveActive || !this.IsConnected)
+            {
+                return;
+            }
+
+            if (this.wireTrace)
+            {
+                Trace.WriteLine($"wire-trace TX(keep-alive) {data.Length}B {FormatHex(data)}");
+            }
+
+            await this.DoWrite(data).ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Session disposed mid-tick; safe to ignore.
+        }
+        catch (Exception e)
+        {
+            // Never let exceptions escape an async-void Timer callback or the
+            // process will terminate. Log and let the next tick try again.
+            Trace.WriteLine($"keep-alive: resend failed: {e.GetType().Name}: {e.Message}");
+        }
+        finally
+        {
+            try
+            {
+                this.writeSemaphore.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Semaphore disposed during shutdown; safe to ignore.
+            }
+        }
     }
 
     /// <summary>

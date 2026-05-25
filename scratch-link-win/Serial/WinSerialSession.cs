@@ -66,6 +66,11 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
             throw JsonRpc2Error.InvalidRequest("already connected").ToException();
         }
 
+        if (!string.IsNullOrEmpty(openParams.PeripheralType))
+        {
+            Trace.WriteLine($"Connecting to {info.Path} with peripheral type: {openParams.PeripheralType}");
+        }
+
         try
         {
             this.port = new SerialPort(info.Path)
@@ -94,6 +99,8 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
         this.rxCts = new CancellationTokenSource();
         var token = this.rxCts.Token;
         this.rxLoop = Task.Run(() => this.ReadLoop(token));
+
+        this.StartKeepAlive(openParams.KeepAliveIntervalMs);
 
         return Task.FromResult<object>(new Dictionary<string, object>());
     }
@@ -126,6 +133,7 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
     /// <inheritdoc/>
     protected override async Task DoDisconnect()
     {
+        this.StopKeepAlive();
         var loop = this.rxLoop;
         this.CloseConnectionSilently();
 

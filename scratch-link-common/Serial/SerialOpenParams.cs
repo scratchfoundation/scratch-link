@@ -34,4 +34,24 @@ internal class SerialOpenParams
     /// Gets or sets the flow control: "none", "rtsCts", or "xonXoff". Defaults to "none".
     /// </summary>
     public string FlowControl { get; set; }
+
+    /// <summary>
+    /// Gets or sets the peripheral type (e.g. "codetinker", "connect", "technic"). Optional.
+    /// </summary>
+    public string PeripheralType { get; set; }
+
+    /// <summary>
+    /// Gets or sets the keep-alive interval in milliseconds. If set, the session will
+    /// automatically resend the last sent packet at this interval to prevent
+    /// device timeout. Optional; null disables keep-alive.
+    /// </summary>
+    public int? KeepAliveIntervalMs { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether wire-level TX/RX hex dumps are
+    /// emitted via <see cref="System.Diagnostics.Trace"/> for this session.
+    /// Diagnostic only; off by default. Enable when debugging suspected
+    /// transport-level corruption or loss.
+    /// </summary>
+    public bool WireTrace { get; set; }
 }
