@@ -52,7 +52,8 @@ scratch-link/
 │   ├── ScratchVersion.targets # Git 기반 버전 자동 생성
 │   ├── CommonPackageRefs.props # 공유 NuGet 패키지
 │   └── StyleCop.props         # 코드 스타일 분석
-├── Documentation/             # 프로토콜 문서 (Architecture, Bluetooth, Serial 등)
+├── Documentation/             # upstream 원본 프로토콜 문서
+│   └── Alux/                  # 이 포크 전용 문서 (upstream 동기화 시 제외)
 └── brand/                     # 아이콘 소스 SVG 및 빌드 스크립트
 ```
 
