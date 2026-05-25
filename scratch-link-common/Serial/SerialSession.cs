@@ -26,12 +26,10 @@ using ScratchLink.JsonRpc;
 internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     where TPort : class
 {
-    // Coordinates concurrent writes from HandleWrite and keep-alive ticks
-    // so that two DoWrite invocations never overlap and corrupt the stream.
+    // Serializes DoWrite calls so two writes never overlap and corrupt the stream.
     private readonly SemaphoreSlim writeSemaphore = new SemaphoreSlim(1, 1);
 
-    // Guards keep-alive lifecycle state (timer, interval, lastSentData)
-    // so that Start/Stop/Reset and the timer callback observe a consistent view.
+    // Guards keep-alive lifecycle fields shared with the timer callback.
     private readonly object stateLock = new object();
 
     private byte[] lastSentData;
@@ -39,9 +37,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     private int keepAliveIntervalMs;
     private bool keepAliveActive;
 
-    // Wire-level TX/RX hex dump for diagnostic builds. Set from connect params.
-    // volatile so the flag is observed on any thread (HandleWrite, ReadLoop, ticks)
-    // without taking stateLock for the hot path.
+    // volatile so threads outside stateLock see the latest value on the hot path.
     private volatile bool wireTrace;
 
     /// <summary>
@@ -108,15 +104,12 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     protected abstract Task<object> DoConnect(TPort port, SerialOpenParams openParams);
 
     /// <summary>
-    /// Implement the JSON-RPC "write" request. Decodes the base64 payload and
-    /// forwards to the platform implementation. Serializes writes against the
-    /// keep-alive timer, caches the payload as the most recent TX packet, and
-    /// resets the keep-alive interval so that idle-only resends are not triggered
-    /// during active bursts (e.g. firmware updates).
+    /// JSON-RPC <c>write</c> handler. Caches the payload as the most recent TX packet
+    /// and resets the keep-alive timer so resends are suppressed during active bursts.
     /// </summary>
-    /// <param name="methodName">The name of the method being called ("write").</param>
-    /// <param name="args">A JSON object containing <c>message</c> and <c>encoding</c>.</param>
-    /// <returns>An object with <c>sentBytes</c> equal to the number of bytes written.</returns>
+    /// <param name="methodName">Dispatched method name.</param>
+    /// <param name="args">Decoded request params.</param>
+    /// <returns><c>sentBytes</c> wrapper.</returns>
     protected async Task<object> HandleWrite(string methodName, JsonElement? args)
     {
         if (args == null)
@@ -204,15 +197,13 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     }
 
     /// <summary>
-    /// Implement the JSON-RPC "setKeepAlive" request. Lets the client toggle or
-    /// reconfigure keep-alive at runtime — e.g. disable before a firmware update
-    /// (via <c>intervalMs: null</c> or <c>0</c>) and re-enable afterwards.
-    /// Idempotent: calling with the same interval as the current one restarts the
-    /// timer cleanly; calling with null/0 while disabled is a no-op.
+    /// JSON-RPC <c>setKeepAlive</c> handler. <c>intervalMs</c>: positive (re)starts, null/0/negative disables.
+    /// Idempotent: stop-then-start so repeated calls leave only one timer alive.
+    /// Response echoes the applied interval (null when disabled).
     /// </summary>
-    /// <param name="methodName">The name of the method being called ("setKeepAlive").</param>
-    /// <param name="args">A JSON object with <c>intervalMs</c> (int or null). Null/0/negative disables.</param>
-    /// <returns>An object echoing the resulting <c>intervalMs</c> (or null when disabled).</returns>
+    /// <param name="methodName">Dispatched method name.</param>
+    /// <param name="args">Decoded request params.</param>
+    /// <returns>Echo of the applied interval.</returns>
     protected Task<object> HandleSetKeepAlive(string methodName, JsonElement? args)
     {
         int? requested = null;
@@ -225,9 +216,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             }
         }
 
-        // Always stop first so the request is fully idempotent — repeated calls
-        // with the same interval rebuild the timer cleanly, and calls with a
-        // different interval don't leave the old one running.
+        // Stop-then-start makes the call idempotent regardless of current state.
         this.StopKeepAlive();
 
         int? applied = null;
@@ -307,11 +296,10 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     }
 
     /// <summary>
-    /// Start the keep-alive timer. When set, the most recently sent TX packet
-    /// is re-sent at the specified interval to satisfy devices that disconnect
-    /// on long idle periods (e.g. Codetinker requires &lt; 1s gaps).
+    /// Start the keep-alive timer at <paramref name="keepAliveIntervalMs"/>. Null or non-positive disables.
+    /// No-op if already running.
     /// </summary>
-    /// <param name="keepAliveIntervalMs">Interval in milliseconds. Null or non-positive values disable keep-alive.</param>
+    /// <param name="keepAliveIntervalMs">Interval in milliseconds; null/non-positive disables.</param>
     protected void StartKeepAlive(int? keepAliveIntervalMs)
     {
         if (keepAliveIntervalMs == null || keepAliveIntervalMs.Value <= 0)
@@ -338,8 +326,8 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     }
 
     /// <summary>
-    /// Stop the keep-alive timer and block until any in-flight callback completes.
-    /// Safe to call multiple times.
+    /// Stop the keep-alive timer and block until any in-flight tick finishes.
+    /// Safe to call repeatedly.
     /// </summary>
     protected void StopKeepAlive()
     {
@@ -358,8 +346,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
 
         if (toDispose != null)
         {
-            // Block until any in-flight callback finishes so that no resend
-            // races against the platform disconnect / port disposal.
+            // Block so no resend races a subsequent disconnect or port disposal.
             using var waitHandle = new ManualResetEvent(false);
             if (toDispose.Dispose(waitHandle))
             {
@@ -370,18 +357,12 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         Trace.WriteLine("keep-alive: stopped");
     }
 
-    /// <summary>
-    /// Release keep-alive resources. Platform subclasses should still override
-    /// to release their port handles; this base implementation guarantees the
-    /// keep-alive timer is stopped and the write semaphore is disposed.
-    /// </summary>
-    /// <param name="disposing">True if called from <see cref="Session.Dispose()"/>.</param>
+    /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
         if (disposing && !this.DisposedValue)
         {
-            // StopKeepAlive blocks on in-flight callbacks, so by the time we
-            // dispose the semaphore no tick can still be holding it.
+            // Order matters: StopKeepAlive waits for in-flight ticks before we dispose the semaphore they use.
             this.StopKeepAlive();
             this.writeSemaphore.Dispose();
         }
@@ -439,14 +420,8 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     }
 
     /// <summary>
-    /// Format a byte buffer as a space-separated, lowercase hex string for diagnostic
-    /// logs. Long buffers are truncated to the first <paramref name="maxBytes"/> bytes
-    /// with a tail marker indicating how many bytes were elided, so trace lines stay
-    /// bounded even on large transfers (e.g. firmware update chunks).
+    /// Hex preview for diagnostic logs, capped at <paramref name="maxBytes"/> with a tail marker.
     /// </summary>
-    /// <param name="data">Buffer to format. May be empty; must not be null.</param>
-    /// <param name="maxBytes">Maximum number of bytes to render verbatim before truncation.</param>
-    /// <returns>Hex preview suitable for <see cref="Trace.WriteLine(string)"/>.</returns>
     private static string FormatHex(byte[] data, int maxBytes = 256)
     {
         if (data == null || data.Length == 0)
@@ -475,9 +450,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     }
 
     /// <summary>
-    /// Reset the keep-alive timer to fire one full interval from now.
-    /// Called from <see cref="HandleWrite"/> so that bursts of writes
-    /// (e.g. firmware update chunks) suppress the resend until the line goes idle.
+    /// Push the next tick one full interval forward so that ongoing write bursts suppress the resend.
     /// </summary>
     private void ResetKeepAliveTimer()
     {
@@ -500,15 +473,10 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         }
         catch (ObjectDisposedException)
         {
-            // Raced with StopKeepAlive; the timer is gone, nothing to do.
+            // Raced with StopKeepAlive.
         }
     }
 
-    /// <summary>
-    /// Timer callback that resends the last TX packet. Skips silently if another
-    /// write is already in progress, if the session is no longer connected, or
-    /// if no packet has been sent yet.
-    /// </summary>
     private async void OnKeepAliveTick(object state)
     {
         byte[] data;
@@ -527,9 +495,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             return;
         }
 
-        // Skip if a real write (or another tick) holds the semaphore. This is
-        // what makes keep-alive idle-only: during a write burst the semaphore
-        // is busy and ticks no-op.
+        // WaitAsync(0) makes the tick idle-only: during a write burst the semaphore is busy and we no-op.
         if (!await this.writeSemaphore.WaitAsync(0).ConfigureAwait(false))
         {
             return;
@@ -537,7 +503,6 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
 
         try
         {
-            // Re-check after acquiring the lock; state may have changed while waiting.
             if (!this.keepAliveActive || !this.IsConnected)
             {
                 return;
@@ -552,12 +517,11 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         }
         catch (ObjectDisposedException)
         {
-            // Session disposed mid-tick; safe to ignore.
+            // Session disposed mid-tick.
         }
         catch (Exception e)
         {
-            // Never let exceptions escape an async-void Timer callback or the
-            // process will terminate. Log and let the next tick try again.
+            // async-void Timer callback: an escaped exception terminates the process, so log and move on.
             Trace.WriteLine($"keep-alive: resend failed: {e.GetType().Name}: {e.Message}");
         }
         finally
@@ -568,7 +532,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             }
             catch (ObjectDisposedException)
             {
-                // Semaphore disposed during shutdown; safe to ignore.
+                // Semaphore disposed during shutdown.
             }
         }
     }

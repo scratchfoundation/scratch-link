@@ -36,22 +36,20 @@ internal class SerialOpenParams
     public string FlowControl { get; set; }
 
     /// <summary>
-    /// Gets or sets the peripheral type (e.g. "codetinker", "connect", "technic"). Optional.
+    /// Gets or sets the client-supplied peripheral type identifier. Optional; used for diagnostic logging only.
     /// </summary>
     public string PeripheralType { get; set; }
 
     /// <summary>
-    /// Gets or sets the keep-alive interval in milliseconds. If set, the session will
-    /// automatically resend the last sent packet at this interval to prevent
-    /// device timeout. Optional; null disables keep-alive.
+    /// Gets or sets the keep-alive interval in milliseconds. If positive, the most recently
+    /// sent TX packet is automatically re-sent at this interval while the line is idle.
+    /// Null or non-positive disables the timer.
     /// </summary>
     public int? KeepAliveIntervalMs { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether wire-level TX/RX hex dumps are
-    /// emitted via <see cref="System.Diagnostics.Trace"/> for this session.
-    /// Diagnostic only; off by default. Enable when debugging suspected
-    /// transport-level corruption or loss.
+    /// Gets or sets a value indicating whether wire-level TX/RX hex dumps are emitted via
+    /// <see cref="System.Diagnostics.Trace"/>. Diagnostic only; off by default.
     /// </summary>
     public bool WireTrace { get; set; }
 }

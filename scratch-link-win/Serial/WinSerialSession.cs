@@ -22,13 +22,7 @@ using ScratchLink.Serial;
 /// </summary>
 internal class WinSerialSession : SerialSession<WinSerialPortInfo>
 {
-    // Serializes SerialPort.Read and SerialPort.Write so the two never run
-    // concurrently on the same handle. .NET 8 SerialPort + CH340/CP210x driver
-    // combinations produce a TimeoutException burst on the read side whenever
-    // a write fires during an active blocking Read, even with ReadTimeout=500
-    // and the synchronous Write API. Pairing this with BytesToRead polling
-    // (only call Read when data is actually available) keeps the lock held
-    // for a very short time, so keep-alive writes are not noticeably delayed.
+    // Serializes Read and Write on the same handle: concurrent calls trigger a TimeoutException burst on the read side with CH340/CP210x drivers.
     private readonly object ioLock = new object();
 
     private SerialPort port;
@@ -123,14 +117,7 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
             throw JsonRpc2Error.InvalidRequest("cannot write when not connected").ToException();
         }
 
-        // Use the synchronous SerialPort.Write under ioLock so that it cannot
-        // overlap with a concurrent SerialPort.Read in ReadLoop. Mixing the
-        // two on the same handle (with any combination of sync/async APIs)
-        // causes the read side to throw TimeoutException bursts at the write
-        // cadence — observed at 33 ms with keep-alive enabled and the cause
-        // of DFU breakage on devices like Codetinker. ReadLoop only enters
-        // the lock when BytesToRead > 0 so this lock is held very briefly
-        // and keep-alive writes are not noticeably delayed.
+        // Sync Write under ioLock; see ioLock declaration for why. Task.Run keeps the async signature off the dispatcher thread.
         try
         {
             await Task.Run(() =>
@@ -231,14 +218,7 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
                 break;
             }
 
-            // Poll BytesToRead instead of issuing a blocking Read with a timeout.
-            // A blocking Read holds the SerialPort I/O surface and races with any
-            // concurrent Write (e.g. the keep-alive timer), producing spurious
-            // TimeoutException bursts that look like the read loop is dying.
-            // BytesToRead is a cheap status query that does not hold the I/O
-            // surface, so the loop only enters the critical section (under
-            // ioLock) when data is actually available, and Read returns
-            // immediately because we know there's something to drain.
+            // Poll BytesToRead so Read is only called when there's data to drain — keeps ioLock hold time minimal.
             int available;
             try
             {
@@ -267,8 +247,7 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
 
             if (available <= 0)
             {
-                // Idle. Sleep briefly so we don't spin the CPU; cancellation
-                // is observed via the token.
+                // Wait on ct.WaitHandle so cancellation wakes the loop immediately; otherwise sleep 10ms.
                 try
                 {
                     if (ct.WaitHandle.WaitOne(10))
@@ -299,8 +278,7 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
             }
             catch (TimeoutException)
             {
-                // Defensive: shouldn't happen now that we only Read when data is available,
-                // but keep the safety net.
+                // Defensive: BytesToRead gate should prevent this.
                 continue;
             }
             catch (OperationCanceledException)
