@@ -8,7 +8,7 @@
 
   <Identity
     Name="ALUXInc.AluxLabsLink"
-    Publisher="CN=ALUX, Inc."
+    Publisher="CN=ALUX Inc."
     Version="1.0.0.0" />
 
   <Properties>
