@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-*'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Override channel (auto/stable/dev). auto=태그 형식으로 결정'
+        type: choice
+        options: [auto, stable, dev]
+        default: auto
+      ref:
+        description: '수동 실행 시 사용할 ref (태그/브랜치). 비우면 워크플로 ref 사용'
+        type: string
+        default: ''
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Resolve channel and version
+        id: meta
+        run: |
+          set -euo pipefail
+          # 채널 결정
+          input="${{ github.event.inputs.channel }}"
+          tag_name="${GITHUB_REF_NAME:-}"
+          if [[ "$input" == "stable" || "$input" == "dev" ]]; then
+            channel="$input"
+          elif [[ "$tag_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            channel="dev"
+          elif [[ "$tag_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            channel="stable"
+          else
+            channel="dev"  # workflow_dispatch + auto + non-tag ref → 안전한 쪽
+          fi
+          # 버전 산출 (태그면 v 제거, 아니면 git describe)
+          if [[ "$tag_name" =~ ^v ]]; then
+            version="${tag_name#v}"
+          else
+            version="$(git describe --tags --always --dirty)"
+          fi
+          # 채널별 버킷·distribution
+          if [[ "$channel" == "stable" ]]; then
+            bucket="scratch-link.aluxcoding.com"
+            dist_id="${{ secrets.CF_DIST_ID_PROD }}"
+          else
+            bucket="dev-scratch-link.aluxcoding.com"
+            dist_id="${{ secrets.CF_DIST_ID_DEV }}"
+          fi
+          {
+            echo "channel=$channel"
+            echo "version=$version"
+            echo "bucket=$bucket"
+            echo "dist_id=$dist_id"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      - name: Show resolved metadata
+        run: |
+          echo "channel = ${{ steps.meta.outputs.channel }}"
+          echo "version = ${{ steps.meta.outputs.version }}"
+          echo "bucket  = ${{ steps.meta.outputs.bucket }}"
+          echo "dist_id = (마스킹됨)"
