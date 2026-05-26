@@ -2,15 +2,15 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Fleck;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
 
 /// <summary>
 /// A kind of session which discovers and connects to peripheral devices by some sort of address.

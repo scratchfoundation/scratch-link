@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 using System;
 using System.Collections.Concurrent;
@@ -12,9 +12,9 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Fleck;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
-using ScratchLink.JsonRpc.Converters;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
+using AluxLabs.Link.JsonRpc.Converters;
 
 using JsonRpcMethodHandler = System.Func<
     string, // method name

@@ -1,25 +1,25 @@
-﻿// <copyright file="ScratchLinkApp.cs" company="Scratch Foundation">
+// <copyright file="AluxLabsLinkApp.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 using System;
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
-using ScratchLink.BLE;
+using AluxLabs.Link.BLE;
 
 /// <summary>
 /// Main entry point for Scratch Link and central service provider for dependency injection.
 /// </summary>
-public class ScratchLinkApp
+public class AluxLabsLinkApp
 {
     private const int WebSocketPort = 20211;
 
     private readonly SessionManager sessionManager;
     private readonly WebSocketListener webSocketListener;
 
-    private ScratchLinkApp(IServiceProvider platformServicesProvider)
+    private AluxLabsLinkApp(IServiceProvider platformServicesProvider)
     {
         Debug.AutoFlush = Trace.AutoFlush = true;
 
@@ -41,7 +41,7 @@ public class ScratchLinkApp
     /// <summary>
     /// Gets the current app instance.
     /// </summary>
-    public static ScratchLinkApp Current { get; private set; }
+    public static AluxLabsLinkApp Current { get; private set; }
 
     /// <summary>
     /// Gets the platform-specific services provider.
@@ -113,7 +113,7 @@ public class ScratchLinkApp
         /// Builds a Scratch Link app host.
         /// </summary>
         /// <returns>A new Scratch Link app host.</returns>
-        internal ScratchLinkApp Build()
+        internal AluxLabsLinkApp Build()
         {
             var serviceCollection = new ServiceCollection();
             var serviceProviderOptions = new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true };
@@ -122,7 +122,7 @@ public class ScratchLinkApp
                 .AddSingleton(typeof(SessionManager), this.sessionManagerType)
                 .AddSingleton(this.gattHelpersBaseType, this.gattHelpersType)
                 .BuildServiceProvider();
-            return new ScratchLinkApp(servicesProvider);
+            return new AluxLabsLinkApp(servicesProvider);
         }
     }
 }

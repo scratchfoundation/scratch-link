@@ -3,7 +3,7 @@
 // Based on scratch-link by Scratch Foundation, licensed under AGPL-3.0-only.
 // </copyright>
 
-namespace ScratchLink.Win.Serial;
+namespace AluxLabs.Link.Win.Serial;
 
 using System;
 using System.Collections.Generic;
@@ -13,8 +13,8 @@ using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
 using Fleck;
-using ScratchLink.JsonRpc;
-using ScratchLink.Serial;
+using AluxLabs.Link.JsonRpc;
+using AluxLabs.Link.Serial;
 
 /// <summary>
 /// Implements a USB Serial session on Windows using <see cref="SerialPort"/>

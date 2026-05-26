@@ -2,13 +2,13 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 using System;
 using System.Text;
 using System.Text.Json;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
 
 /// <summary>
 /// Helpers for interacting with Scratch Link's message buffers.

@@ -1,8 +1,8 @@
-﻿// <copyright file="JsonExtensions.cs" company="Scratch Foundation">
+// <copyright file="JsonExtensions.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Extensions;
+namespace AluxLabs.Link.Extensions;
 
 using System.Text.Json;
 

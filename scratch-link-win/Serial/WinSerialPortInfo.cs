@@ -3,7 +3,7 @@
 // Based on scratch-link by Scratch Foundation, licensed under AGPL-3.0-only.
 // </copyright>
 
-namespace ScratchLink.Win.Serial;
+namespace AluxLabs.Link.Win.Serial;
 
 /// <summary>
 /// A single port returned by <see cref="WinSerialPortEnumerator"/>.

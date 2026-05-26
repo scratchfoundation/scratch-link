@@ -2,11 +2,11 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Win.BLE;
+namespace AluxLabs.Link.Win.BLE;
 
 using Fleck;
-using ScratchLink.BLE;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.BLE;
+using AluxLabs.Link.JsonRpc;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;

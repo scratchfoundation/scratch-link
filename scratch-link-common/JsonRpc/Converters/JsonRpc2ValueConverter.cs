@@ -1,8 +1,8 @@
-﻿// <copyright file="JsonRpc2ValueConverter.cs" company="Scratch Foundation">
+// <copyright file="JsonRpc2ValueConverter.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.JsonRpc.Converters;
+namespace AluxLabs.Link.JsonRpc.Converters;
 
 using System;
 using System.Text.Json;

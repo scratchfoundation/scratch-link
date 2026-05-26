@@ -1,15 +1,15 @@
-﻿// <copyright file="GattHelpers.cs" company="Scratch Foundation">
+// <copyright file="GattHelpers.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.BLE;
+namespace AluxLabs.Link.BLE;
 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.JsonRpc;
 
 /// <summary>
 /// Helper methods to deal with GATT names and UUID values.

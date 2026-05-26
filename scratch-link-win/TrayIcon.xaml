@@ -4,10 +4,10 @@
 <ResourceDictionary
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  xmlns:local="using:ScratchLink.Win"
+  xmlns:local="using:AluxLabs.Link.Win"
   xmlns:tb="using:H.NotifyIcon">
 
-  <tb:TaskbarIcon x:Key="ScratchLinkTaskbarIcon"
+  <tb:TaskbarIcon x:Key="AluxLabsLinkTaskbarIcon"
                   Visibility="Visible"
                   ToolTipText="AluxLabs Link"
                   ContextMenuMode="SecondWindow"

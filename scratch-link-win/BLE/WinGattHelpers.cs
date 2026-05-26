@@ -1,10 +1,10 @@
-﻿// <copyright file="WinGattHelpers.cs" company="Scratch Foundation">
+// <copyright file="WinGattHelpers.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Win.BLE;
+namespace AluxLabs.Link.Win.BLE;
 
-using ScratchLink.BLE;
+using AluxLabs.Link.BLE;
 
 /// <summary>
 /// Implement the Windows-specific GATT helpers.

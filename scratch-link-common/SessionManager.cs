@@ -1,8 +1,8 @@
-﻿// <copyright file="SessionManager.cs" company="Scratch Foundation">
+// <copyright file="SessionManager.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 using System;
 using System.Collections.Concurrent;

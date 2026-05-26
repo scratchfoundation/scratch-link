@@ -1,11 +1,11 @@
-﻿// <copyright file="WinBLEEndpoint.cs" company="Scratch Foundation">
+// <copyright file="WinBLEEndpoint.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Win.BLE;
+namespace AluxLabs.Link.Win.BLE;
 
-using ScratchLink.BLE;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.BLE;
+using AluxLabs.Link.JsonRpc;
 using System;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;

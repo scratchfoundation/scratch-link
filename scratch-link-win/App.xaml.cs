@@ -2,14 +2,14 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Win;
+namespace AluxLabs.Link.Win;
 
 using H.NotifyIcon;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using ScratchLink;
-using ScratchLink.Win.BLE;
+using AluxLabs.Link;
+using AluxLabs.Link.Win.BLE;
 using System.Diagnostics;
 using System.Reflection;
 using Windows.ApplicationModel.DataTransfer;
@@ -24,7 +24,7 @@ public partial class App : Application
     private readonly string versionQuad;
     private readonly string versionDetail;
 
-    private ScratchLinkApp app;
+    private AluxLabsLinkApp app;
     private TaskbarIcon trayIcon;
 
     /// <summary>
@@ -54,7 +54,7 @@ public partial class App : Application
         // Trace.Listeners.Add(??);
         Trace.WriteLine("Starting...");
 
-        var appBuilder = new ScratchLinkApp.Builder();
+        var appBuilder = new AluxLabsLinkApp.Builder();
         appBuilder.SetArguments(Environment.GetCommandLineArgs());
         appBuilder.SetSessionManager<WinSessionManager>();
         appBuilder.SetGattHelpers<WinGattHelpers, Guid>();
@@ -92,7 +92,7 @@ public partial class App : Application
         var exitCommand = (XamlUICommand)this.Resources["ExitCommand"];
         exitCommand.ExecuteRequested += this.ExitCommand_ExecuteRequested;
 
-        this.trayIcon = (TaskbarIcon)this.Resources["ScratchLinkTaskbarIcon"];
+        this.trayIcon = (TaskbarIcon)this.Resources["AluxLabsLinkTaskbarIcon"];
 
         // TODO: maybe we should enable efficiency mode when there are no connections?
         this.trayIcon.ForceCreate(enablesEfficiencyMode: false);

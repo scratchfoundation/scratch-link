@@ -6,7 +6,7 @@
     <SharedGUID>06B5D2A3-AD0A-4704-B00D-BCFF634E7709</SharedGUID>
   </PropertyGroup>
   <PropertyGroup Label="Configuration">
-    <Import_RootNamespace>ScratchLink</Import_RootNamespace>
+    <Import_RootNamespace>AluxLabs.Link</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)BLE\IBLEEndpoint.cs" />
@@ -27,7 +27,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)JsonRpc\Converters\JsonRpc2ValueConverter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EncodingHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EventAwaiter.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ScratchLinkApp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)AluxLabsLinkApp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Session.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SessionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)WebSocketListener.cs" />

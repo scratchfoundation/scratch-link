@@ -1,8 +1,8 @@
-﻿// <copyright file="JsonRpc2Error.cs" company="Scratch Foundation">
+// <copyright file="JsonRpc2Error.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.JsonRpc;
+namespace AluxLabs.Link.JsonRpc;
 
 using System.Text.Json.Serialization;
 

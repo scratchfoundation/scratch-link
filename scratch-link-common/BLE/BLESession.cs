@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.BLE;
+namespace AluxLabs.Link.BLE;
 
 using System;
 using System.Collections.Generic;
@@ -12,8 +12,8 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Fleck;
 using Microsoft.Extensions.DependencyInjection;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
 
 /// <summary>
 /// Implements the cross-platform portions of a BLE session.
@@ -32,7 +32,7 @@ internal abstract class BLESession<TDiscoveredPeripheral, TPeripheralAddress, TU
     public BLESession(IWebSocketConnection webSocket)
         : base(webSocket)
     {
-        this.GattHelpers = ScratchLinkApp.Current.Services.GetService<GattHelpers<TUUID>>();
+        this.GattHelpers = AluxLabsLinkApp.Current.Services.GetService<GattHelpers<TUUID>>();
         this.AllowedServices = new ();
         this.Handlers["discover"] = this.HandleDiscover;
         this.Handlers["write"] = this.HandleWrite;

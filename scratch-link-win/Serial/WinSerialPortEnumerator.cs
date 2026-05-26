@@ -3,7 +3,7 @@
 // Based on scratch-link by Scratch Foundation, licensed under AGPL-3.0-only.
 // </copyright>
 
-namespace ScratchLink.Win.Serial;
+namespace AluxLabs.Link.Win.Serial;
 
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Management;
 using System.Text.RegularExpressions;
-using ScratchLink.Serial;
+using AluxLabs.Link.Serial;
 
 /// <summary>
 /// Enumerates USB serial ports on Windows via WMI (Win32_PnPEntity), extracting

@@ -1,8 +1,8 @@
-﻿// <copyright file="IBLEEndpoint.cs" company="Scratch Foundation">
+// <copyright file="IBLEEndpoint.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.BLE;
+namespace AluxLabs.Link.BLE;
 
 using System;
 using System.Threading.Tasks;

@@ -2,12 +2,12 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Win;
+namespace AluxLabs.Link.Win;
 
 using Fleck;
-using ScratchLink.Win.BLE;
-using ScratchLink.Win.BT;
-using ScratchLink.Win.Serial;
+using AluxLabs.Link.Win.BLE;
+using AluxLabs.Link.Win.BT;
+using AluxLabs.Link.Win.Serial;
 
 /// <summary>
 /// Implements the Windows-specific functionality of the SessionManager.

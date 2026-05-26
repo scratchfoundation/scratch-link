@@ -3,7 +3,7 @@
 // Based on scratch-link by Scratch Foundation, licensed under AGPL-3.0-only.
 // </copyright>
 
-namespace ScratchLink.Serial;
+namespace AluxLabs.Link.Serial;
 
 using System;
 using System.Collections.Generic;
@@ -13,8 +13,8 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Fleck;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
 
 /// <summary>
 /// Cross-platform base for a USB Serial transport session. Uses Serial-specific

@@ -2,12 +2,12 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Win.BT;
+namespace AluxLabs.Link.Win.BT;
 
 using Fleck;
-using ScratchLink.BT;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.BT;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
 using System.Diagnostics;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;

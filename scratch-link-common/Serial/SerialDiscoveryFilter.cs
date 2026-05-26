@@ -3,7 +3,7 @@
 // Based on scratch-link by Scratch Foundation, licensed under AGPL-3.0-only.
 // </copyright>
 
-namespace ScratchLink.Serial;
+namespace AluxLabs.Link.Serial;
 
 /// <summary>
 /// A single filter entry passed by the client in a serial "discover" request.

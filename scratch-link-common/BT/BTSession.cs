@@ -1,16 +1,16 @@
-﻿// <copyright file="BTSession.cs" company="Scratch Foundation">
+// <copyright file="BTSession.cs" company="Scratch Foundation">
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.BT;
+namespace AluxLabs.Link.BT;
 
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Fleck;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
 
 /// <summary>
 /// Implements the cross-platform portions of a Bluetooth Classic (RFCOMM) session.

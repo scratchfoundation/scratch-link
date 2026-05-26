@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.JsonRpc.Converters;
+namespace AluxLabs.Link.JsonRpc.Converters;
 
 using System;
 using System.Text.Json;
