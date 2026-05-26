@@ -10,8 +10,9 @@ ensure_distribution() {
   local origin_domain="${domain}.s3-website.${AWS_REGION}.amazonaws.com"
 
   local existing
+  # `|| \`[]\``: alias 없는 다른 distribution의 null Items에서 contains() 에러를 회피.
   existing=$(aws cloudfront list-distributions \
-    --query "DistributionList.Items[?contains(Aliases.Items, \`$domain\`)].{Id:Id,Domain:DomainName}" \
+    --query "DistributionList.Items[?contains(Aliases.Items || \`[]\`, \`$domain\`)].{Id:Id,Domain:DomainName}" \
     --output json)
 
   local count
