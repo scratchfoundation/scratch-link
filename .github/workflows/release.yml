@@ -117,3 +117,47 @@ jobs:
             -p:AppxBundlePlatforms="x86|x64|ARM64" `
             -p:AppxBundle=Always `
             -p:UapAppxPackageBuildMode=StoreAndSideload
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Artifacts
+
+          version="${{ steps.meta.outputs.version }}"
+          channel="${{ steps.meta.outputs.channel }}"
+          bundle_src=$(find scratch-link-win-msix/AppPackages -type f -name '*.msixbundle' | head -n1)
+          upload_src=$(find scratch-link-win-msix/AppPackages -type f -name '*.msixupload' | head -n1)
+
+          if [[ -z "$bundle_src" || -z "$upload_src" ]]; then
+            echo "::error::빌드 산출물(.msixbundle / .msixupload)을 찾지 못함"
+            ls -R scratch-link-win-msix/AppPackages || true
+            exit 1
+          fi
+
+          bundle_dst="Artifacts/Scratch-Link-${version}.msixbundle"
+          upload_dst="Artifacts/Scratch-Link-${version}.msixupload"
+          cp "$bundle_src" "$bundle_dst"
+          cp "$upload_src" "$upload_dst"
+
+          # 체크섬
+          (cd Artifacts && sha256sum "$(basename "$bundle_dst")" "$(basename "$upload_dst")") > Artifacts/SHA256SUMS.txt
+
+          # latest.json
+          sha=$(sha256sum "$bundle_dst" | awk '{print $1}')
+          size=$(stat -c %s "$bundle_dst" 2>/dev/null || stat -f %z "$bundle_dst")
+          published=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          archive_url="https://${{ steps.meta.outputs.bucket }}/archive/v${version}/$(basename "$bundle_dst")"
+
+          jq -n \
+            --arg version "$version" \
+            --arg publishedAt "$published" \
+            --arg channel "$channel" \
+            --arg url "$archive_url" \
+            --arg sha256 "$sha" \
+            --argjson size "$size" \
+            '{version:$version, publishedAt:$publishedAt, channel:$channel, url:$url, sha256:$sha256, size:$size, minWindowsBuild:17763, windowsAppRuntime:"1.8"}' \
+            > Artifacts/latest.json
+
+          ls -la Artifacts/
+          cat Artifacts/latest.json
