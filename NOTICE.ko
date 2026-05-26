@@ -1,0 +1,49 @@
+AluxLabs Link
+Copyright (c) 2026 ALUX, Inc.
+
+본 문서는 참고용 한국어 번역입니다. 정본(authoritative)은 NOTICE 파일을
+참조하십시오. 번역과 정본이 충돌할 경우 정본을 우선합니다.
+
+
+출처 및 라이선스
+
+본 제품은 Scratch Foundation 의 scratch-link
+(https://github.com/scratchfoundation/scratch-link) 에서 파생되었으며,
+원본은 GNU Affero General Public License v3.0 (AGPL-3.0-only) 으로
+배포되었습니다.
+
+AluxLabs Link 역시 동일한 AGPL-3.0-only 라이선스로 배포됩니다.
+전체 라이선스 텍스트는 LICENSE 파일을 참조하십시오.
+
+본 제품의 전체 대응 소스 코드 (ALUX, Inc. 의 모든 수정 사항 포함) 는
+다음 위치에서 공개되고 있습니다:
+  https://github.com/aluxrobot/scratch-link
+
+
+ALUX, Inc. 의 주요 수정 사항
+
+- Windows 전용 배포 — 원본의 macOS 앱과 Safari Helper 확장은 본 포크에
+  포함되지 않음
+- USB Serial 트랜스포트 추가 (/scratch/serial 엔드포인트) — 디스커버리,
+  읽기/쓰기, keep-alive, DTR reset 지원
+- 기본 WebSocket 포트를 20110/20111 에서 20211 로 변경 — 원본 Scratch
+  Link 와 한 PC 에서 공존 가능
+- 런타임을 .NET 6 / Windows App SDK 1.3 에서 .NET 8 / Windows App SDK
+  1.8 로 업그레이드
+- "AluxLabs Link" 로 리브랜드 및 별도 MSIX 패키지 식별자 사용 — 원본과의
+  설치 충돌 방지
+- 그 외 안정성·코드 품질 개선
+
+AGPL-3.0 §5 에 따라, 원본 코드에서 파생된 모든 소스 파일의 원저작권
+표시 ("Copyright (c) Scratch Foundation") 와 파일별 attribution 은
+보존됩니다.
+
+
+상표 고지
+
+"Scratch" 는 Scratch Foundation 의 상표입니다. AluxLabs Link 는 Scratch
+Foundation 과 어떠한 제휴·후원·인증 관계도 없습니다.
+
+소스 코드와 문서에 나오는 "Scratch Link protocol" 이라는 표현은 원본
+scratch-link 프로젝트가 정립한 네트워크 프로토콜을 가리키며, 클라이언트
+호환성 확보 목적으로만 사용됩니다.

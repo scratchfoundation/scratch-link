@@ -1,7 +1,10 @@
-# Alux Scratch Link
+# AluxLabs Link
 
 Scratch 3.0과 PC에 연결된 하드웨어 주변기기를 중계하는 도우미 앱.
-[scratchfoundation/scratch-link](https://github.com/scratchfoundation/scratch-link)의 **Windows 전용 포크**이며, 원본의 AGPL-3.0-only 라이선스를 그대로 따릅니다.
+
+> 본 제품은 Scratch Foundation 의 [scratch-link](https://github.com/scratchfoundation/scratch-link) (AGPL-3.0-only) 에서 파생된 Windows 전용 포크이며, 동일한 **AGPL-3.0-only** 라이선스로 배포됩니다. 변경 내역·소스 위치·상표 고지는 [NOTICE](NOTICE) ([한국어](NOTICE.ko)), 전체 라이선스 텍스트는 [LICENSE](LICENSE) 를 참조하십시오.
+>
+> "Scratch" 는 Scratch Foundation 의 상표입니다. 본 제품은 Scratch Foundation 과 제휴·후원·인증 관계가 없으며, 호환성 확보를 위해 원본 프로토콜을 구현한 독립적인 파생 저작물입니다.
 
 ## 원본과의 차이
 
@@ -25,7 +28,7 @@ Windows App Runtime 1.8이 없는 경우 앱 실행 시 설치 안내가 표시�
 
 AluxLabs는 Alux 전용 Scratch 3.0입니다.
 
-1. Alux Scratch Link 실행
+1. AluxLabs Link 실행
 2. AluxLabs 열기
 3. 블록 카테고리 아래 "확장 기능 추가" 선택
 4. CodeTinker, Connect, CodingDrone 등 지원 확장 선택

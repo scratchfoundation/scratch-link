@@ -1,0 +1,49 @@
+AluxLabs Link
+Copyright (c) 2026 ALUX, Inc.
+
+This file is the authoritative version. A Korean translation is
+available at NOTICE.ko (for reference only).
+
+
+Origin and license
+
+This product is derived from scratch-link by the Scratch Foundation
+(https://github.com/scratchfoundation/scratch-link), originally licensed
+under the GNU Affero General Public License v3.0 (AGPL-3.0-only).
+
+AluxLabs Link is also distributed under the AGPL-3.0-only license.
+See the LICENSE file for the full license text.
+
+The complete corresponding source code of this product, including all
+modifications by ALUX, Inc., is publicly available at:
+  https://github.com/aluxrobot/scratch-link
+
+
+Significant modifications by ALUX, Inc.
+
+- Windows-only distribution; the upstream macOS application and Safari
+  Helper extension are not included in this fork
+- Added USB Serial transport (/scratch/serial endpoint) with discovery,
+  read/write, keep-alive, and DTR reset support
+- Changed the default WebSocket port from 20110/20111 to 20211 so that
+  AluxLabs Link can coexist with the original Scratch Link on the same
+  machine
+- Upgraded the runtime from .NET 6 / Windows App SDK 1.3 to
+  .NET 8 / Windows App SDK 1.8
+- Rebranded as "AluxLabs Link" with a separate MSIX package identity to
+  prevent installation conflict with the original
+- Various stability and code-quality improvements
+
+Per AGPL-3.0 Section 5, the original copyright notices and per-file
+attributions ("Copyright (c) Scratch Foundation") are retained in all
+source files derived from the upstream project.
+
+
+Trademark notice
+
+"Scratch" is a trademark of the Scratch Foundation. AluxLabs Link is
+not affiliated with, endorsed by, or sponsored by the Scratch Foundation.
+
+References to the "Scratch Link protocol" in source code and
+documentation refer to the network protocol established by the original
+scratch-link project, used here solely for client compatibility.
