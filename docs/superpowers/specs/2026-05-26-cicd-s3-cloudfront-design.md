@@ -292,6 +292,13 @@ Organization 수준에서 다음 secret을 본 리포지토리에 노출시킨�
 
 현재는 IAM user + 장기 access key. 향후 OIDC로 전환하면 access key 로테이션 부담이 사라진다.
 
+### 9.5 WAF (AWS WAFv2)
+
+CloudFront 앞단에 WebACL 부착은 **이번 범위에서 제외**한다. 사용자가 받는 것은 정적 `.msixbundle` 파일 1개와 `latest.json` 1개뿐이라, 입력 검증·SQLi·XSS 같은 WAF 본연의 보호 대상이 없다. 비용·복잡도만 늘어남. 향후 다음 중 하나가 발생하면 재검토:
+- 봇 트래픽이 비정상적으로 늘어 대역폭 비용이 문제됨
+- 특정 국가에서의 다운로드를 차단해야 하는 요구사항 발생
+- 인증된 다운로드(서명된 URL 등) 도입
+
 ## 10. 검증 시나리오 (구현 완료 시)
 
 1. **prerelease 시나리오**: `git tag v0.0.1-test.1 && git push origin v0.0.1-test.1` → dev 버킷에 객체 도착 → `https://dev-scratch-link.aluxcoding.com/latest.json`이 `0.0.1-test.1` 표시 → `latest.msixbundle` 다운로드 가능
