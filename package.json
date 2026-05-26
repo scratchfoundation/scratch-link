@@ -1,8 +1,8 @@
 {
-  "name": "scratch-link",
-  "version": "2.1.0-develop.10",
-  "description": "Scratch Link is not published as an NPM package. This file only exists to facilitate installation of devDependencies.",
-  "author": "Scratch Foundation",
+  "name": "alux-scratch-link",
+  "version": "1.0.0",
+  "description": "Alux Scratch Link is not published as an NPM package. This file only exists to facilitate installation of devDependencies.",
+  "author": "ALUX, Inc.",
   "license": "AGPL-3.0-only",
   "scripts": {
     "prepare": "husky install"
