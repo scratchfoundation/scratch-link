@@ -200,8 +200,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Git Bash on Windows에서 native aws.exe로 따옴표가 그대로 전달돼 invalid path가 되는 문제 회피.
+          # --invalidation-batch JSON 형태로 명시. CallerReference로 재실행 시 중복 방지.
+          cat > /tmp/cf-invalidation.json <<JSON
+          {
+            "Paths": {"Quantity": 2, "Items": ["/latest.msixbundle", "/latest.json"]},
+            "CallerReference": "release-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+          JSON
           aws cloudfront create-invalidation \
             --distribution-id "${{ steps.meta.outputs.dist_id }}" \
-            --paths "/latest.msixbundle" "/latest.json" \
+            --invalidation-batch file:///tmp/cf-invalidation.json \
             --query 'Invalidation.{Id:Id,Status:Status}' \
             --output table
