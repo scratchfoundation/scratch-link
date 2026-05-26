@@ -80,3 +80,40 @@ jobs:
           echo "version = ${{ steps.meta.outputs.version }}"
           echo "bucket  = ${{ steps.meta.outputs.bucket }}"
           echo "dist_id = (마스킹됨)"
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Verify build toolchain
+        shell: pwsh
+        run: |
+          dotnet --version
+          msbuild -version
+          aws --version
+
+      - name: Restore NuGet cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '**/*.props') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Build MSIX bundle
+        shell: pwsh
+        env:
+          SOLUTION_DIR: ${{ github.workspace }}
+        run: |
+          msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj `
+            -maxCpuCount `
+            -restore `
+            -t:Build `
+            -p:SolutionDir="$env:SOLUTION_DIR\" `
+            -p:Configuration=Release_Win `
+            -p:AppxBundlePlatforms="x86|x64|ARM64" `
+            -p:AppxBundle=Always `
+            -p:UapAppxPackageBuildMode=StoreAndSideload
