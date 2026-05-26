@@ -33,7 +33,7 @@ public class Session : IDisposable
     /// Specifies the Scratch Link network protocol version. Note that this is not the application version.
     /// Keep this in sync with the version number in `NetworkProtocol.md`.
     /// </summary>
-    protected const string NetworkProtocolVersion = "1.2";
+    protected const string NetworkProtocolVersion = "1.3";
 
     /// <summary>
     /// Default timeout for remote requests.
