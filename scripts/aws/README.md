@@ -23,7 +23,7 @@ cd <repo-root>
 
 ## 산출
 
-마지막에 출력되는 5개 값을 GitHub **Organization** Secrets에 등록:
+마지막에 출력되는 5개 값을 **Repository Secrets** (org가 아닌 본 repo 한정)에 등록:
 
 | Secret 이름 | 출처 |
 |---|---|
@@ -33,9 +33,20 @@ cd <repo-root>
 | `CF_DIST_ID_PROD` | 스크립트 출력 |
 | `CF_DIST_ID_DEV` | 스크립트 출력 |
 
-등록 경로: GitHub Org → Settings → Secrets and variables → Actions → New organization secret. 본 리포지토리(`aluxrobot/scratch-link`)를 접근 가능 리포에 추가.
+> **왜 repo 시크릿?** `aluxrobot/scratch-link`은 `scratchfoundation/scratch-link`의 **public fork**라 org 시크릿(visibility=Private repositories)이 닿지 못한다. 본 작업의 IAM user `gh-actions-scratch-link`도 이 repo 전용이라 시크릿도 같은 스코프에 두는 게 일관적.
 
-> 기존 Org Secret에 `AWS_ACCESS_KEY_ID` 이름이 이미 다른 키로 등록돼 있으면, 본 워크플로용 이름을 `SCRATCH_LINK_AWS_ACCESS_KEY_ID` 등으로 바꿔 등록하고 `release.yml`의 secret 참조도 같이 바꾸세요.
+### 등록 방법 두 가지
+
+**(권장) gh CLI** — 값이 셸 히스토리에 안 남게:
+```bash
+gh secret set AWS_REGION            --repo aluxrobot/scratch-link --body "ap-northeast-2"
+gh secret set CF_DIST_ID_PROD       --repo aluxrobot/scratch-link --body "<from setup output>"
+gh secret set CF_DIST_ID_DEV        --repo aluxrobot/scratch-link --body "<from setup output>"
+gh secret set AWS_ACCESS_KEY_ID     --repo aluxrobot/scratch-link   # 프롬프트
+gh secret set AWS_SECRET_ACCESS_KEY --repo aluxrobot/scratch-link   # 프롬프트
+```
+
+**브라우저**: https://github.com/aluxrobot/scratch-link/settings/secrets/actions → "New repository secret".
 
 ## 멱등성
 

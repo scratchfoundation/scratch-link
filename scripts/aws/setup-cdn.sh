@@ -59,7 +59,8 @@ key_line=$(ensure_access_key)
 cat >&2 <<EOF
 
 ==========================================================
-${GREEN}셋업 완료. 다음 값을 GitHub Organization Secret에 등록:${RESET}
+${GREEN}셋업 완료. 다음 값을 GitHub Repository Secret에 등록:${RESET}
+${GREEN}(scratch-link은 public fork라 org 시크릿(private-only)이 닿지 못해 repo 시크릿으로 둠)${RESET}
 
   AWS_REGION              = $AWS_REGION
   CF_DIST_ID_PROD         = ${DIST_ID[prod]}
@@ -88,10 +89,14 @@ CloudFront 도메인 (DNS 전파 후 사용 가능):
   dev:  ${DIST_DOMAIN[dev]}   →  https://$(domain_for_env dev)
 
 다음 단계:
-  1. GitHub Org Settings → Secrets and variables → Actions → New organization secret
-  2. 위 5개 값 등록 (또는 기존 AWS_ACCESS_KEY_ID 재사용)
-  3. 본 리포지토리에 secret 접근 허용
-  4. (대기) CloudFront distribution Deployed 상태 확인:
+  1. gh CLI로 한 줄씩 등록 (값이 셸 히스토리·로그에 남지 않도록 stdin 사용):
+     gh secret set AWS_REGION            --repo aluxrobot/scratch-link --body "$AWS_REGION"
+     gh secret set CF_DIST_ID_PROD       --repo aluxrobot/scratch-link --body "${DIST_ID[prod]}"
+     gh secret set CF_DIST_ID_DEV        --repo aluxrobot/scratch-link --body "${DIST_ID[dev]}"
+     gh secret set AWS_ACCESS_KEY_ID     --repo aluxrobot/scratch-link   # 프롬프트로 입력
+     gh secret set AWS_SECRET_ACCESS_KEY --repo aluxrobot/scratch-link   # 프롬프트로 입력
+     (브라우저로 등록하려면: https://github.com/aluxrobot/scratch-link/settings/secrets/actions)
+  2. (대기) CloudFront distribution Deployed 상태 확인:
      aws cloudfront get-distribution --id ${DIST_ID[prod]} --query 'Distribution.Status'
 ==========================================================
 EOF
