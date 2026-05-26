@@ -4,8 +4,8 @@ Source of truth:
     brand/labs-l.svg
 
 Outputs (overwrites in place; all paths relative to repo root):
-    scratch-link-win/scratch-link.ico        app icon, 16..256 sizes
-    scratch-link-win/scratch-link-tray.ico   tray icon, 16/24/32
+    scratch-link-win/aluxlabs-link.ico        app icon, 16..256 sizes
+    scratch-link-win/aluxlabs-link-tray.ico   tray icon, 16/24/32
     scratch-link-win-msix/Images/*.png       MSIX tile/splash/store/lock assets
 
 How to run (from repo root):
@@ -26,7 +26,7 @@ How it works:
 
 Editing the targets:
     To add or change output sizes, edit ICO_TARGETS / PNG_TARGETS below.
-    ICO sizes must match the slots the existing scratch-link*.ico files
+    ICO sizes must match the slots the existing aluxlabs-link*.ico files
     advertise; MSIX PNG dimensions are dictated by Windows
     (Square44x44Logo.scale-200 must be 88x88, etc.).
 """
@@ -47,8 +47,8 @@ WIN = REPO / "scratch-link-win"
 MSIX = REPO / "scratch-link-win-msix" / "Images"
 
 ICO_TARGETS = {
-    WIN / "scratch-link.ico": [16, 24, 32, 48, 64, 96, 128, 256],
-    WIN / "scratch-link-tray.ico": [16, 24, 32],
+    WIN / "aluxlabs-link.ico": [16, 24, 32, 48, 64, 96, 128, 256],
+    WIN / "aluxlabs-link-tray.ico": [16, 24, 32],
 }
 
 PNG_TARGETS = {

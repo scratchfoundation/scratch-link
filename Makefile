@@ -45,8 +45,8 @@ MAC_IMAGES = \
 	Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-72.png
 
 WINDOWS_IMAGES = \
-	scratch-link-win/scratch-link.ico \
-	scratch-link-win/scratch-link-tray.ico \
+	scratch-link-win/aluxlabs-link.ico \
+	scratch-link-win/aluxlabs-link-tray.ico \
 	scratch-link-win-msix/Images/LockScreenLogo.scale-200.png \
 	scratch-link-win-msix/Images/SplashScreen.scale-200.png \
 	scratch-link-win-msix/Images/Square150x150Logo.scale-200.png \
@@ -124,8 +124,8 @@ $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Exten
 # See also:
 #   https://stackoverflow.com/q/3236115
 #   https://iconhandbook.co.uk/reference/chart/windows/
-$(eval $(call svg2ico,scratch-link-win/scratch-link.ico,Assets/square.svg,256 128 96 64 48 32 24 16))
-$(eval $(call svg2ico,scratch-link-win/scratch-link-tray.ico,Assets/simplified.svg,32 24 16))
+$(eval $(call svg2ico,scratch-link-win/aluxlabs-link.ico,Assets/square.svg,256 128 96 64 48 32 24 16))
+$(eval $(call svg2ico,scratch-link-win/aluxlabs-link-tray.ico,Assets/simplified.svg,32 24 16))
 
 # Windows MSIX
 # TODO: does Microsoft really want DPI=72 for all of these?

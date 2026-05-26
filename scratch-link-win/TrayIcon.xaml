@@ -11,7 +11,7 @@
                   Visibility="Visible"
                   ToolTipText="AluxLabs Link"
                   ContextMenuMode="SecondWindow"
-                  IconSource="scratch-link-tray.ico"
+                  IconSource="aluxlabs-link-tray.ico"
                   tb:TaskbarIcon.ContextFlyout="{StaticResource ContextFlyout}"
   />
 

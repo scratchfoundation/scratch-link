@@ -18,7 +18,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>AnyCPU</Platforms>
-    <ApplicationIcon>scratch-link.ico</ApplicationIcon>
+    <ApplicationIcon>aluxlabs-link.ico</ApplicationIcon>
   </PropertyGroup>
   <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
   <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
@@ -34,8 +34,8 @@
   </Target>
 
   <ItemGroup>
-    <Content Include="scratch-link.ico" />
-    <Content Include="scratch-link-tray.ico" />
+    <Content Include="aluxlabs-link.ico" />
+    <Content Include="aluxlabs-link-tray.ico" />
   </ItemGroup>
 
   <ItemGroup>
