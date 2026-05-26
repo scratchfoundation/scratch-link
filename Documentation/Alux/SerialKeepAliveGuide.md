@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Scratch Link serial transport now supports **keep-alive** functionality to prevent device timeout. This is particularly useful for devices like Codetinker that disconnect if no response is received within 1 second.
+AluxLabs Link's serial transport supports **keep-alive** functionality to prevent device timeout. This is particularly useful for devices like Codetinker that disconnect if no response is received within 1 second.
 
 ## Problem Statement
 

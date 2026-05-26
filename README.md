@@ -9,7 +9,7 @@ Scratch 3.0과 PC에 연결된 하드웨어 주변기기를 중계하는 도우�
 ## 원본과의 차이
 
 - **Windows 전용** — macOS 빌드와 Safari 확장은 제외.
-- **Serial 전송 추가** — BLE / Bluetooth Classic에 더해 USB 시리얼(CDC/CH340 등) 장치를 `/scratch/serial` JSON-RPC 엔드포인트로 지원. 구현은 `scratch-link-common/Serial/`과 `scratch-link-win/Serial/` 참고.
+- **Serial 전송 추가** — BLE / Bluetooth Classic에 더해 USB 시리얼(CDC/CH340 등) 장치를 `/scratch/serial` JSON-RPC 엔드포인트로 지원. 구현은 `aluxlabs-link-common/Serial/`과 `aluxlabs-link-win/Serial/` 참고.
 - **포트 20211 사용** — 원본 Scratch Link(20110/20111)와 한 PC에서 공존 가능.
 - **.NET 8 / WindowsAppSDK 1.8** — 원본의 .NET 6 / WindowsAppSDK 1.3에서 업그레이드.
 
@@ -38,13 +38,13 @@ AluxLabs는 Alux 전용 Scratch 3.0입니다.
 
 ```
 scratch-link/
-├── scratch-link-win/          # WinUI 3 앱 본체 (EXE)
+├── aluxlabs-link-win/          # WinUI 3 앱 본체 (EXE)
 │   ├── BLE/                   # Bluetooth Low Energy (Windows)
 │   ├── BT/                    # Bluetooth Classic (Windows)
 │   ├── Serial/                # USB 시리얼 (Windows)
 │   └── Properties/PublishProfiles/  # win-x64/x86/arm64 publish 프로필
-├── scratch-link-win-msix/     # MSIX 패키징 프로젝트 (.wapproj)
-├── scratch-link-common/       # 플랫폼 공유 C# 코드 (.shproj)
+├── aluxlabs-link-win-msix/     # MSIX 패키징 프로젝트 (.wapproj)
+├── aluxlabs-link-common/       # 플랫폼 공유 C# 코드 (.shproj)
 │   ├── BLE/                   # BLE 세션 공통 로직
 │   ├── BT/                    # BT 세션 공통 로직
 │   ├── Serial/                # 시리얼 세션 공통 로직
@@ -62,7 +62,7 @@ scratch-link/
 
 ## 개발 환경 구성
 
-[Documentation/WindowsDevSetup-VS2026.md](Documentation/WindowsDevSetup-VS2026.md) 참고.
+[Documentation/Alux/WindowsDevSetup-VS2026.md](Documentation/Alux/WindowsDevSetup-VS2026.md) 참고.
 
 ## 빌드 구성
 
@@ -71,7 +71,7 @@ scratch-link/
 | `Debug_Win` | 일상 개발/디버깅 (F5) |
 | `Release_Win` | 배포용 빌드 및 MSIX 패키징 |
 
-Startup Project를 `scratch-link-win-msix`로 설정하면 MSIX 패키지 빌드가 실행됩니다. 일반 디버깅은 반드시 `scratch-link-win`으로 설정할 것.
+Startup Project를 `aluxlabs-link-win-msix`로 설정하면 MSIX 패키지 빌드가 실행됩니다. 일반 디버깅은 반드시 `aluxlabs-link-win`으로 설정할 것.
 
 ## 버전 번호
 

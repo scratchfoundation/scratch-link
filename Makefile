@@ -45,15 +45,15 @@ MAC_IMAGES = \
 	Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Extension/Resources/images/toolbar-icon-72.png
 
 WINDOWS_IMAGES = \
-	scratch-link-win/aluxlabs-link.ico \
-	scratch-link-win/aluxlabs-link-tray.ico \
-	scratch-link-win-msix/Images/LockScreenLogo.scale-200.png \
-	scratch-link-win-msix/Images/SplashScreen.scale-200.png \
-	scratch-link-win-msix/Images/Square150x150Logo.scale-200.png \
-	scratch-link-win-msix/Images/Square44x44Logo.scale-200.png \
-	scratch-link-win-msix/Images/Square44x44Logo.targetsize-24_altform-unplated.png \
-	scratch-link-win-msix/Images/StoreLogo.png \
-	scratch-link-win-msix/Images/Wide310x150Logo.scale-200.png
+	aluxlabs-link-win/aluxlabs-link.ico \
+	aluxlabs-link-win/aluxlabs-link-tray.ico \
+	aluxlabs-link-win-msix/Images/LockScreenLogo.scale-200.png \
+	aluxlabs-link-win-msix/Images/SplashScreen.scale-200.png \
+	aluxlabs-link-win-msix/Images/Square150x150Logo.scale-200.png \
+	aluxlabs-link-win-msix/Images/Square44x44Logo.scale-200.png \
+	aluxlabs-link-win-msix/Images/Square44x44Logo.targetsize-24_altform-unplated.png \
+	aluxlabs-link-win-msix/Images/StoreLogo.png \
+	aluxlabs-link-win-msix/Images/Wide310x150Logo.scale-200.png
 
 .PHONY: all clean mac windows
 
@@ -124,16 +124,16 @@ $(eval $(call svg2png,Scratch\ Link\ Safari\ Helper/Scratch\ Link\ Safari\ Exten
 # See also:
 #   https://stackoverflow.com/q/3236115
 #   https://iconhandbook.co.uk/reference/chart/windows/
-$(eval $(call svg2ico,scratch-link-win/aluxlabs-link.ico,Assets/square.svg,256 128 96 64 48 32 24 16))
-$(eval $(call svg2ico,scratch-link-win/aluxlabs-link-tray.ico,Assets/simplified.svg,32 24 16))
+$(eval $(call svg2ico,aluxlabs-link-win/aluxlabs-link.ico,Assets/square.svg,256 128 96 64 48 32 24 16))
+$(eval $(call svg2ico,aluxlabs-link-win/aluxlabs-link-tray.ico,Assets/simplified.svg,32 24 16))
 
 # Windows MSIX
 # TODO: does Microsoft really want DPI=72 for all of these?
 # See https://learn.microsoft.com/en-us/windows/apps/design/layout/screen-sizes-and-breakpoints-for-responsive-design#effective-pixels-and-scale-factor
-$(eval $(call svg2png,scratch-link-win-msix/Images/LockScreenLogo.scale-200.png,Assets/rounded.svg,48,48,72))
-$(eval $(call svg2png,scratch-link-win-msix/Images/SplashScreen.scale-200.png,Assets/rounded.svg,1240,600,72))
-$(eval $(call svg2png,scratch-link-win-msix/Images/Square44x44Logo.scale-200.png,Assets/rounded.svg,88,88,72))
-$(eval $(call svg2png,scratch-link-win-msix/Images/Square44x44Logo.targetsize-24_altform-unplated.png,Assets/rounded.svg,24,24,72))
-$(eval $(call svg2png,scratch-link-win-msix/Images/Square150x150Logo.scale-200.png,Assets/rounded.svg,300,300,72))
-$(eval $(call svg2png,scratch-link-win-msix/Images/StoreLogo.png,Assets/rounded.svg,50,50,72))
-$(eval $(call svg2png,scratch-link-win-msix/Images/Wide310x150Logo.scale-200.png,Assets/rounded.svg,620,300,72))
+$(eval $(call svg2png,aluxlabs-link-win-msix/Images/LockScreenLogo.scale-200.png,Assets/rounded.svg,48,48,72))
+$(eval $(call svg2png,aluxlabs-link-win-msix/Images/SplashScreen.scale-200.png,Assets/rounded.svg,1240,600,72))
+$(eval $(call svg2png,aluxlabs-link-win-msix/Images/Square44x44Logo.scale-200.png,Assets/rounded.svg,88,88,72))
+$(eval $(call svg2png,aluxlabs-link-win-msix/Images/Square44x44Logo.targetsize-24_altform-unplated.png,Assets/rounded.svg,24,24,72))
+$(eval $(call svg2png,aluxlabs-link-win-msix/Images/Square150x150Logo.scale-200.png,Assets/rounded.svg,300,300,72))
+$(eval $(call svg2png,aluxlabs-link-win-msix/Images/StoreLogo.png,Assets/rounded.svg,50,50,72))
+$(eval $(call svg2png,aluxlabs-link-win-msix/Images/Wide310x150Logo.scale-200.png,Assets/rounded.svg,620,300,72))
