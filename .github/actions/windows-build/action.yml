@@ -19,25 +19,25 @@ runs:
           # That means SolutionDir needs to be set artificially, though.
           # The `UapAppxPackageBuildMode=StoreAndSideload` means it'll build both MSIXUpload and MSIXBundle.
           # The StoreUpload mode does that too, but that might be a bug, and semantically "StoreAndSideload" is what we want.
-          msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="${{ inputs.configuration }}_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
+          msbuild aluxlabs-link-win-msix/aluxlabs-link-win-msix.wapproj -maxCpuCount -restore -t:Build -p:SolutionDir="$PWD\" -p:Configuration="${{ inputs.configuration }}_Win" -p:AppxBundlePlatforms="x86|x64|ARM64" -p:AppxBundle=Always -p:UapAppxPackageBuildMode=StoreAndSideload
     - name: "Move Windows artifacts into place: ${{ inputs.configuration }}"
       shell: bash
       run: |
           mkdir -p Artifacts
           # The store package is fine as is: no user will see this filename.
-          mv -v scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_${{ inputs.configuration }}_Win.msixupload Artifacts/
+          mv -v aluxlabs-link-win-msix/AppPackages/aluxlabs-link-win-msix_*_${{ inputs.configuration }}_Win.msixupload Artifacts/
           # Transform the bundle for a more user-friendly filename
-          for PKGPATH in scratch-link-win-msix/AppPackages/scratch-link-win-msix_*_${{ inputs.configuration }}_Win_Test/scratch-link-win-msix_*_${{ inputs.configuration }}_Win.msixbundle; do
+          for PKGPATH in aluxlabs-link-win-msix/AppPackages/aluxlabs-link-win-msix_*_${{ inputs.configuration }}_Win_Test/aluxlabs-link-win-msix_*_${{ inputs.configuration }}_Win.msixbundle; do
             if [ -r "$PKGPATH" ]; then
               PKGFILE="${PKGPATH##*/}"
-              [[ $PKGFILE =~ scratch-link-win-msix_([.0-9]+)_(.*)_${{ inputs.configuration }}_Win.msixbundle$ ]]
+              [[ $PKGFILE =~ aluxlabs-link-win-msix_([.0-9]+)_(.*)_${{ inputs.configuration }}_Win.msixbundle$ ]]
               PKGVERSION=${BASH_REMATCH[1]}
               PKGPLATFORMS=${BASH_REMATCH[2]}
             fi
             # do the move outside the "if" above to force an error if the file doesn't exist
             if [ -z "${{ inputs.artifact_tag }}" ]; then
-              mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION}.msixbundle"
+              mv -v "$PKGPATH" "Artifacts/AluxLabs Link ${PKGVERSION}.msixbundle"
             else
-              mv -v "$PKGPATH" "Artifacts/Scratch Link ${PKGVERSION} ${{ inputs.artifact_tag }}.msixbundle"
+              mv -v "$PKGPATH" "Artifacts/AluxLabs Link ${PKGVERSION} ${{ inputs.artifact_tag }}.msixbundle"
             fi
           done

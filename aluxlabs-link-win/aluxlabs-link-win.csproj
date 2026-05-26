@@ -20,7 +20,7 @@
     <Platforms>AnyCPU</Platforms>
     <ApplicationIcon>aluxlabs-link.ico</ApplicationIcon>
   </PropertyGroup>
-  <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
+  <Import Project="..\aluxlabs-link-common\aluxlabs-link-common.projitems" Label="Shared" Condition="Exists('..\aluxlabs-link-common\aluxlabs-link-common.projitems')" />
   <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
   <Import Project="$(SolutionDir)SharedProps\ScratchVersion.targets" />
   <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />

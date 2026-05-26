@@ -30,7 +30,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		TRADEMARK = TRADEMARK
 	EndProjectSection
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "scratch-link-common", "scratch-link-common\scratch-link-common.shproj", "{06B5D2A3-AD0A-4704-B00D-BCFF634E7709}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "aluxlabs-link-common", "aluxlabs-link-common\aluxlabs-link-common.shproj", "{06B5D2A3-AD0A-4704-B00D-BCFF634E7709}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "scratch-link-mac", "scratch-link-mac\scratch-link-mac.csproj", "{CDF7978E-13C6-40A9-81F9-2A3B4F7E861C}"
 EndProject
@@ -50,9 +50,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "fastlane", "fastlane", "{B8
 		fastlane\README.md = fastlane\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "scratch-link-win", "scratch-link-win\scratch-link-win.csproj", "{B21C2FCE-7670-402A-B8EE-958F3896F237}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "aluxlabs-link-win", "aluxlabs-link-win\aluxlabs-link-win.csproj", "{B21C2FCE-7670-402A-B8EE-958F3896F237}"
 EndProject
-Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "scratch-link-win-msix", "scratch-link-win-msix\scratch-link-win-msix.wapproj", "{265CA433-8639-4E8D-A7F3-09B1B3495D92}"
+Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "aluxlabs-link-win-msix", "aluxlabs-link-win-msix\aluxlabs-link-win-msix.wapproj", "{265CA433-8639-4E8D-A7F3-09B1B3495D92}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{05F0C24B-4EA1-4B11-9F86-DB3F1EDEE785}"
 	ProjectSection(SolutionItems) = preProject
@@ -220,8 +220,8 @@ Global
 		SolutionGuid = {61F7FB11-1E47-470C-91E2-47F8143E1572}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		scratch-link-common\scratch-link-common.projitems*{06b5d2a3-ad0a-4704-b00d-bcff634e7709}*SharedItemsImports = 13
-		scratch-link-common\scratch-link-common.projitems*{b21c2fce-7670-402a-b8ee-958f3896f237}*SharedItemsImports = 5
-		scratch-link-common\scratch-link-common.projitems*{cdf7978e-13c6-40a9-81f9-2a3b4f7e861c}*SharedItemsImports = 4
+		aluxlabs-link-common\aluxlabs-link-common.projitems*{06b5d2a3-ad0a-4704-b00d-bcff634e7709}*SharedItemsImports = 13
+		aluxlabs-link-common\aluxlabs-link-common.projitems*{b21c2fce-7670-402a-b8ee-958f3896f237}*SharedItemsImports = 5
+		aluxlabs-link-common\aluxlabs-link-common.projitems*{cdf7978e-13c6-40a9-81f9-2a3b4f7e861c}*SharedItemsImports = 4
 	EndGlobalSection
 EndGlobal
