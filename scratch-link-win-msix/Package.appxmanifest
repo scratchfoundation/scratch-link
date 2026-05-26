@@ -7,8 +7,8 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="ScratchFoundation.1711508CFD202"
-    Publisher="CN=2EC43DF1-469A-4119-9AB9-568A0A1FF65F"
+    Name="ALUXInc.AluxLabsLink"
+    Publisher="CN=ALUX, Inc."
     Version="1.0.0.0" />
 
   <Properties>
