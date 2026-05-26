@@ -12,7 +12,7 @@
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>Alux Scratch Link</DisplayName>
+    <DisplayName>AluxLabs Link</DisplayName>
     <PublisherDisplayName>ALUX, Inc.</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
@@ -31,8 +31,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Alux Scratch Link"
-        Description="Alux Scratch Link"
+        DisplayName="AluxLabs Link"
+        Description="AluxLabs Link"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
         Square44x44Logo="Images\Square44x44Logo.png">

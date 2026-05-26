@@ -44,7 +44,7 @@ This file sets up version properties in our own Scratch way.
 		<PropertyGroup>
 			<!--
 			Alux fork: when there's no semver git tag, GitInfo defaults to 0.0.0 and we'd ship
-			as "0.0.x" — bump the floor to 1.0.0 so we ship as "Alux Scratch Link 1.0.0.x".
+			as "0.0.x" — bump the floor to 1.0.0 so we ship as "AluxLabs Link 1.0.0.x".
 			To cut a real release later, tag the commit (e.g. `git tag v1.1.0`) and this guard
 			will yield automatically.
 			-->

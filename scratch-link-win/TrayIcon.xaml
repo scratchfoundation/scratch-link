@@ -9,7 +9,7 @@
 
   <tb:TaskbarIcon x:Key="ScratchLinkTaskbarIcon"
                   Visibility="Visible"
-                  ToolTipText="Alux Scratch Link"
+                  ToolTipText="AluxLabs Link"
                   ContextMenuMode="SecondWindow"
                   IconSource="scratch-link-tray.ico"
                   tb:TaskbarIcon.ContextFlyout="{StaticResource ContextFlyout}"
@@ -23,7 +23,7 @@
 
   <XamlUICommand
     x:Key="CopyVersionCommand"
-    Label="Alux Scratch Link 1.0.0.0"
+    Label="AluxLabs Link 1.0.0.0"
     Description="Copy version to clipboard"
     >
     <XamlUICommand.IconSource>
