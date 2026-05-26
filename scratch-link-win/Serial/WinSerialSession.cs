@@ -171,6 +171,27 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
     }
 
     /// <inheritdoc/>
+    protected override async Task DoTriggerDTRReset()
+    {
+        var currentPort = this.port;
+        if (currentPort == null || !currentPort.IsOpen)
+        {
+            throw JsonRpc2Error.InternalError("No connected peripheral").ToException();
+        }
+
+        try
+        {
+            currentPort.DtrEnable = true;
+            await Task.Delay(50).ConfigureAwait(false);
+            currentPort.DtrEnable = false;
+        }
+        catch (Exception e) when (e is ObjectDisposedException || e is InvalidOperationException || e is IOException)
+        {
+            throw JsonRpc2Error.InternalError($"setSignals failed: {e.Message}").ToException();
+        }
+    }
+
+    /// <inheritdoc/>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);

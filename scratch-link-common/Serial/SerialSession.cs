@@ -53,6 +53,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         this.Handlers["startReading"] = this.HandleStartReading;
         this.Handlers["stopReading"] = this.HandleStopReading;
         this.Handlers["setKeepAlive"] = this.HandleSetKeepAlive;
+        this.Handlers["triggerDTRReset"] = this.HandleTriggerDTRReset;
     }
 
     /// <summary>
@@ -230,6 +231,38 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         Trace.WriteLine($"keep-alive: setKeepAlive applied intervalMs={appliedText}");
         return Task.FromResult<object>(new Dictionary<string, object> { ["intervalMs"] = applied });
     }
+
+    /// <summary>
+    /// JSON-RPC <c>triggerDTRReset</c> handler. Acquires the write semaphore so no
+    /// write overlaps the DTR pulse sequence, then delegates to <see cref="DoTriggerDTRReset"/>.
+    /// </summary>
+    /// <param name="methodName">Dispatched method name.</param>
+    /// <param name="args">Unused.</param>
+    /// <returns>An empty result, returned after the DTR pulse sequence completes.</returns>
+    protected async Task<object> HandleTriggerDTRReset(string methodName, JsonElement? args)
+    {
+        Trace.WriteLine("triggerDTRReset: executing DTR pulse");
+
+        await this.writeSemaphore.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await this.DoTriggerDTRReset().ConfigureAwait(false);
+        }
+        finally
+        {
+            this.writeSemaphore.Release();
+        }
+
+        return new Dictionary<string, object>();
+    }
+
+    /// <summary>
+    /// Platform-specific implementation for the DTR reset pulse. Asserts DTR for 50 ms
+    /// then releases it. Must throw <see cref="JsonRpc2Exception"/> on failure so the
+    /// caller receives a well-formed JSON-RPC error response.
+    /// </summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    protected abstract Task DoTriggerDTRReset();
 
     /// <summary>
     /// Report received bytes to the client as a <c>serialDidReceiveData</c>
