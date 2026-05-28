@@ -4,9 +4,9 @@ Source of truth:
     brand/labs-l.svg
 
 Outputs (overwrites in place; all paths relative to repo root):
-    scratch-link-win/aluxlabs-link.ico        app icon, 16..256 sizes
-    scratch-link-win/aluxlabs-link-tray.ico   tray icon, 16/24/32
-    scratch-link-win-msix/Images/*.png       MSIX tile/splash/store/lock assets
+    aluxlabs-link-win/aluxlabs-link.ico        app icon, 16..256 sizes
+    aluxlabs-link-win/aluxlabs-link-tray.ico   tray icon, 16/24/32
+    aluxlabs-link-win-msix/Images/*.png       MSIX tile/splash/store/lock assets
 
 How to run (from repo root):
     pip install Pillow                   # one-time
@@ -43,8 +43,8 @@ from PIL import Image
 REPO = Path(__file__).resolve().parent.parent
 SVG = REPO / "brand" / "labs-l.svg"
 
-WIN = REPO / "scratch-link-win"
-MSIX = REPO / "scratch-link-win-msix" / "Images"
+WIN = REPO / "aluxlabs-link-win"
+MSIX = REPO / "aluxlabs-link-win-msix" / "Images"
 
 ICO_TARGETS = {
     WIN / "aluxlabs-link.ico": [16, 24, 32, 48, 64, 96, 128, 256],

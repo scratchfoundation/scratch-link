@@ -2,8 +2,8 @@
 // Expected globals:
 // - JSONRPC
 // - Scratch
-// - ScratchLinkWebSocket
-// - ScratchLinkSafariSocket (if Safari extension is present)
+// - AluxLabsLinkWebSocket
+// - AluxLabsLinkSafariSocket (if Safari extension is present)
 /// <reference path="global.d.ts"/>
 
 class LogDisplay {
@@ -74,20 +74,20 @@ class DidReceiveCallEvent extends Event {
     }
 }
 
-class ScratchLinkClient extends JSONRPC {
+class AluxLabsLinkClient extends JSONRPC {
     /**
      * @param {string} type
      */
     constructor(type) {
         super();
-        this._scratchLinkPeripheralType = type;
+        this._aluxLabsLinkPeripheralType = type;
         this._events = new EventTarget();
-        const ScratchLinkSafariSocket = self.Scratch && self.Scratch.ScratchLinkSafariSocket;
-        const useSafariSocket = ScratchLinkSafariSocket && ScratchLinkSafariSocket.isSafariHelperCompatible();
+        const AluxLabsLinkSafariSocket = self.AluxLabs && self.AluxLabs.AluxLabsLinkSafariSocket;
+        const useSafariSocket = AluxLabsLinkSafariSocket && AluxLabsLinkSafariSocket.isSafariHelperCompatible();
         addLine(`Using ${useSafariSocket ? 'Safari WebExtension' : 'WebSocket'}`);
         this._socket = useSafariSocket ?
-            new ScratchLinkSafariSocket(type) :
-            new ScratchLinkWebSocket(type);
+            new AluxLabsLinkSafariSocket(type) :
+            new AluxLabsLinkWebSocket(type);
         addLine(`Socket created for ${type}`);
         this._socket.setOnClose(e => {
             addLine(`Socket closed: ${stringify(e)}`);
@@ -106,12 +106,12 @@ class ScratchLinkClient extends JSONRPC {
     }
 
     /**
-     * @returns {Promise<ScratchLinkClient>}
+     * @returns {Promise<AluxLabsLinkClient>}
      */
     open () {
         return new Promise(resolve => {
             this._socket.setOnOpen(() => {
-                addLine(`Socket opened for ${this._scratchLinkPeripheralType}`);
+                addLine(`Socket opened for ${this._aluxLabsLinkPeripheralType}`);
                 resolve(this);
             });
             this._socket.open();
@@ -119,7 +119,7 @@ class ScratchLinkClient extends JSONRPC {
     }
 }
 
-class ScratchBLE extends ScratchLinkClient {
+class AluxLabsBLE extends AluxLabsLinkClient {
     constructor() {
         super('BLE');
 
@@ -183,7 +183,7 @@ class ScratchBLE extends ScratchLinkClient {
     }
 }
 
-class ScratchBT extends ScratchLinkClient {
+class AluxLabsBT extends AluxLabsLinkClient {
     constructor() {
         super('BT');
     }
@@ -246,7 +246,7 @@ function attachFunctionToButton(buttonId, func) {
 }
 
 /**
- * @param {ScratchLinkClient} session
+ * @param {AluxLabsLinkClient} session
  */
 function getVersion(session) {
     return session.sendRemoteRequest('getVersion').then(
@@ -260,7 +260,7 @@ function getVersion(session) {
 }
 
 /**
- * @param {ScratchLinkClient} session
+ * @param {AluxLabsLinkClient} session
  */
 function pingMe (session) {
     return session.sendRemoteRequest('pingMe').then(
@@ -274,12 +274,12 @@ function pingMe (session) {
 }
 
 function initBLE() {
-    if (self.Scratch.BLE) {
-        self.Scratch.BLE._socket.close();
+    if (self.AluxLabs.BLE) {
+        self.AluxLabs.BLE._socket.close();
     }
     addLine('Connecting...');
-    self.Scratch.BLE = new ScratchBLE();
-    return self.Scratch.BLE.open();
+    self.AluxLabs.BLE = new AluxLabsBLE();
+    return self.AluxLabs.BLE.open();
 }
 
 const filterInputsBLE = [];
@@ -410,7 +410,7 @@ function discoverBLE() {
         deviceDetails.optionalServices = optionalServicesBLE.value.trim().split(/\s+/);
     }
 
-    return Scratch.BLE.requestDevice(
+    return AluxLabs.BLE.requestDevice(
         deviceDetails
     ).then(
         x => {
@@ -424,9 +424,9 @@ function discoverBLE() {
 
 function connectBLE() {
     // this should really be implicit in `requestDevice` but splitting it out helps with debugging
-    return Scratch.BLE.sendRemoteRequest(
+    return AluxLabs.BLE.sendRemoteRequest(
         'connect',
-        { peripheralId: Scratch.BLE.discoveredPeripheralId }
+        { peripheralId: AluxLabs.BLE.discoveredPeripheralId }
     ).then(
         x => {
             addLine(`connect resolved to: ${stringify(x)}`);
@@ -438,7 +438,7 @@ function connectBLE() {
 }
 
 function getServicesBLE() {
-    return Scratch.BLE.sendRemoteRequest(
+    return AluxLabs.BLE.sendRemoteRequest(
         'getServices'
     ).then(
         x => {
@@ -458,7 +458,7 @@ function setServiceMicroBit() {
 }
 
 function readMicroBit() {
-    return Scratch.BLE.read(0xf005, '5261da01-fa7e-42ab-850b-7c80220097cc', true).then(
+    return AluxLabs.BLE.read(0xf005, '5261da01-fa7e-42ab-850b-7c80220097cc', true).then(
         x => {
             addLine(`read resolved to: ${stringify(x)}`);
         },
@@ -470,7 +470,7 @@ function readMicroBit() {
 
 function writeMicroBit() {
     const message = _encodeMessage('LINK');
-    return Scratch.BLE.write(0xf005, '5261da02-fa7e-42ab-850b-7c80220097cc', message, 'base64').then(
+    return AluxLabs.BLE.write(0xf005, '5261da02-fa7e-42ab-850b-7c80220097cc', message, 'base64').then(
         x => {
             addLine(`write resolved to: ${stringify(x)}`);
         },
@@ -515,8 +515,8 @@ function _encodeMessage(message) {
 }
 
 attachFunctionToButton('initBLE', initBLE);
-attachFunctionToButton('getVersionBLE', () => getVersion(self.Scratch.BLE));
-attachFunctionToButton('pingBLE', () => pingMe(self.Scratch.BLE));
+attachFunctionToButton('getVersionBLE', () => getVersion(self.AluxLabs.BLE));
+attachFunctionToButton('pingBLE', () => pingMe(self.AluxLabs.BLE));
 attachFunctionToButton('discoverBLE', discoverBLE);
 attachFunctionToButton('connectBLE', connectBLE);
 attachFunctionToButton('getServicesBLE', getServicesBLE);
@@ -534,16 +534,16 @@ attachFunctionToButton('addFilterBLE', addFilterBLE);
 addFilterBLE();
 
 function initBT() {
-    if (self.Scratch.BT) {
-        self.Scratch.BT._socket.close();
+    if (self.AluxLabs.BT) {
+        self.AluxLabs.BT._socket.close();
     }
     addLine('Connecting...');
-    self.Scratch.BT = new ScratchBT();
-    return self.Scratch.BT.open();
+    self.AluxLabs.BT = new AluxLabsBT();
+    return self.AluxLabs.BT.open();
 }
 
 function discoverBT() {
-    return Scratch.BT.requestDevice({
+    return AluxLabs.BT.requestDevice({
         majorDeviceClass: 8,
         minorDeviceClass: 1
     }).then(
@@ -557,7 +557,7 @@ function discoverBT() {
 }
 
 function connectBT() {
-    return Scratch.BT.connectDevice({
+    return AluxLabs.BT.connectDevice({
         peripheralId: document.getElementById('peripheralId').value,
         pin: "1234"
     }).then(
@@ -574,7 +574,7 @@ function connectBT() {
  * @param {any} message
  */
 function sendMessage(message) {
-    return Scratch.BT.sendMessage({
+    return AluxLabs.BT.sendMessage({
         message: document.getElementById('messageBody').value,
         encoding: 'base64'
     }).then(
@@ -588,7 +588,7 @@ function sendMessage(message) {
 }
 
 function beep() {
-    return Scratch.BT.sendMessage({
+    return AluxLabs.BT.sendMessage({
         message: 'DwAAAIAAAJQBgQKC6AOC6AM=',
         encoding: 'base64'
     }).then(
@@ -603,11 +603,11 @@ function beep() {
 
 const closeButton = document.getElementById('closeBT');
 closeButton.onclick = () => {
-    self.Scratch.BT.dispose();
+    self.AluxLabs.BT.dispose();
 };
 
 attachFunctionToButton('initBT', initBT);
-attachFunctionToButton('getVersionBT', () => getVersion(self.Scratch.BT));
+attachFunctionToButton('getVersionBT', () => getVersion(self.AluxLabs.BT));
 attachFunctionToButton('discoverBT', discoverBT);
 attachFunctionToButton('connectBT', connectBT);
 attachFunctionToButton('send', sendMessage);

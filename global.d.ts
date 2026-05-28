@@ -1,7 +1,7 @@
 
 // This file is only used for type-checking in playground.js
 
-declare class ScratchLinkSafariSocket {
+declare class AluxLabsLinkSafariSocket {
     constructor(type: string);
     static isSafariHelperCompatible(): boolean;
 
@@ -25,7 +25,7 @@ declare global {
         _sendMessage(jsonMessageObject: object): void;
     }
 
-    class ScratchLinkWebSocket {
+    class AluxLabsLinkWebSocket {
         constructor(type: string);
 
         close(): void;
@@ -39,10 +39,10 @@ declare global {
     }
 
     // This isn't proper TS but it seems to work for type checking in playground.js
-    var Scratch = {
-        BLE: new ScratchBLE,
-        BT: new ScratchBT,
-        ScratchLinkSafariSocket
+    var AluxLabs = {
+        BLE: new AluxLabsBLE,
+        BT: new AluxLabsBT,
+        AluxLabsLinkSafariSocket
     };
 }
 export {};

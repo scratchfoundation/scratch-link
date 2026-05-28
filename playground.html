@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Scratch Link Test Client Fun Stuff Yay</title>
+    <title>AluxLabs Link Test Client Fun Stuff Yay</title>
     <style>
         button, input {
             margin: 0.125rem auto;
@@ -20,7 +20,7 @@
         <div>
             <input id="linkSecure" type="checkbox" title="WSS" />
             <label for="linkSecure">WSS?</label>
-            <input id="linkHost" value="127.0.0.1" type="text" placeholder="Scratch Link host" style="width: 30rem;" />
+            <input id="linkHost" value="127.0.0.1" type="text" placeholder="AluxLabs Link host" style="width: 30rem;" />
         </div>
     </fieldset>
     <fieldset>
@@ -102,13 +102,13 @@
     </fieldset>
     <script>
         self.module = { exports: {} }; // Hack to allow `module.exports` in the scripts from scratch-vm
-        self.Scratch = self.Scratch || {}; // Container for semi-global objects in this playground
+        self.AluxLabs = self.AluxLabs || {}; // Container for semi-global objects in this playground
     </script>
     <!-- Non-Safari WebSocket support, borrowed from scratch-vm -->
     <script src="./node_modules/scratch-vm/src/util/jsonrpc.js"></script>
     <script src="./node_modules/scratch-vm/src/util/scratch-link-websocket.js"></script>
     <!-- Safari WebExtension support: this script is injected by the Safari extension if it's active -->
-    <script id="scratch-link-extension-script"></script>
+    <script id="aluxlabs-link-extension-script"></script>
     <!-- Playground-specific code -->
     <script src="./playground.js"></script>
 </body>

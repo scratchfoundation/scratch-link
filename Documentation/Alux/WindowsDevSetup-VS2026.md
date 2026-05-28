@@ -9,7 +9,7 @@ Visual Studio 2026으로 AluxLabs Link를 빌드/디버깅하기 위한 환경 �
   - `aluxlabs-link-win` — WinUI 3 기반 본체 EXE (net8.0-windows)
   - `aluxlabs-link-win-msix` — `.wapproj` (Desktop Bridge) 형식의 MSIX 패키징 프로젝트
   - `aluxlabs-link-common` — 공유 C# 코드 (`.shproj`, 공유 아이템 프로젝트)
-- `scratch-link-mac`은 솔루션을 열면 "Unsupported"로 표시되는데 **정상이다**. Windows VS에서는 어차피 빌드하지 않으므로 무시한다 (솔루션에서 제거하지 말 것).
+- `aluxlabs-link-mac`은 솔루션을 열면 "Unsupported"로 표시되는데 **정상이다**. Windows VS에서는 어차피 빌드하지 않으므로 무시한다 (솔루션에서 제거하지 말 것).
 
 ## 1. Visual Studio Installer 워크로드
 
@@ -52,7 +52,7 @@ Get-AppxPackage -Name "Microsoft.WindowsAppRuntime.1.8*"
 ## 3. 솔루션 열기
 
 1. `aluxlabs-link.sln` 더블클릭으로 VS 2026에서 열기
-2. "Migration Report"가 뜨면 **OK**로 닫는다. `scratch-link-mac`이 Unsupported로 나오는 것은 정상.
+2. "Migration Report"가 뜨면 **OK**로 닫는다. `aluxlabs-link-mac`이 Unsupported로 나오는 것은 정상.
 3. **솔루션 탐색기**에서 `aluxlabs-link-win`을 우클릭 → **Set as Startup Project**. 프로젝트 이름이 굵게(bold) 변하면 적용된 것.
 
 ## 4. 빌드/실행 설정
