@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 /// <summary>
 /// This class hosts the cross-platform entry point.
@@ -17,7 +17,7 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder
-            .UseMauiApp<ScratchLinkApp>()
+            .UseMauiApp<AluxLabsLinkApp>()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

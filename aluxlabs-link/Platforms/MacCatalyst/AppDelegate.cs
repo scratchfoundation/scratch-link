@@ -2,13 +2,13 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 using CoreBluetooth;
 using Foundation;
-using ScratchLink.BLE;
-using ScratchLink.Platforms.MacCatalyst;
-using ScratchLink.Platforms.MacCatalyst.BLE;
+using AluxLabs.Link.BLE;
+using AluxLabs.Link.Platforms.MacCatalyst;
+using AluxLabs.Link.Platforms.MacCatalyst.BLE;
 
 /// <summary>
 /// The AppDelegate connects UIApplication to MauiApp on MacCatalyst.

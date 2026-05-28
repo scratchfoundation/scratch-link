@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ScratchLink.Resources.Strings {
+namespace AluxLabs.Link.Resources.Strings {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace ScratchLink.Resources.Strings {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ScratchLink.Resources.Strings.AppResource", typeof(AppResource).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("AluxLabs.Link.Resources.Strings.AppResource", typeof(AppResource).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

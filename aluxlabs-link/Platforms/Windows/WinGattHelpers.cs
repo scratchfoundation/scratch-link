@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Platforms.Windows;
+namespace AluxLabs.Link.Platforms.Windows;
 
 using System;
 

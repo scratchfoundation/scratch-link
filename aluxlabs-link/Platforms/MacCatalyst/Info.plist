@@ -9,12 +9,12 @@
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>TODO: Info.plist NSBluetoothAlwaysUsageDescription</string>
 	<key>CFBundleIdentifier</key>
-	<string>edu.mit.scratch.scratch-link</string>
+	<string>com.aluxlabs.link</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.15</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>CFBundleName</key>
-	<string>Scratch Link</string>
+	<string>AluxLabs Link</string>
 </dict>
 </plist>

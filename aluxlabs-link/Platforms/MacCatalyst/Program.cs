@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 using ObjCRuntime;
 using UIKit;

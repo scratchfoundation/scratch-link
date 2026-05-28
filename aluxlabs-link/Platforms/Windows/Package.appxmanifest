@@ -8,12 +8,12 @@
 
   <Identity
     Name="D3961642-FEBC-424C-BEAE-60F30108AC12"
-    Publisher="CN=User Name"
+    Publisher="CN=ALUX Inc."
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>scratch-link</DisplayName>
-    <PublisherDisplayName>Microsoft</PublisherDisplayName>
+    <DisplayName>AluxLabs Link</DisplayName>
+    <PublisherDisplayName>ALUX, Inc.</PublisherDisplayName>
     <Logo>appiconStoreLogo.png</Logo>
   </Properties>
 
@@ -31,8 +31,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="scratch-link"
-        Description="scratch-link"
+        DisplayName="AluxLabs Link"
+        Description="AluxLabs Link"
         BackgroundColor="transparent"
         Square150x150Logo="appiconMediumTile.png"
         Square44x44Logo="appiconLogo.png">
@@ -40,7 +40,7 @@
           Wide310x150Logo="appiconWideTile.png"
           Square71x71Logo="appiconSmallTile.png"
           Square310x310Logo="appiconLargeTile.png"
-          ShortName="scratch-link">
+          ShortName="AluxLabs Link">
           <uap:ShowNameOnTiles>
             <uap:ShowOn Tile="square150x150Logo"/>
             <uap:ShowOn Tile="wide310x150Logo"/>

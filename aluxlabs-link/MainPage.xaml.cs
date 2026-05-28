@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink;
+namespace AluxLabs.Link;
 
 /// <summary>
 /// This class holds the main UI for the application.
