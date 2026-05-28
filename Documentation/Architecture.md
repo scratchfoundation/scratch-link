@@ -1,4 +1,4 @@
-# Scratch Link 2.x Architecture
+# AluxLabs Link 2.x Architecture
 
 ## Requirements
 
@@ -10,7 +10,7 @@
 * Communicate with the Scratch 3 app running on macOS or Windows
   * Must not require an active Internet connection
 * Avoid the need for an SSL certificate
-* Support all peripherals which were supported by Scratch Link 1.x
+* Support all peripherals which were supported by AluxLabs Link 1.x
   * Bluetooth LE
   * Bluetooth Classic
 
@@ -45,12 +45,12 @@ Other browsers are capable of either `ws://` or WebExtension communication. Howe
 difficult (maybe impossible) to communicate over `stdio` as needed by WebExtension native messaging. Since Safari is
 the only browser which strictly needs this, and Safari needs a WebExtension wrapper app anyway, we can implement that
 wrapper using Swift or Objective C and use the macOS native WebSocket client. The only downside to the lack of a
-WebExtension component for other browsers is that those other browsers will not be able to auto-launch Scratch Link.
+WebExtension component for other browsers is that those other browsers will not be able to auto-launch AluxLabs Link.
 If this limitation is lifted in a future version of MAUI, we can add that as a nice-to-have.
 
-The Scratch app for Mac & Windows can communicate with Scratch Link over a `ws://` connection, just like other
+The Scratch app for Mac & Windows can communicate with AluxLabs Link over a `ws://` connection, just like other
 browsers. Because we're making a loopback connection over `ws://` we won't need to worry about DNS resolution, which
-means we will be able to use Scratch Link in a truly offline environment without needing any DNS workarounds.
+means we will be able to use AluxLabs Link in a truly offline environment without needing any DNS workarounds.
 
 ```mermaid
 graph TD;
@@ -59,8 +59,8 @@ subgraph Clients
     Browsers["Other Browsers"]
     App["Scratch app"]
 end
-SafariHelper["Scratch Link Safari WebExtension Helper"]
-subgraph "Scratch Link"
+SafariHelper["AluxLabs Link Safari WebExtension Helper"]
+subgraph "AluxLabs Link"
     WebSocket["WebSocket listener"]
     RPC["JSON RPC message handler"]
     SessionManager
@@ -102,7 +102,7 @@ WinBLE --> Windows.Devices.Bluetooth
 
 ## Previous Architecture
 
-For reference, the architecture of Scratch Link 1.4 was as shown below.
+For reference, the architecture of AluxLabs Link 1.4 was as shown below.
 
 ```mermaid
 graph TD;
@@ -111,14 +111,14 @@ subgraph Clients
     Browsers["Other Browsers"]
     App["Scratch app"]
 end
-subgraph "Scratch Link (Windows / C#)"
+subgraph "AluxLabs Link (Windows / C#)"
     WinWebSocket["WebSocket listener"]
     WinRPC["JSON RPC message handler"]
     WinSessionManager["Session manager"]
     WinBT["BT Session"]
     WinBLE["BLE Session"]
 end
-subgraph "Scratch Link (macOS / Swift)"
+subgraph "AluxLabs Link (macOS / Swift)"
     MacWebSocket["WebSocket listener"]
     MacRPC["JSON RPC message handler"]
     MacSessionManager["Session manager"]
@@ -160,4 +160,4 @@ Major differences include:
   * The macOS version is implemented in Swift and uses the `CoreBluetooth` API.
   * The Windows version is written in C# and uses the `Windows.Devices.Bluetooth` API.
 * Safari is unsupported due to the "secure contexts" requirement discussed in the "Implications" section above.
-  * Scratch Link 1.3 used `wss://` instead of `ws://`, so it supported Safari but required an SSL certificate.
+  * AluxLabs Link 1.3 used `wss://` instead of `ws://`, so it supported Safari but required an SSL certificate.

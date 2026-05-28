@@ -1,14 +1,14 @@
 # Bluetooth Peripheral Protocol
 
 This document describes the communication protocol used by a Scratch Extension (or the extension framework) to
-communicate with a Bluetooth RFCOMM / BR / EDR peripheral using Scratch Link. This document builds on the "Network
+communicate with a Bluetooth RFCOMM / BR / EDR peripheral using AluxLabs Link. This document builds on the "Network
 Protocol" document describing the portions of the protocol common to all peripheral types.
 
-## Communication Interface (Scratch Extension to Scratch Link)
+## Communication Interface (Scratch Extension to AluxLabs Link)
 
-### Initiating Communication with Scratch Link
+### Initiating Communication with AluxLabs Link
 
-For Bluetooth (BT) connections, an extension connects to Scratch Link's WebSocket server at the path "/scratch/bt".
+For Bluetooth (BT) connections, an extension connects to AluxLabs Link's WebSocket server at the path "/scratch/bt".
 
 ### Common Methods
 
@@ -25,7 +25,7 @@ No additional version information is provided beyond the base implementation.
 
 TODO: describe Bluetooth discovery / filtering parameters.
 
-JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery.
+JSON-RPC **request** sent from Scratch Extension to AluxLabs Link to initiate discovery.
 
 ```json5
 {
@@ -36,7 +36,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate dis
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful initiation of discovery. This confirms
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon successful initiation of discovery. This confirms
 the transition into the discovery state.
 
 ```json5
@@ -47,7 +47,7 @@ the transition into the discovery state.
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon failure to initiate discovery. The connection
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon failure to initiate discovery. The connection
 remains in the initial state.
 
 ```json5
@@ -65,10 +65,10 @@ remains in the initial state.
 Sending data to a connected peripheral shall be initiated by the Scratch Extension. This command requires two arguments:
 the message body and a supported encoding format. Attempting to "send" to a peripheral with an unsupported encoding or
 invalid message body will result in an error response. If the underlying peripheral connection has specific needs
-regarding packet size (MTU), keep-alive, etc., those concerns shall be managed by Scratch Link in order to simulate a
+regarding packet size (MTU), keep-alive, etc., those concerns shall be managed by AluxLabs Link in order to simulate a
 persistent free-form serial data stream.
 
-JSON-RPC **request** sent from Scratch Extension to Scratch Link to send a serial message to a specified peripheral.
+JSON-RPC **request** sent from Scratch Extension to AluxLabs Link to send a serial message to a specified peripheral.
 
 ```json5
 {
@@ -82,7 +82,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to send a seria
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful message send.
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon successful message send.
 
 ```json5
 {
@@ -92,7 +92,7 @@ JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successfu
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon unsuccessful message send.
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon unsuccessful message send.
 
 ```json5
 {
@@ -104,11 +104,11 @@ JSON-RPC **response** sent from Scratch Link to Scratch Extension upon unsuccess
 
 ### Receiving a Message
 
-Receiving data from a connected peripheral shall be initiated by Scratch Link. This message requires two arguments: the
+Receiving data from a connected peripheral shall be initiated by AluxLabs Link. This message requires two arguments: the
 message body and the encoding format (`base64`). The Scratch Extension is not expected to return a "callback" response
 when receiving a message.
 
-JSON-RPC **notification** sent from Scratch Link to Scratch Extension on receipt of a serial message.
+JSON-RPC **notification** sent from AluxLabs Link to Scratch Extension on receipt of a serial message.
 
 ```json5
 {
