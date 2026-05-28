@@ -11,8 +11,8 @@ using AluxLabs.Link.Extensions;
 using AluxLabs.Link.JsonRpc;
 
 /// <summary>
-/// Helpers for interacting with Scratch Link's message buffers.
-/// A Scratch Link message buffer has a <c>message</c> property and optionally an <c>encoding</c> property.
+/// Helpers for interacting with AluxLabs Link's message buffers.
+/// An AluxLabs Link message buffer has a <c>message</c> property and optionally an <c>encoding</c> property.
 /// If the encoding property is missing, null, or empty, the message is a Unicode string.
 /// If the encoding property is "base64" then the message is a string in Base64 format.
 /// No other encodings are supported at this time.

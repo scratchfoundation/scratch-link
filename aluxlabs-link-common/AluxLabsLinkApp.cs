@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using AluxLabs.Link.BLE;
 
 /// <summary>
-/// Main entry point for Scratch Link and central service provider for dependency injection.
+/// Main entry point for AluxLabs Link and central service provider for dependency injection.
 /// </summary>
 public class AluxLabsLinkApp
 {
@@ -67,7 +67,7 @@ public class AluxLabsLinkApp
     }
 
     /// <summary>
-    /// Builds a Scratch Link app instance.
+    /// Builds an AluxLabs Link app instance.
     /// Fills the role of the .NET generic host or <c>MauiAppBuilder</c>.
     /// </summary>
     public class Builder
@@ -110,9 +110,9 @@ public class AluxLabsLinkApp
         }
 
         /// <summary>
-        /// Builds a Scratch Link app host.
+        /// Builds an AluxLabs Link app host.
         /// </summary>
-        /// <returns>A new Scratch Link app host.</returns>
+        /// <returns>A new AluxLabs Link app host.</returns>
         internal AluxLabsLinkApp Build()
         {
             var serviceCollection = new ServiceCollection();

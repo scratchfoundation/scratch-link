@@ -49,7 +49,7 @@ internal abstract class BLESession<TDiscoveredPeripheral, TPeripheralAddress, TU
 
     /// <summary>
     /// Gets the set of services which are allowed based on discovery filters.
-    /// See Scratch Link protocol documentation.
+    /// See AluxLabs Link protocol documentation.
     /// </summary>
     protected HashSet<TUUID> AllowedServices { get; }
 

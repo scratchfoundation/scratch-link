@@ -25,12 +25,12 @@ using JsonRpcMethodHandler = System.Func<
 using RequestId = System.UInt32;
 
 /// <summary>
-/// Base class for Scratch Link sessions.
+/// Base class for AluxLabs Link sessions.
 /// </summary>
 public class Session : IDisposable
 {
     /// <summary>
-    /// Specifies the Scratch Link network protocol version. Note that this is not the application version.
+    /// Specifies the AluxLabs Link network protocol version. Note that this is not the application version.
     /// Keep this in sync with the version number in `NetworkProtocol.md`.
     /// </summary>
     protected const string NetworkProtocolVersion = "1.3";

@@ -1,4 +1,4 @@
-# AluxCoding Scratch Link — Claude 행동 규칙
+# AluxLabs Link — Claude 행동 규칙
 
 Windows-only desktop app. Scratch 3.0 ↔ 하드웨어(BLE, Bluetooth Classic, USB Serial) 중계.
 C# / .NET 8 + WinUI 3, Visual Studio Solution.
