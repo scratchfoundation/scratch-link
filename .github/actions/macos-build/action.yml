@@ -41,16 +41,16 @@ runs:
       shell: bash
       run: |
         set -x # debug trace
-        msbuild -m -t:Restore -p:Configuration=${{ inputs.configuration }}_Mac scratch-link.sln
-        '/Applications/Visual Studio.app/Contents/MacOS/vstool' build -t:Build -c:'${{ inputs.configuration }}_Mac' "${PWD}/scratch-link.sln"
+        msbuild -m -t:Restore -p:Configuration=${{ inputs.configuration }}_Mac aluxlabs-link.sln
+        '/Applications/Visual Studio.app/Contents/MacOS/vstool' build -t:Build -c:'${{ inputs.configuration }}_Mac' "${PWD}/aluxlabs-link.sln"
         # "for" is just a convenient way to resolve the glob to a variable so we can DRY the filename for "if" and "mv"
-        for PKGPATH in scratch-link-mac/bin/"${{ inputs.configuration }}"/"Scratch Link"*.pkg; do
+        for PKGPATH in aluxlabs-link-mac/bin/"${{ inputs.configuration }}"/"AluxLabs Link"*.pkg; do
           if [ -r "$PKGPATH" ]; then
             # Get filename without path
             PKGFILE="${PKGPATH##*/}"
             if [ -n "${{ inputs.artifact_tag }}" ]; then
-              # change "Scratch Link-1.2.3" to "Scratch Link-Debug-1.2.3"
-              PKGFILE="${PKGFILE/Scratch Link/Scratch Link-${{ inputs.artifact_tag }}}"
+              # change "AluxLabs Link-1.2.3" to "AluxLabs Link-Debug-1.2.3"
+              PKGFILE="${PKGFILE/AluxLabs Link/AluxLabs Link-${{ inputs.artifact_tag }}}"
             fi
             mkdir -p Artifacts
           fi
@@ -61,8 +61,8 @@ runs:
       if: env.ARTIFACT_TAG == 'notarizeMe'
       shell: bash
       run: |
-        for PKGPATH in Artifacts/"Scratch Link-notarizeMe"*.pkg; do
+        for PKGPATH in Artifacts/"AluxLabs Link-notarizeMe"*.pkg; do
           PKGFILE="${PKGPATH##*/}"
-          scratch-link-mac/notarize.sh edu.mit.scratch.scratch-link "${PKGPATH}" "${PKGPATH}" /tmp || rm -f "${PKGPATH}"
-          mv -v "${PKGPATH}" "Artifacts/${PKGFILE/Scratch Link-notarizeMe/Scratch Link}"
+          aluxlabs-link-mac/notarize.sh com.aluxlabs.link "${PKGPATH}" "${PKGPATH}" /tmp || rm -f "${PKGPATH}"
+          mv -v "${PKGPATH}" "Artifacts/${PKGFILE/AluxLabs Link-notarizeMe/AluxLabs Link}"
         done
