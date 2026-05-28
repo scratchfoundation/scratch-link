@@ -2,14 +2,14 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac.BLE;
+namespace AluxLabs.Link.Mac.BLE;
 
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CoreBluetooth;
 using Foundation;
-using ScratchLink.BLE;
+using AluxLabs.Link.BLE;
 
 /// <summary>
 /// Implement <see cref="IBLEEndpoint"/> by wrapping <see cref="CBCharacteristic"/>.

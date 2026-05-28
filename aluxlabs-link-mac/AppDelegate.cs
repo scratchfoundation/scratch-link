@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac;
+namespace AluxLabs.Link.Mac;
 
 using System;
 using System.Collections.Generic;
@@ -12,16 +12,16 @@ using CoreBluetooth;
 using Foundation;
 using ObjCRuntime;
 using SafariServices;
-using ScratchLink.Mac.BLE;
+using AluxLabs.Link.Mac.BLE;
 
 /// <summary>
-/// Scratch Link's implementation of the NSApplicationDelegate protocol.
+/// AluxLabs Link's implementation of the NSApplicationDelegate protocol.
 /// </summary>
 [Register("AppDelegate")]
 public class AppDelegate : NSApplicationDelegate
 {
     // This identifier must match the PRODUCT_BUNDLE_IDENTIFIER setting for the extension's Xcode project
-    private const string ExtensionBundleIdentifier = "edu.mit.scratch.scratch-link.safari-extension";
+    private const string ExtensionBundleIdentifier = "com.aluxlabs.link.safari-extension";
 
     private const string VersionItemSelected = "versionItemSelected:";
     private const string ExtensionItemSelected = "extensionItemSelected:";
@@ -29,7 +29,7 @@ public class AppDelegate : NSApplicationDelegate
 
     private NSStatusItem statusBarItem;
 
-    private ScratchLinkApp app;
+    private AluxLabsLinkApp app;
 
     /// <summary>
     /// Called when the app's initialization is complete but it hasn't received its first event.
@@ -39,7 +39,7 @@ public class AppDelegate : NSApplicationDelegate
     {
         Trace.Listeners.Add(new OSLogTraceListener());
 
-        var appBuilder = new ScratchLinkApp.Builder();
+        var appBuilder = new AluxLabsLinkApp.Builder();
         appBuilder.SetArguments(new NSProcessInfo().Arguments);
         appBuilder.SetSessionManager<MacSessionManager>();
         appBuilder.SetGattHelpers<MacGattHelpers, CBUUID>();

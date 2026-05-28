@@ -2,10 +2,10 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac.BLE;
+namespace AluxLabs.Link.Mac.BLE;
 
 using CoreBluetooth;
-using ScratchLink.BLE;
+using AluxLabs.Link.BLE;
 
 /// <summary>
 /// Implement the MacOS-specific GATT helpers.

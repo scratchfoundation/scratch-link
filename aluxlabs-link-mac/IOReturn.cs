@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac;
+namespace AluxLabs.Link.Mac;
 
 using System;
 using System.Runtime.InteropServices;

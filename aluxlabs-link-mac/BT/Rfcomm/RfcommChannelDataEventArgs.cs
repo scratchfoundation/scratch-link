@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac.BT.Rfcomm;
+namespace AluxLabs.Link.Mac.BT.Rfcomm;
 
 using System;
 

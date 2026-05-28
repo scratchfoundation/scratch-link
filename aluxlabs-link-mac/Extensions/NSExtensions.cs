@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac.Extensions;
+namespace AluxLabs.Link.Mac.Extensions;
 
 using Foundation;
 

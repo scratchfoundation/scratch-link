@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac.BT;
+namespace AluxLabs.Link.Mac.BT;
 
 using System;
 using System.Diagnostics;
@@ -14,10 +14,10 @@ using CoreFoundation;
 using Fleck;
 using Foundation;
 using IOBluetooth;
-using ScratchLink.BT;
-using ScratchLink.JsonRpc;
-using ScratchLink.Mac.BT.Rfcomm;
-using ScratchLink.Mac.Extensions;
+using AluxLabs.Link.BT;
+using AluxLabs.Link.JsonRpc;
+using AluxLabs.Link.Mac.BT.Rfcomm;
+using AluxLabs.Link.Mac.Extensions;
 
 /// <summary>
 /// Implements a BT session on MacOS.

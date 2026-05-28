@@ -2,11 +2,11 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac;
+namespace AluxLabs.Link.Mac;
 
 using Fleck;
-using ScratchLink.Mac.BLE;
-using ScratchLink.Mac.BT;
+using AluxLabs.Link.Mac.BLE;
+using AluxLabs.Link.Mac.BT;
 
 /// <summary>
 /// Implements the Mac-specific functionality of the SessionManager.

@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac.BLE;
+namespace AluxLabs.Link.Mac.BLE;
 
 using System;
 using CoreBluetooth;

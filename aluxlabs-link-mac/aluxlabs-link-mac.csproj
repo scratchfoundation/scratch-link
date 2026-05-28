@@ -6,8 +6,8 @@
     <ProjectGuid>{CDF7978E-13C6-40A9-81F9-2A3B4F7E861C}</ProjectGuid>
     <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <OutputType>Exe</OutputType>
-    <RootNamespace>ScratchLink.Mac</RootNamespace>
-    <AssemblyName>Scratch Link</AssemblyName>
+    <RootNamespace>AluxLabs.Link.Mac</RootNamespace>
+    <AssemblyName>AluxLabs Link</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <TargetFrameworkIdentifier>Xamarin.Mac</TargetFrameworkIdentifier>
     <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
@@ -20,7 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Debug\Scratch Link.xml</DocumentationFile>
+    <DocumentationFile>bin\Debug\AluxLabs Link.xml</DocumentationFile>
     <EnableCodeSigning>false</EnableCodeSigning>
     <CodeSigningKey>Mac Developer</CodeSigningKey>
     <CreatePackage>true</CreatePackage>
@@ -40,7 +40,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Scratch Link.xml</DocumentationFile>
+    <DocumentationFile>bin\Release\AluxLabs Link.xml</DocumentationFile>
     <EnableCodeSigning>true</EnableCodeSigning>
     <CreatePackage>true</CreatePackage>
     <EnablePackageSigning>false</EnablePackageSigning>
@@ -65,7 +65,7 @@
     <DefineConstants>SIGNED_DEVID;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release_DevID\Scratch Link.xml</DocumentationFile>
+    <DocumentationFile>bin\Release_DevID\AluxLabs Link.xml</DocumentationFile>
     <EnableCodeSigning>true</EnableCodeSigning>
     <CreatePackage>true</CreatePackage>
     <EnablePackageSigning>true</EnablePackageSigning>
@@ -91,7 +91,7 @@
     <DefineConstants>SIGNED_MAS;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release_MAS\Scratch Link.xml</DocumentationFile>
+    <DocumentationFile>bin\Release_MAS\AluxLabs Link.xml</DocumentationFile>
     <EnableCodeSigning>true</EnableCodeSigning>
     <CreatePackage>true</CreatePackage>
     <EnablePackageSigning>true</EnablePackageSigning>
@@ -209,7 +209,7 @@
     <Compile Include="OSLogTraceListener.cs" />
     <Compile Include="BLE\CBCentralManagerEventDelegate.cs" />
   </ItemGroup>
-  <Import Project="..\scratch-link-common\scratch-link-common.projitems" Label="Shared" Condition="Exists('..\scratch-link-common\scratch-link-common.projitems')" />
+  <Import Project="..\aluxlabs-link-common\aluxlabs-link-common.projitems" Label="Shared" Condition="Exists('..\aluxlabs-link-common\aluxlabs-link-common.projitems')" />
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
   <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
   <Import Project="$(SolutionDir)SharedProps\ScratchVersion.targets" />

@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac;
+namespace AluxLabs.Link.Mac;
 
 using System;
 using System.Diagnostics;
@@ -13,7 +13,7 @@ using CoreFoundation;
 /// </summary>
 public class OSLogTraceListener : TraceListener
 {
-    private const string LogSubsystem = "org.scratch.link";
+    private const string LogSubsystem = "com.aluxlabs.link";
     private const string LogCategory = "app";
 
     private readonly OSLog log;

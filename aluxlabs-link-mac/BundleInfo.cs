@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac;
+namespace AluxLabs.Link.Mac;
 
 using System;
 using Foundation;
@@ -12,7 +12,7 @@ using Foundation;
 /// </summary>
 public static class BundleInfo
 {
-    private static string defaultTitle = "Scratch Link";
+    private static string defaultTitle = "AluxLabs Link";
     private static string defaultVersion = "(unknown version)";
 
     /// <summary>

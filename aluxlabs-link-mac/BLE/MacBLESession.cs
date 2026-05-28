@@ -2,7 +2,7 @@
 // Copyright (c) Scratch Foundation. All rights reserved.
 // </copyright>
 
-namespace ScratchLink.Mac.BLE;
+namespace AluxLabs.Link.Mac.BLE;
 
 using System;
 using System.Collections.Generic;
@@ -14,10 +14,10 @@ using CoreBluetooth;
 using CoreFoundation;
 using Fleck;
 using Foundation;
-using ScratchLink.BLE;
-using ScratchLink.Extensions;
-using ScratchLink.JsonRpc;
-using ScratchLink.Mac.Extensions;
+using AluxLabs.Link.BLE;
+using AluxLabs.Link.Extensions;
+using AluxLabs.Link.JsonRpc;
+using AluxLabs.Link.Mac.Extensions;
 
 /// <summary>
 /// Implements a BLE session on MacOS.
