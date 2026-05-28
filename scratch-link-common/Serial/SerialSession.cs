@@ -26,6 +26,16 @@ using ScratchLink.JsonRpc;
 internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     where TPort : class
 {
+    // Yield keep-alive while RX is active so the peripheral can finish unsolicited notifications (e.g. BLE link-loss).
+    private const int KeepAliveRxYieldMs = 200;
+
+    // Force keep-alive once the client has been idle this long, even if RX is still flowing, to stay under the device's 1 s RX timeout.
+    private const int KeepAliveTxIdleMs = 900;
+
+    // Pause keep-alive once RX has stalled this long. Dongles defer BLE link-loss notifications while servicing PC commands;
+    // pausing gives the dongle the idle window it needs to push the notification.
+    private const int KeepAliveRxStallMs = 500;
+
     // Serializes DoWrite calls so two writes never overlap and corrupt the stream.
     private readonly SemaphoreSlim writeSemaphore = new SemaphoreSlim(1, 1);
 
@@ -36,6 +46,11 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     private Timer keepAliveTimer;
     private int keepAliveIntervalMs;
     private bool keepAliveActive;
+
+    // 64-bit timestamps in DateTime.UtcNow.Ticks; accessed via Interlocked to keep reads/writes atomic on 32-bit runtimes.
+    private long lastRxTicks;
+    private long lastClientTxTicks;
+    private long lastKeepAliveSentTicks;
 
     // volatile so threads outside stateLock see the latest value on the hot path.
     private volatile bool wireTrace;
@@ -129,6 +144,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
                 this.lastSentData = buffer;
             }
 
+            Interlocked.Exchange(ref this.lastClientTxTicks, DateTime.UtcNow.Ticks);
             this.ResetKeepAliveTimer();
 
             if (this.wireTrace)
@@ -272,6 +288,8 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected async Task DidReceiveData(byte[] data)
     {
+        Interlocked.Exchange(ref this.lastRxTicks, DateTime.UtcNow.Ticks);
+
         if (this.wireTrace)
         {
             Trace.WriteLine($"wire-trace RX {data.Length}B {FormatHex(data)}");
@@ -341,6 +359,13 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         }
 
         var interval = keepAliveIntervalMs.Value;
+
+        // Seed timestamps to "now" so the first tick doesn't see zero-initialized fields as ancient activity
+        // (which would otherwise mis-trigger the RX-stall guard before any RX has arrived).
+        var nowTicks = DateTime.UtcNow.Ticks;
+        Interlocked.Exchange(ref this.lastRxTicks, nowTicks);
+        Interlocked.Exchange(ref this.lastClientTxTicks, nowTicks);
+        Interlocked.Exchange(ref this.lastKeepAliveSentTicks, nowTicks);
 
         lock (this.stateLock)
         {
@@ -528,6 +553,26 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             return;
         }
 
+        // msSinceAnyTx tracks "any TX we issued recently" — client write OR previous keep-alive — so a single forced
+        // keep-alive resets the budget instead of unlocking the 33 ms cadence permanently.
+        var nowTicks = DateTime.UtcNow.Ticks;
+        var msSinceRx = (nowTicks - Interlocked.Read(ref this.lastRxTicks)) / TimeSpan.TicksPerMillisecond;
+        var msSinceClientTx = (nowTicks - Interlocked.Read(ref this.lastClientTxTicks)) / TimeSpan.TicksPerMillisecond;
+        var msSinceKeepAlive = (nowTicks - Interlocked.Read(ref this.lastKeepAliveSentTicks)) / TimeSpan.TicksPerMillisecond;
+        var msSinceAnyTx = Math.Min(msSinceClientTx, msSinceKeepAlive);
+
+        // RX stalled too long: peripheral is silent (likely BLE link loss). Pause so the dongle can push its notification.
+        if (msSinceRx > KeepAliveRxStallMs)
+        {
+            return;
+        }
+
+        // Yield to in-flight RX so we don't trample its TX window; capped by KeepAliveTxIdleMs to stay under the ~1 s device timeout.
+        if (msSinceRx < KeepAliveRxYieldMs && msSinceAnyTx < KeepAliveTxIdleMs)
+        {
+            return;
+        }
+
         // WaitAsync(0) makes the tick idle-only: during a write burst the semaphore is busy and we no-op.
         if (!await this.writeSemaphore.WaitAsync(0).ConfigureAwait(false))
         {
@@ -547,6 +592,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             }
 
             await this.DoWrite(data).ConfigureAwait(false);
+            Interlocked.Exchange(ref this.lastKeepAliveSentTicks, DateTime.UtcNow.Ticks);
         }
         catch (ObjectDisposedException)
         {
