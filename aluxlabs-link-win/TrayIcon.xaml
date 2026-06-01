@@ -10,7 +10,7 @@
   <tb:TaskbarIcon x:Key="AluxLabsLinkTaskbarIcon"
                   Visibility="Visible"
                   ToolTipText="AluxLabs Link"
-                  ContextMenuMode="SecondWindow"
+                  ContextMenuMode="PopupMenu"
                   IconSource="aluxlabs-link-tray.ico"
                   tb:TaskbarIcon.ContextFlyout="{StaticResource ContextFlyout}"
   />
