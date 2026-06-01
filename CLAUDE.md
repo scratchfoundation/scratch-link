@@ -77,7 +77,7 @@ docs(architecture): Serial 프로토콜 설계 문서 업데이트
 
 - `aluxlabs-link-common/` — 플랫폼 공통 C# Shared Project (BLE/BT/Serial 프로토콜 추상화, JSON-RPC 2.0, WebSocket 핸들링). **재사용 가능한 단위로 분리**, Windows API에 종속되지 않는다.
 - `aluxlabs-link-win/` — WinUI 3 플랫폼 구현 (Windows.Devices.* API 연동, 트레이 아이콘, 앱 진입점). **비즈니스 로직은 최소화**, 가능한 한 `aluxlabs-link-common`으로 위임.
-- `aluxlabs-link-win-msix/` — MSIX 패키징 프로젝트. 직접 코드 편집 대상이 아니다.
+- `aluxlabs-link-win-msix/` — MSIX 패키징 프로젝트. 앱·비즈니스 로직을 넣지 않는다. 단, 패키징·서명·self-contained·매니페스트 등 배포 구성 변경은 필요 시 여기서 수정하되, 배포 전반에 영향을 주므로 변경 후 빌드된 패키지를 검증한다.
 - `SharedProps/` — MSBuild 공유 속성 (SDK 버전, NuGet 패키지 참조, 버전 자동화). 개별 csproj에서 중복 선언 금지.
 - `Documentation/` — 아키텍처·프로토콜 설계 문서. 관련 코드 변경 시 함께 업데이트한다.
 - **의존 방향: `aluxlabs-link-win` → `aluxlabs-link-common` 단방향** (§1 절대 규칙). 이유: common이 win을 참조하면 플랫폼 독립성이 깨지고 순환 의존이 발생한다.
