@@ -10,6 +10,13 @@ This file sets up version properties in our own Scratch way.
 	definition when available ("last definition wins" in MSBuild).
 	-->
 	<Target Name="GitVersion">
+		<!-- GitInfo가 .wapproj 컨텍스트에선 로드 안 되므로, 빌드 번호(커밋 수)를 git에서 직접 뽑아 패키지 버전이 .0으로 고정되는 걸 막는다 -->
+		<Exec Command="git rev-list --count HEAD" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" StandardOutputImportance="low" ContinueOnError="true">
+			<Output TaskParameter="ConsoleOutput" PropertyName="_AluxGitCommits" />
+		</Exec>
+		<Exec Command="git rev-parse --short=7 HEAD" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" StandardOutputImportance="low" ContinueOnError="true">
+			<Output TaskParameter="ConsoleOutput" PropertyName="_AluxGitCommit" />
+		</Exec>
 		<PropertyGroup>
 			<GitSemVerMajor     Condition="'$(GitSemVerMajor)'     == ''">0</GitSemVerMajor>
 			<GitSemVerMinor     Condition="'$(GitSemVerMinor)'     == ''">0</GitSemVerMinor>
@@ -18,6 +25,8 @@ This file sets up version properties in our own Scratch way.
 			<GitCommit          Condition="'$(GitCommit)'          == ''">0000000</GitCommit>
 			<GitCommits         Condition="'$(GitCommits)'         == ''">0</GitCommits>
 			<GitCommitDate      Condition="'$(GitCommitDate)'      == ''">$([System.DateTime]::UtcNow.ToString("o"))</GitCommitDate>
+			<GitCommits Condition="('$(GitCommits)' == '' OR '$(GitCommits)' == '0') AND '$(_AluxGitCommits)' != ''">$(_AluxGitCommits.Trim())</GitCommits>
+			<GitCommit Condition="('$(GitCommit)' == '' OR '$(GitCommit)' == '0000000') AND '$(_AluxGitCommit)' != ''">$(_AluxGitCommit.Trim())</GitCommit>
 		</PropertyGroup>
 	</Target>
 
