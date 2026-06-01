@@ -32,3 +32,6 @@ Backup*/
 
 # Local-only debug captures (DebugView dumps, browser console logs, etc.)
 ref/
+
+# Test signing materials (self-signed test certs / build logs — never commit)
+/aluxlabs-link-win-msix/_signing/

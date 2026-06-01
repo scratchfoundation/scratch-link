@@ -48,6 +48,8 @@
     <AssetTargetFallback>net8.0-windows$(TargetPlatformVersion);$(AssetTargetFallback)</AssetTargetFallback>
     <DefaultLanguage>en-US</DefaultLanguage>
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
+    <!-- 사이드로딩된 MSIX가 Windows App Runtime 설치 없이 실행되도록 런타임을 패키지에 동봉 -->
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <EntryPointProjectUniqueName>..\aluxlabs-link-win\aluxlabs-link-win.csproj</EntryPointProjectUniqueName>
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
