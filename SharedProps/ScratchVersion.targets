@@ -10,7 +10,7 @@ This file sets up version properties in our own Scratch way.
 	definition when available ("last definition wins" in MSBuild).
 	-->
 	<Target Name="GitVersion">
-		<!-- GitInfo가 .wapproj 컨텍스트에선 로드 안 되므로, 빌드 번호(커밋 수)를 git에서 직접 뽑아 패키지 버전이 .0으로 고정되는 걸 막는다 -->
+		<!-- GitInfo가 .wapproj 컨텍스트에선 로드되지 않아 빌드 번호가 0으로 떨어지는 것을 방지 -->
 		<Exec Command="git rev-list --count HEAD" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" StandardOutputImportance="low" ContinueOnError="true">
 			<Output TaskParameter="ConsoleOutput" PropertyName="_AluxGitCommits" />
 		</Exec>
