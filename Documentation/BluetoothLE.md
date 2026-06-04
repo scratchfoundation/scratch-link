@@ -1,17 +1,17 @@
 # Bluetooth LE Peripheral Protocol
 
 This document describes the communication protocol used by a Scratch Extension (or the extension framework) to
-communicate with a Bluetooth Low Energy (BLE) peripheral's GATT interface using Scratch Link. This document builds on
+communicate with a Bluetooth Low Energy (BLE) peripheral's GATT interface using AluxLabs Link. This document builds on
 the "Network Protocol" document describing the portions of the protocol common to all peripheral types.
 
-## Communication Interface (Scratch Extension to Scratch Link)
+## Communication Interface (Scratch Extension to AluxLabs Link)
 
-In general, BLE support in Scratch Link is patterned after BLE support in Web bluetooth. The Web Bluetooth specification
+In general, BLE support in AluxLabs Link is patterned after BLE support in Web bluetooth. The Web Bluetooth specification
 can be found here: <https://webbluetoothcg.github.io/web-bluetooth/>
 
-### Initiating Communication with Scratch Link
+### Initiating Communication with AluxLabs Link
 
-For BLE connections, an extension connects to Scratch Link's WebSocket server at the path "/scratch/ble".
+For BLE connections, an extension connects to AluxLabs Link's WebSocket server at the path "/scratch/ble".
 
 ### Common Methods
 
@@ -53,7 +53,7 @@ even if they are not used for filtering. See the "Service Names" section below f
 services in this list, or the "Connected State" section for more information about the relationship between the
 "services" filter property, the "optionalServices" parameter, and the services available to the Scratch Extension.
 
-Example JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery:
+Example JSON-RPC **request** sent from Scratch Extension to AluxLabs Link to initiate discovery:
 
 ```json5
 {
@@ -107,7 +107,7 @@ calls "names" for GATT services. A GATT service name is one of the following:
 
 Each of the examples above specifies the same service.
 
-Scratch Link shall resolve each name to a full UUID using the [getService](
+AluxLabs Link shall resolve each name to a full UUID using the [getService](
 https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothuuid-getservice) algorithm as described by the Web
 Bluetooth specification, which in practice is just shorthand for calling the [resolveUuidName](
 https://webbluetoothcg.github.io/web-bluetooth/#resolveuuidname) algorithm and passing the [Service Assigned Numbers
@@ -115,18 +115,18 @@ table](https://www.bluetooth.com/specifications/gatt/services) and "org.bluetoot
 
 ### Connected State
 
-Connecting to a BLE peripheral with a "connect" request is the Scratch Link equivalent of the [Web Bluetooth
+Connecting to a BLE peripheral with a "connect" request is the AluxLabs Link equivalent of the [Web Bluetooth
 `device.gatt.connect()`](https://webbluetoothcg.github.io/web-bluetooth/#dom-bluetoothremotegattserver-connect) call.
 After successfully connecting to a peripheral the Scratch Extension may access any **allowed** GATT service which the
 peripheral provides by reading and writing characteristics of those services, etc.
 
-Scratch Link shall block access to certain GATT UUIDs (services, characteristics, etc.) as demanded by the [GATT
+AluxLabs Link shall block access to certain GATT UUIDs (services, characteristics, etc.) as demanded by the [GATT
 Blocklist](https://webbluetoothcg.github.io/web-bluetooth/#the-gatt-blocklist). Such UUIDs are allowed in discovery
 filters but not allowed for actual communication.
 
 #### Allowed Services
 
-Scratch Link shall reject any attempt by the Scratch Extension to access a GATT service unless the service is
+AluxLabs Link shall reject any attempt by the Scratch Extension to access a GATT service unless the service is
 specifically allowed. A service is allowed if and only if:
 
 - it was named in the "services" array of **any** filter in the "discover" request, **or**
@@ -151,7 +151,7 @@ Consider this request:
 }
 ```
 
-Suppose Scratch Link finds a peripheral with the name "My Peripheral" and reports that to the client in a
+Suppose AluxLabs Link finds a peripheral with the name "My Peripheral" and reports that to the client in a
 "didDiscoverPeripheral" notification, then the Scratch Extension chooses to connect to the "My Peripheral" peripheral.
 The Scratch Extension will be allowed to contact the following services:
 
@@ -164,7 +164,7 @@ discovery filter based on its name it might not implement any of these services.
 
 #### Enumerating Services
 
-The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to Scratch Link:
+The Scratch Extension may query the list of allowed services by sending a "getServices" **request** to AluxLabs Link:
 
 ```json5
 {
@@ -175,7 +175,7 @@ The Scratch Extension may query the list of allowed services by sending a "getSe
 }
 ```
 
-On success, Scratch Link's **response** shall contain an array of service UUIDs as its result:
+On success, AluxLabs Link's **response** shall contain an array of service UUIDs as its result:
 
 ```json5
 {
@@ -187,13 +187,13 @@ On success, Scratch Link's **response** shall contain an array of service UUIDs 
 }
 ```
 
-The Scratch Extension is not required to enumerate a peripheral's services; Scratch Link shall not change the list of
+The Scratch Extension is not required to enumerate a peripheral's services; AluxLabs Link shall not change the list of
 allowed services based on whether or not the Scratch Extension has requested enumeration.
 
 #### Enumerating Service Characteristics (not currently implemented)
 
 The Scratch Extension may query the list of characteristics available on an allowed service by sending a
-"getCharacteristics" **request** to Scratch Link:
+"getCharacteristics" **request** to AluxLabs Link:
 
 ```json5
 {
@@ -212,7 +212,7 @@ The "serviceId" property may be any valid GATT service name:
 - an integer representing a short ID, or
 - a string name from the [Service Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/services).
 
-On success, Scratch Link's **response** shall contain an array of characteristic UUIDs as its result:
+On success, AluxLabs Link's **response** shall contain an array of characteristic UUIDs as its result:
 
 ```json5
 {
@@ -224,13 +224,13 @@ On success, Scratch Link's **response** shall contain an array of characteristic
 }
 ```
 
-The Scratch Extension is not required to enumerate a service's characteristics; Scratch Link shall not change the list
+The Scratch Extension is not required to enumerate a service's characteristics; AluxLabs Link shall not change the list
 of allowed characteristics based on whether or not the Scratch Extension has requested enumeration.
 
 #### Writing to a Characteristic
 
 The Scratch Extension may write data to a characteristics available on an allowed service by sending a "write"
-**request** to Scratch Link:
+**request** to AluxLabs Link:
 
 ```json5
 {
@@ -264,25 +264,25 @@ The "characteristicId" property may be any valid GATT characteristic name:
 - a string name from the [Characteristic Assigned Numbers table](
   https://www.bluetooth.com/specifications/gatt/characteristic).
 
-The "encoding" property may be omitted; in this case the "message" is assumed to be a Unicode string. Scratch Link shall
+The "encoding" property may be omitted; in this case the "message" is assumed to be a Unicode string. AluxLabs Link shall
 encode the string using UTF-8 and write the resulting bytes to the characteristic.
 
 Bluetooth LE supports writing a value to a characteristic with or without a response. The "withResponse" property
 controls which of these modes shall be used for a particular write.
 
-- If true, Scratch Link shall write with response. That is, Scratch Link shall wait for the peripheral to confirm that
-  the write was received without error, and Scratch Link's response to the client shall report any error reported by the
+- If true, AluxLabs Link shall write with response. That is, AluxLabs Link shall wait for the peripheral to confirm that
+  the write was received without error, and AluxLabs Link's response to the client shall report any error reported by the
   BLE peripheral. If the peripheral reports an error, that error shall be forwarded to the client as an error response
   to the "write" request.
-- If false, Scratch Link shall write without response. That is, Scratch Link shall make a [best-effort
+- If false, AluxLabs Link shall write without response. That is, AluxLabs Link shall make a [best-effort
   delivery](https://en.wikipedia.org/wiki/Best-effort_delivery) attempt then report success. There is no way for the
   peripheral to report an error in this mode.
-- If absent, Scratch Link shall check if the characteristic appears to support writing without response. If so,
-  Scratch Link shall write without response. Otherwise, Scratch shall write with response.
+- If absent, AluxLabs Link shall check if the characteristic appears to support writing without response. If so,
+  AluxLabs Link shall write without response. Otherwise, Scratch shall write with response.
 
 Generally, writing without response is significantly faster.
 
-On success, Scratch Link's **response** shall contain the number of bytes written, which may differ from the number of
+On success, AluxLabs Link's **response** shall contain the number of bytes written, which may differ from the number of
 characters in the string value of the initiating request's "message" property:
 
 ```json5
@@ -296,7 +296,7 @@ characters in the string value of the initiating request's "message" property:
 #### Reading from a Characteristic
 
 The Scratch Extension may read data from a characteristics available on an allowed service by sending a "read"
-**request** to Scratch Link:
+**request** to AluxLabs Link:
 
 ```json5
 {
@@ -328,11 +328,11 @@ The "characteristicId" property may be any valid GATT characteristic name:
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
 
-If the "encoding" property is present then Scratch Link should use the indicated encoding for the response, but Scratch
-Link is not required to do so. If the "encoding" property is absent in the **request** Scratch Link may choose an
+If the "encoding" property is present then AluxLabs Link should use the indicated encoding for the response, but Scratch
+Link is not required to do so. If the "encoding" property is absent in the **request** AluxLabs Link may choose an
 encoding for the response.
 
-On success, Scratch Link's **response** shall contain the data read from the characteristic:
+On success, AluxLabs Link's **response** shall contain the data read from the characteristic:
 
 ```json5
 {
@@ -353,7 +353,7 @@ If the "startNotifications" property is both present and true in the **request**
 
 #### Value change notification
 
-The Scratch Extension may request that Scratch Link shall continuously notify the Scratch Extension of changes in the
+The Scratch Extension may request that AluxLabs Link shall continuously notify the Scratch Extension of changes in the
 characteristic's value by sending a "startNotifications" **request**. This shall continue until the Scratch Extension
 makes a "stopNotifications" request:
 
@@ -386,11 +386,11 @@ The "characteristicId" property may be any valid GATT characteristic name:
 - an integer representing a short ID, or
 - a string name from the [Characteristic Assigned Numbers table](https://www.bluetooth.com/specifications/gatt/characteristic).
 
-If the "encoding" property is present then Scratch Link should use the indicated encoding for notifications, but Scratch
-Link is not required to do so. If the "encoding" property is absent in the **request** Scratch Link may choose an
+If the "encoding" property is present then AluxLabs Link should use the indicated encoding for notifications, but Scratch
+Link is not required to do so. If the "encoding" property is absent in the **request** AluxLabs Link may choose an
 encoding for the response.
 
-Scratch Link notifies the Scratch Extension of value changes with **notification** messages in this form:
+AluxLabs Link notifies the Scratch Extension of value changes with **notification** messages in this form:
 
 ```json5
 {
@@ -408,13 +408,13 @@ Scratch Link notifies the Scratch Extension of value changes with **notification
 If the "encoding" property is absent the Scratch Extension should assume that the "message" property contains a
 Unicode string.
 
-Scratch Link shall only send such a notification when the value of a characteristic changes, and only for
+AluxLabs Link shall only send such a notification when the value of a characteristic changes, and only for
 characteristics for which a "startNotifications" request (or a "read" request with the "startNotifications" flag set)
 has been made. Such notifications shall continue until the Scratch Extension makes a "stopNotifications" request.
 
 #### Stop Notifications
 
-The Scratch Extension may end value change notifications by sending a "stopNotifications" **request** to Scratch Link:
+The Scratch Extension may end value change notifications by sending a "stopNotifications" **request** to AluxLabs Link:
 
 ```json5
 {

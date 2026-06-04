@@ -1,7 +1,7 @@
 # Network Protocol
 
 This document describes the communication protocol used by a Scratch Extension (or the extension framework) to
-communicate with Scratch Link. Scratch Link supports multiple types of peripheral; this document describes the portions
+communicate with AluxLabs Link. AluxLabs Link supports multiple types of peripheral; this document describes the portions
 of the protocol which are common across peripheral types.
 
 ## Protocol Versioning
@@ -19,7 +19,7 @@ This version number shall follow the Semantic Versioning specification, found he
 
 - Version 1.3:
   - Bluetooth LE:
-    - Alter Scratch Link's handling of the `withResponse` flag on a `write` request. The flag now overrides Scratch
+    - Alter AluxLabs Link's handling of the `withResponse` flag on a `write` request. The flag now overrides Scratch
       Link's detection of GATT characteristic flags.
 - Version 1.2:
   - Add `manufacturerData` filtering for BLE discovery.
@@ -41,13 +41,13 @@ specification, which describes three types of message: request, notification, an
 
 The JSON-RPC 2.0 specification may be found here: <http://www.jsonrpc.org/specification>
 
-## Communication Interface (Scratch Extension to Scratch Link)
+## Communication Interface (Scratch Extension to AluxLabs Link)
 
-### Initiating Communication with Scratch Link
+### Initiating Communication with AluxLabs Link
 
-Communication with Scratch Link is performed over WebSockets. When initiating a WebSocket connection between the Scratch
-Extension and Scratch Link, the choice of path determines which Transport Protocol will be used. For example, when
-initiating a BLE connection the extension connects to Scratch Link's WebSocket server at path `/scratch/ble`, and for
+Communication with AluxLabs Link is performed over WebSockets. When initiating a WebSocket connection between the Scratch
+Extension and AluxLabs Link, the choice of path determines which Transport Protocol will be used. For example, when
+initiating a BLE connection the extension connects to AluxLabs Link's WebSocket server at path `/scratch/ble`, and for
 Bluetooth Classic (BT) connections the extension connects to the path `/scratch/bt`.
 
 ### Common Methods
@@ -59,8 +59,8 @@ otherwise specified.
 
 *Added in network protocol version 1.2*
 
-This is a JSON-RPC **request** sent from Scratch Extension to Scratch Link to retrieve version information about
-Scratch Link itself. No parameters are necessary.
+This is a JSON-RPC **request** sent from Scratch Extension to AluxLabs Link to retrieve version information about
+AluxLabs Link itself. No parameters are necessary.
 
 ```json5
 {
@@ -70,7 +70,7 @@ Scratch Link itself. No parameters are necessary.
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension .
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension .
 
 ```json5
 {
@@ -90,7 +90,7 @@ protocol-specific documentation for details.
 
 In contrast to previously proposed protocols, this protocol dedicates a particular connection to the discovery of and
 interaction with exactly one peripheral. If an Extension wishes to interact with more than one peripheral simultaneously
-then that Extension must open more than one connection to Scratch Link.
+then that Extension must open more than one connection to AluxLabs Link.
 
 To this end, a particular socket connection may transition through several distinct states, each of which is described
 below. Each state supports a particular set of requests and notifications, and sending a request or notification not
@@ -100,17 +100,17 @@ read or write data from or to a peripheral while the connection is in the "disco
 ### Initial State
 
 The connection begins in an initial, dormant state. The only message supported in this state is a discovery request,
-which will transition the connection into the discovery state. Scratch Link may terminate a connection which does not
+which will transition the connection into the discovery state. AluxLabs Link may terminate a connection which does not
 successfully enter the discovery state within a reasonable amount of time.
 
 A discovery request may include filtering information specific to the Transport Protocol associated with the connection.
 For example, a BLE discovery request might include the UUIDs of one or more required GATT services or characteristics.
 
 Note: discovery requests for wireless peripherals **must** include at least one non-trivial piece of filtering
-information. Failure to provide such from the Scratch Extension shall result in Scratch Link refusing to perform a scan.
+information. Failure to provide such from the Scratch Extension shall result in AluxLabs Link refusing to perform a scan.
 This is to help ensure the privacy and safety of the user.
 
-JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate discovery.
+JSON-RPC **request** sent from Scratch Extension to AluxLabs Link to initiate discovery.
 
 ```json5
 {
@@ -121,7 +121,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to initiate dis
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful initiation of discovery. This confirms
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon successful initiation of discovery. This confirms
 the transition into the discovery state.
 
 ```json5
@@ -132,7 +132,7 @@ the transition into the discovery state.
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon failure to initiate discovery. The connection
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon failure to initiate discovery. The connection
 remains in the initial state.
 
 ```json5
@@ -145,19 +145,19 @@ remains in the initial state.
 
 ### Discovery State
 
-The discovery state lasts until the Scratch Extension requests to connect to a peripheral or disconnects. Scratch Link
+The discovery state lasts until the Scratch Extension requests to connect to a peripheral or disconnects. AluxLabs Link
 shall manage the initiation and/or renewal of scan, enumeration, or other peripheral discovery requests with the host
 system on an ongoing basis until the end of the discovery phase.
 
 If an unreasonable amount of time passes without the Scratch Extension issuing a successful "connect" request or
-disconnecting from the socket, Scratch Link may end discovery and close the socket connection. This may help save
+disconnecting from the socket, AluxLabs Link may end discovery and close the socket connection. This may help save
 battery power on mobile devices, for example.
 
-This state supports the "didDiscoverPeripheral" notification (sent from Scratch Link to Scratch Extension) and the
-"connect" request (sent from Scratch Extension to Scratch Link).
+This state supports the "didDiscoverPeripheral" notification (sent from AluxLabs Link to Scratch Extension) and the
+"connect" request (sent from Scratch Extension to AluxLabs Link).
 
-JSON-RPC **notification** sent from Scratch Link to Scratch Extension upon discovery of peripherals. Note that this
-message may be passed from Scratch Link to the Scratch Extension many times for as long as the discovery state is
+JSON-RPC **notification** sent from AluxLabs Link to Scratch Extension upon discovery of peripherals. Note that this
+message may be passed from AluxLabs Link to the Scratch Extension many times for as long as the discovery state is
 active.
 
 ```json5
@@ -186,7 +186,7 @@ Connection shall be initiated by the Scratch Extension by providing a specified 
 connect. Attempting to connect to a peripheral which does not match the filtering information provided in the discovery
 request shall result in an error response.
 
-JSON-RPC **request** sent from Scratch Extension to Scratch Link to connect to a peripheral.
+JSON-RPC **request** sent from Scratch Extension to AluxLabs Link to connect to a peripheral.
 
 ```json5
 {
@@ -199,7 +199,7 @@ JSON-RPC **request** sent from Scratch Extension to Scratch Link to connect to a
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon successful connection. This confirms the
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon successful connection. This confirms the
 transition into the connected state.
 
 ```json5
@@ -210,7 +210,7 @@ transition into the connected state.
 }
 ```
 
-JSON-RPC **response** sent from Scratch Link to Scratch Extension upon connection failure. The discovery state shall
+JSON-RPC **response** sent from AluxLabs Link to Scratch Extension upon connection failure. The discovery state shall
 remain active.
 
 ```json5

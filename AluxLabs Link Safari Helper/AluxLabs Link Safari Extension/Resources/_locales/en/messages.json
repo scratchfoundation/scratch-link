@@ -1,0 +1,10 @@
+{
+    "extension_name": {
+        "message": "AluxLabs Link",
+        "description": "The display name for the extension."
+    },
+    "extension_description": {
+        "message": "This extension allows Safari to communicate with AluxLabs Link.",
+        "description": "Description of what the extension does."
+    }
+}
