@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppInstaller
+    xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2"
+    Uri="https://dev-scratch-assets.aluxcoding.com/link/AluxLabsLink.appinstaller"
+    Version="1.0.0.0">
+
+  <MainBundle
+      Name="ALUXInc.AluxLabsLink"
+      Publisher="CN=&quot;ALUX Co.,Ltd&quot;, O=&quot;ALUX Co.,Ltd&quot;, S=Seoul, C=KR"
+      Version="1.0.0.0"
+      Uri="https://dev-scratch-assets.aluxcoding.com/link/AluxLabs-Link-1.0.0.0.msixbundle" />
+
+  <UpdateSettings>
+    <OnLaunch HoursBetweenUpdateChecks="0" />
+    <AutomaticBackgroundTask />
+  </UpdateSettings>
+
+</AppInstaller>
