@@ -93,6 +93,17 @@ python brand/build_icons.py
 
 생성물(ICO/PNG)은 커밋되어 있으므로 일반 빌드 시에는 실행 불필요.
 
+## 다운로드
+
+| 채널 | URL |
+|---|---|
+| Stable | https://scratch-link.aluxcoding.com/latest.msixbundle |
+| Prerelease (개발판) | https://dev-scratch-link.aluxcoding.com/latest.msixbundle |
+
+최신 버전 메타: `latest.json` (같은 디렉토리). 특정 버전: `archive/v<version>/...`.
+
+> 코드사이닝 적용 상태와 임시 자체서명 안내는 아래 **코드사이닝** 섹션 참조.
+
 ## 패키징 및 배포
 
 현재 배포 방식은 **framework-dependent**입니다. Windows App Runtime 1.8이 없는 PC에서는 설치 안내가 표시됩니다.

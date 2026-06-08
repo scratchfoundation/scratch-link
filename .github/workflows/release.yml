@@ -1,0 +1,212 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-*'
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Override channel (auto/stable/dev). auto=태그 형식으로 결정'
+        type: choice
+        options: [auto, stable, dev]
+        default: auto
+      ref:
+        description: '수동 실행 시 사용할 ref (태그/브랜치). 비우면 워크플로 ref 사용'
+        type: string
+        default: ''
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Resolve channel and version
+        id: meta
+        run: |
+          set -euo pipefail
+          # 채널 결정
+          input="${{ github.event.inputs.channel }}"
+          tag_name="${GITHUB_REF_NAME:-}"
+          if [[ "$input" == "stable" || "$input" == "dev" ]]; then
+            channel="$input"
+          elif [[ "$tag_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            channel="dev"
+          elif [[ "$tag_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            channel="stable"
+          else
+            channel="dev"  # workflow_dispatch + auto + non-tag ref → 안전한 쪽
+          fi
+          # 버전 산출 (태그면 v 제거, 아니면 git describe)
+          if [[ "$tag_name" =~ ^v ]]; then
+            version="${tag_name#v}"
+          else
+            version="$(git describe --tags --always --dirty)"
+          fi
+          # 채널별 버킷·distribution
+          if [[ "$channel" == "stable" ]]; then
+            bucket="scratch-link.aluxcoding.com"
+            dist_id="${{ secrets.CF_DIST_ID_PROD }}"
+          else
+            bucket="dev-scratch-link.aluxcoding.com"
+            dist_id="${{ secrets.CF_DIST_ID_DEV }}"
+          fi
+          {
+            echo "channel=$channel"
+            echo "version=$version"
+            echo "bucket=$bucket"
+            echo "dist_id=$dist_id"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      - name: Show resolved metadata
+        run: |
+          echo "channel = ${{ steps.meta.outputs.channel }}"
+          echo "version = ${{ steps.meta.outputs.version }}"
+          echo "bucket  = ${{ steps.meta.outputs.bucket }}"
+          echo "dist_id = (마스킹됨)"
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Verify build toolchain
+        shell: pwsh
+        run: |
+          dotnet --version
+          msbuild -version
+          aws --version
+
+      - name: Restore NuGet cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '**/*.props') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      - name: Build MSIX bundle
+        shell: pwsh
+        env:
+          SOLUTION_DIR: ${{ github.workspace }}
+        run: |
+          msbuild aluxlabs-link-win-msix/aluxlabs-link-win-msix.wapproj `
+            -maxCpuCount `
+            -restore `
+            -t:Build `
+            -p:SolutionDir="$env:SOLUTION_DIR\" `
+            -p:Configuration=Release_Win `
+            -p:AppxBundlePlatforms="x86|x64|ARM64" `
+            -p:AppxBundle=Always `
+            -p:UapAppxPackageBuildMode=StoreAndSideload
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Artifacts
+
+          version="${{ steps.meta.outputs.version }}"
+          channel="${{ steps.meta.outputs.channel }}"
+          bundle_src=$(find aluxlabs-link-win-msix/AppPackages -type f -name '*.msixbundle' | head -n1)
+          upload_src=$(find aluxlabs-link-win-msix/AppPackages -type f -name '*.msixupload' | head -n1)
+
+          if [[ -z "$bundle_src" || -z "$upload_src" ]]; then
+            echo "::error::빌드 산출물(.msixbundle / .msixupload)을 찾지 못함"
+            ls -R aluxlabs-link-win-msix/AppPackages || true
+            exit 1
+          fi
+
+          bundle_dst="Artifacts/AluxLabs-Link-${version}.msixbundle"
+          upload_dst="Artifacts/AluxLabs-Link-${version}.msixupload"
+          cp "$bundle_src" "$bundle_dst"
+          cp "$upload_src" "$upload_dst"
+
+          # 체크섬
+          (cd Artifacts && sha256sum "$(basename "$bundle_dst")" "$(basename "$upload_dst")") > Artifacts/SHA256SUMS.txt
+
+          # latest.json
+          sha=$(sha256sum "$bundle_dst" | awk '{print $1}')
+          size=$(stat -c %s "$bundle_dst" 2>/dev/null || stat -f %z "$bundle_dst")
+          published=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          archive_url="https://${{ steps.meta.outputs.bucket }}/archive/v${version}/$(basename "$bundle_dst")"
+
+          jq -n \
+            --arg version "$version" \
+            --arg publishedAt "$published" \
+            --arg channel "$channel" \
+            --arg url "$archive_url" \
+            --arg sha256 "$sha" \
+            --argjson size "$size" \
+            '{version:$version, publishedAt:$publishedAt, channel:$channel, url:$url, sha256:$sha256, size:$size, minWindowsBuild:17763, windowsAppRuntime:"1.8"}' \
+            > Artifacts/latest.json
+
+          ls -la Artifacts/
+          cat Artifacts/latest.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Upload archive (immutable)
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.meta.outputs.version }}"
+          bucket="${{ steps.meta.outputs.bucket }}"
+          aws s3 cp Artifacts/ "s3://${bucket}/archive/v${version}/" \
+            --recursive \
+            --exclude "latest.json" \
+            --cache-control "public, max-age=31536000, immutable" \
+            --metadata-directive REPLACE
+
+      - name: Upload latest pointers (short cache)
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.meta.outputs.version }}"
+          bucket="${{ steps.meta.outputs.bucket }}"
+          aws s3 cp "Artifacts/AluxLabs-Link-${version}.msixbundle" \
+            "s3://${bucket}/latest.msixbundle" \
+            --cache-control "public, max-age=300" \
+            --content-type "application/vnd.ms-appx"
+          aws s3 cp Artifacts/latest.json \
+            "s3://${bucket}/latest.json" \
+            --cache-control "public, max-age=300" \
+            --content-type "application/json"
+
+      - name: Invalidate CloudFront latest paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          # native aws.exe + Git Bash 조합 회피: --invalidation-batch에 workspace 상대 JSON 파일 전달.
+          # CallerReference로 재실행 중복 방지.
+          printf '{"Paths":{"Quantity":2,"Items":["/latest.msixbundle","/latest.json"]},"CallerReference":"release-%s-%s"}' \
+            "${{ github.run_id }}" "${{ github.run_attempt }}" > cf-inv.json
+          cat cf-inv.json
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ steps.meta.outputs.dist_id }}" \
+            --invalidation-batch file://cf-inv.json \
+            --query 'Invalidation.{Id:Id,Status:Status}' \
+            --output table
