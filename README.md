@@ -101,3 +101,11 @@ python brand/build_icons.py
 - **MSIX 번들(`*.msixbundle`)**: 여러 플랫폼을 하나로 묶어 배포
 
 self-contained 배포(런타임 번들링)로 전환하면 설치 안내가 완전히 사라지지만, 바이너리 크기가 증가합니다. AnyCPU 빌드에서는 self-contained를 지원하지 않으므로 플랫폼별 빌드(x64/x86/ARM64)가 필요합니다.
+
+## 코드사이닝
+
+Windows 빌드(`*.msixbundle`)는 [SignPath Foundation](https://signpath.org)의 무료 OSS 코드사이닝 서비스로 서명됩니다. SignPath Foundation은 오픈소스 프로젝트에 EV 코드사이닝 인증서를 제공하는 비영리 단체이며, 본 프로젝트는 AGPL-3.0-only 라이선스로 공개돼 있어 그 자격을 충족합니다.
+
+*Code signing for Windows builds is provided by [SignPath Foundation](https://signpath.org), a non-profit foundation that provides free code signing certificates for open source projects.*
+
+> 승인 절차 완료 전까지는 임시 자체서명 인증서가 사용되며, 이 기간 동안 사용자는 인증서를 Trusted Root에 수동 설치해야 설치할 수 있습니다.
