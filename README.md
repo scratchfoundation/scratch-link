@@ -1,5 +1,14 @@
 # AluxLabs Link
 
+> **About this project (English summary)**
+> AluxLabs Link is a Windows desktop application that bridges Scratch 3.0
+> with hardware peripherals (BLE, Bluetooth Classic, USB Serial). It is a
+> Windows-focused, rebranded fork of Scratch Foundation's
+> [scratch-link](https://github.com/scratchfoundation/scratch-link),
+> distributed under the **AGPL-3.0-only** license. Windows builds are
+> code-signed by [SignPath Foundation](https://signpath.org). The rest of
+> this README is Korean-localized documentation.
+
 Scratch 3.0과 PC에 연결된 하드웨어 주변기기를 중계하는 도우미 앱.
 
 > 본 제품은 Scratch Foundation 의 [scratch-link](https://github.com/scratchfoundation/scratch-link) (AGPL-3.0-only) 에서 파생된 Windows 전용 포크이며, 동일한 **AGPL-3.0-only** 라이선스로 배포됩니다. 변경 내역·소스 위치·상표 고지는 [NOTICE](NOTICE) ([한국어](NOTICE.ko)), 전체 라이선스 텍스트는 [LICENSE](LICENSE) 를 참조하십시오.
