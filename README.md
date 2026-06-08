@@ -1,5 +1,14 @@
 # AluxLabs Link
 
+> **About this project (English summary)**
+> AluxLabs Link is a Windows desktop application that bridges Scratch 3.0
+> with hardware peripherals (BLE, Bluetooth Classic, USB Serial). It is a
+> Windows-focused, rebranded fork of Scratch Foundation's
+> [scratch-link](https://github.com/scratchfoundation/scratch-link),
+> distributed under the **AGPL-3.0-only** license. Windows builds are
+> code-signed by [SignPath Foundation](https://signpath.org). The rest of
+> this README is Korean-localized documentation.
+
 Scratch 3.0과 PC에 연결된 하드웨어 주변기기를 중계하는 도우미 앱.
 
 > 본 제품은 Scratch Foundation 의 [scratch-link](https://github.com/scratchfoundation/scratch-link) (AGPL-3.0-only) 에서 파생된 Windows 전용 포크이며, 동일한 **AGPL-3.0-only** 라이선스로 배포됩니다. 변경 내역·소스 위치·상표 고지는 [NOTICE](NOTICE) ([한국어](NOTICE.ko)), 전체 라이선스 텍스트는 [LICENSE](LICENSE) 를 참조하십시오.
@@ -93,6 +102,17 @@ python brand/build_icons.py
 
 생성물(ICO/PNG)은 커밋되어 있으므로 일반 빌드 시에는 실행 불필요.
 
+## 다운로드
+
+| 채널 | URL |
+|---|---|
+| Stable | https://scratch-link.aluxcoding.com/latest.msixbundle |
+| Prerelease (개발판) | https://dev-scratch-link.aluxcoding.com/latest.msixbundle |
+
+최신 버전 메타: `latest.json` (같은 디렉토리). 특정 버전: `archive/v<version>/...`.
+
+> 코드사이닝 적용 상태와 임시 자체서명 안내는 아래 **코드사이닝** 섹션 참조.
+
 ## 패키징 및 배포
 
 현재 배포 방식은 **framework-dependent**입니다. Windows App Runtime 1.8이 없는 PC에서는 설치 안내가 표시됩니다.
@@ -101,3 +121,11 @@ python brand/build_icons.py
 - **MSIX 번들(`*.msixbundle`)**: 여러 플랫폼을 하나로 묶어 배포
 
 self-contained 배포(런타임 번들링)로 전환하면 설치 안내가 완전히 사라지지만, 바이너리 크기가 증가합니다. AnyCPU 빌드에서는 self-contained를 지원하지 않으므로 플랫폼별 빌드(x64/x86/ARM64)가 필요합니다.
+
+## 코드사이닝
+
+Windows 빌드(`*.msixbundle`)는 [SignPath Foundation](https://signpath.org)의 무료 OSS 코드사이닝 서비스로 서명됩니다. SignPath Foundation은 오픈소스 프로젝트에 EV 코드사이닝 인증서를 제공하는 비영리 단체이며, 본 프로젝트는 AGPL-3.0-only 라이선스로 공개돼 있어 그 자격을 충족합니다.
+
+*Code signing for Windows builds is provided by [SignPath Foundation](https://signpath.org), a non-profit foundation that provides free code signing certificates for open source projects.*
+
+> 승인 절차 완료 전까지는 임시 자체서명 인증서가 사용되며, 이 기간 동안 사용자는 인증서를 Trusted Root에 수동 설치해야 설치할 수 있습니다.
