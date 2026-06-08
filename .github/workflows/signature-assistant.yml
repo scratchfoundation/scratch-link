@@ -1,9 +1,13 @@
 name: "Signature Assistant"
 on:
-  issue_comment:
-    types: [created]
-  pull_request_target:
-    types: [opened,closed,synchronize]
+  # Scratch Foundation의 CLA 서명 검사 봇. AluxLabs Link fork는 upstream에 기여하는
+  # 워크플로가 아니므로 자동 트리거를 비활성화한다. (scratchfoundation/scratch-agreements
+  # 접근 PAT가 우리 저장소에 없어 매번 실패만 함.)
+  # issue_comment:
+  #   types: [created]
+  # pull_request_target:
+  #   types: [opened,closed,synchronize]
+  workflow_dispatch: # 수동 실행만 허용
 
 permissions:
   actions: write
