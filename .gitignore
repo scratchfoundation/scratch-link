@@ -35,3 +35,6 @@ ref/
 
 # Test signing materials (self-signed test certs / build logs — never commit)
 /aluxlabs-link-win-msix/_signing/
+
+# Staged distribution bundles (서명된 .msixbundle — 대용량이라 커밋 금지. .appinstaller 템플릿은 dist/ 직하에 별도 커밋)
+/aluxlabs-link-win-msix/dist/upload/
