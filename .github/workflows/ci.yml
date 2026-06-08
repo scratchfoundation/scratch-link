@@ -1,9 +1,11 @@
 name: CI build
 
 on:
-  push: # Runs whenever a commit is pushed to the repository, including for a PR
-  workflow_call: # Runs when this workflow is called from another workflow
-  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+  # AluxLabs Link fork에서는 upstream의 macOS/semantic-release 흐름이 동작하지 않아
+  # 자동 트리거를 비활성화. release.yml(별도 PR)이 정식 빌드/배포를 담당.
+  # push:
+  # workflow_call:
+  workflow_dispatch: # 수동 실행만 허용 (검증·디버깅용)
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
