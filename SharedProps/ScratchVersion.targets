@@ -10,6 +10,13 @@ This file sets up version properties in our own Scratch way.
 	definition when available ("last definition wins" in MSBuild).
 	-->
 	<Target Name="GitVersion">
+		<!-- GitInfo가 .wapproj 컨텍스트에선 로드되지 않아 빌드 번호가 0으로 떨어지는 것을 방지 -->
+		<Exec Command="git rev-list --count HEAD" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" StandardOutputImportance="low" ContinueOnError="true">
+			<Output TaskParameter="ConsoleOutput" PropertyName="_AluxGitCommits" />
+		</Exec>
+		<Exec Command="git rev-parse --short=7 HEAD" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" StandardOutputImportance="low" ContinueOnError="true">
+			<Output TaskParameter="ConsoleOutput" PropertyName="_AluxGitCommit" />
+		</Exec>
 		<PropertyGroup>
 			<GitSemVerMajor     Condition="'$(GitSemVerMajor)'     == ''">0</GitSemVerMajor>
 			<GitSemVerMinor     Condition="'$(GitSemVerMinor)'     == ''">0</GitSemVerMinor>
@@ -18,6 +25,8 @@ This file sets up version properties in our own Scratch way.
 			<GitCommit          Condition="'$(GitCommit)'          == ''">0000000</GitCommit>
 			<GitCommits         Condition="'$(GitCommits)'         == ''">0</GitCommits>
 			<GitCommitDate      Condition="'$(GitCommitDate)'      == ''">$([System.DateTime]::UtcNow.ToString("o"))</GitCommitDate>
+			<GitCommits Condition="('$(GitCommits)' == '' OR '$(GitCommits)' == '0') AND '$(_AluxGitCommits)' != ''">$(_AluxGitCommits.Trim())</GitCommits>
+			<GitCommit Condition="('$(GitCommit)' == '' OR '$(GitCommit)' == '0000000') AND '$(_AluxGitCommit)' != ''">$(_AluxGitCommit.Trim())</GitCommit>
 		</PropertyGroup>
 	</Target>
 
@@ -44,7 +53,7 @@ This file sets up version properties in our own Scratch way.
 		<PropertyGroup>
 			<!--
 			Alux fork: when there's no semver git tag, GitInfo defaults to 0.0.0 and we'd ship
-			as "0.0.x" — bump the floor to 1.0.0 so we ship as "Alux Scratch Link 1.0.0.x".
+			as "0.0.x" — bump the floor to 1.0.0 so we ship as "AluxLabs Link 1.0.0.x".
 			To cut a real release later, tag the commit (e.g. `git tag v1.1.0`) and this guard
 			will yield automatically.
 			-->

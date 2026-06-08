@@ -355,7 +355,7 @@ Sent when the connection is lost (external cause, not client-initiated).
 
 **Recovery policy (current):**
 
-Scratch Link does **not** retry on I/O errors. The moment the kernel surfaces a read-side `IOException`, Link:
+AluxLabs Link does **not** retry on I/O errors. The moment the kernel surfaces a read-side `IOException`, Link:
 1. Fires `serialDidDisconnect` with `reason: "device"`.
 2. Closes the port.
 3. Stops the keep-alive timer and the RX loop.

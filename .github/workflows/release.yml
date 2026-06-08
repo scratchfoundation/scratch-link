@@ -108,7 +108,7 @@ jobs:
         env:
           SOLUTION_DIR: ${{ github.workspace }}
         run: |
-          msbuild scratch-link-win-msix/scratch-link-win-msix.wapproj `
+          msbuild aluxlabs-link-win-msix/aluxlabs-link-win-msix.wapproj `
             -maxCpuCount `
             -restore `
             -t:Build `
@@ -126,17 +126,17 @@ jobs:
 
           version="${{ steps.meta.outputs.version }}"
           channel="${{ steps.meta.outputs.channel }}"
-          bundle_src=$(find scratch-link-win-msix/AppPackages -type f -name '*.msixbundle' | head -n1)
-          upload_src=$(find scratch-link-win-msix/AppPackages -type f -name '*.msixupload' | head -n1)
+          bundle_src=$(find aluxlabs-link-win-msix/AppPackages -type f -name '*.msixbundle' | head -n1)
+          upload_src=$(find aluxlabs-link-win-msix/AppPackages -type f -name '*.msixupload' | head -n1)
 
           if [[ -z "$bundle_src" || -z "$upload_src" ]]; then
             echo "::error::빌드 산출물(.msixbundle / .msixupload)을 찾지 못함"
-            ls -R scratch-link-win-msix/AppPackages || true
+            ls -R aluxlabs-link-win-msix/AppPackages || true
             exit 1
           fi
 
-          bundle_dst="Artifacts/Scratch-Link-${version}.msixbundle"
-          upload_dst="Artifacts/Scratch-Link-${version}.msixupload"
+          bundle_dst="Artifacts/AluxLabs-Link-${version}.msixbundle"
+          upload_dst="Artifacts/AluxLabs-Link-${version}.msixupload"
           cp "$bundle_src" "$bundle_dst"
           cp "$upload_src" "$upload_dst"
 
@@ -187,7 +187,7 @@ jobs:
           set -euo pipefail
           version="${{ steps.meta.outputs.version }}"
           bucket="${{ steps.meta.outputs.bucket }}"
-          aws s3 cp "Artifacts/Scratch-Link-${version}.msixbundle" \
+          aws s3 cp "Artifacts/AluxLabs-Link-${version}.msixbundle" \
             "s3://${bucket}/latest.msixbundle" \
             --cache-control "public, max-age=300" \
             --content-type "application/vnd.ms-appx"

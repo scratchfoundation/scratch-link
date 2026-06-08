@@ -1,4 +1,4 @@
-# Testing Scratch Link
+# Testing AluxLabs Link
 
 All tests require access to Scratch 3.0 through <https://beta.scratch.mit.edu> or similar.
 
@@ -14,15 +14,15 @@ At least one of each:
 
 ## Test Cases
 
-### Scratch Link startup & shutdown
+### AluxLabs Link startup & shutdown
 
-1. Start Scratch Link.
-2. Click the Scratch Link icon and verify the version number.
-3. Click "Exit" or "Quit" and verify that Scratch Link quits.
+1. Start AluxLabs Link.
+2. Click the AluxLabs Link icon and verify the version number.
+3. Click "Exit" or "Quit" and verify that AluxLabs Link quits.
 
 ### BBC micro:bit
 
-1. Start Scratch 3.0 & Scratch Link.
+1. Start Scratch 3.0 & AluxLabs Link.
 2. Load the "micro:bit" extension.
 3. Connect to the micro:bit.
 4. **Test the `display text` block.**
@@ -36,7 +36,7 @@ At least one of each:
 
 ### LEGO WeDo 2.0
 
-1. Start Scratch 3.0 & Scratch Link.
+1. Start Scratch 3.0 & AluxLabs Link.
 2. Load the "LEGO WeDo 2.0" extension.
 3. Connect to the WeDo 2.
 4. **Test the `set light color to ()` block.**
@@ -50,7 +50,7 @@ At least one of each:
 ### LEGO EV3
 
 1. Turn on the EV3 -- startup takes a while.
-2. Start Scratch 3.0 & Scratch Link.
+2. Start Scratch 3.0 & AluxLabs Link.
 3. Load the "LEGO MINDSTORMS EV3" extension.
 4. Connect to the EV3.
 5. **Test the `beep note () for () secs` block.**
@@ -64,7 +64,7 @@ At least one of each:
 
 ### Bluetooth Toggle
 
-1. Start Scratch 3.0 & Scratch Link.
+1. Start Scratch 3.0 & AluxLabs Link.
 2. Load the extension for any BLE or BT peripheral and connect to the peripheral.
 3. Using the Windows or macOS controls, disable Bluetooth.
 4. **Verify that Scratch displays a disconnect notification.**
@@ -73,7 +73,7 @@ At least one of each:
 
 ### Computer Sleep
 
-1. Start Scratch 3.0 & Scratch Link.
+1. Start Scratch 3.0 & AluxLabs Link.
 2. Load the extension for any BLE or BT peripheral and connect to the peripheral.
 3. Cause your computer to enter sleep mode.
 4. After a few seconds, wake your computer.

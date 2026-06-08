@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>AluxLabs.Link.Win</RootNamespace>
+    <AssemblyName>AluxLabs Link</AssemblyName>
+    <Company>ALUX, Inc.</Company>
+    <Authors>$(Company)</Authors>
+    <Nullable>disable</Nullable>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <!-- Self-contained when building with a specific platform (x64/x86/ARM64): bundles App Runtime DLLs -->
+    <!-- AnyCPU does not support self-contained; publish profiles also override to false for MSIX -->
+    <WindowsAppSDKSelfContained Condition="'$(Platform)'=='x64' Or '$(Platform)'=='x86' Or '$(Platform)'=='ARM64'">true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained Condition="'$(Platform)'=='AnyCPU' Or '$(Platform)'==''">false</WindowsAppSDKSelfContained>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>AnyCPU</Platforms>
+    <ApplicationIcon>aluxlabs-link.ico</ApplicationIcon>
+  </PropertyGroup>
+  <Import Project="..\aluxlabs-link-common\aluxlabs-link-common.projitems" Label="Shared" Condition="Exists('..\aluxlabs-link-common\aluxlabs-link-common.projitems')" />
+  <Import Project="$(SolutionDir)SharedProps\CommonPackageRefs.props" />
+  <Import Project="$(SolutionDir)SharedProps\ScratchVersion.targets" />
+  <Import Project="$(SolutionDir)SharedProps\StyleCop.props" />
+  <Import Project="$(SolutionDir)SharedProps\WindowsSDK.props" />
+
+  <Target Name="SetAssemblyVersion" DependsOnTargets="ScratchVersion" BeforeTargets="GenerateTargetFrameworkMonikerAttribute">
+    <PropertyGroup>
+      <FileVersion>$(ScratchVersionQuad)</FileVersion>
+      <Version>$(ScratchVersionDetail)</Version>
+    </PropertyGroup>
+  </Target>
+
+  <ItemGroup>
+    <Content Include="aluxlabs-link.ico" />
+    <Content Include="aluxlabs-link-tray.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.0.131" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+  </ItemGroup>
+</Project>

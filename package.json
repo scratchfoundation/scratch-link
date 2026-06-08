@@ -1,7 +1,7 @@
 {
-  "name": "alux-scratch-link",
+  "name": "aluxlabs-link",
   "version": "1.0.0",
-  "description": "Alux Scratch Link is not published as an NPM package. This file only exists to facilitate installation of devDependencies.",
+  "description": "AluxLabs Link is not published as an NPM package. This file only exists to facilitate installation of devDependencies.",
   "author": "ALUX, Inc.",
   "license": "AGPL-3.0-only",
   "scripts": {
