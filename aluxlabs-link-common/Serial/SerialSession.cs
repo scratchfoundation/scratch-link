@@ -63,12 +63,20 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         : base(webSocket)
     {
         this.Handlers["discover"] = this.HandleDiscover;
+        this.Handlers["listSerialPorts"] = this.HandleListSerialPorts;
         this.Handlers["write"] = this.HandleWrite;
         this.Handlers["disconnect"] = this.HandleDisconnect;
         this.Handlers["startReading"] = this.HandleStartReading;
         this.Handlers["stopReading"] = this.HandleStopReading;
         this.Handlers["setKeepAlive"] = this.HandleSetKeepAlive;
         this.Handlers["triggerDTRReset"] = this.HandleTriggerDTRReset;
+    }
+
+    /// <inheritdoc/>
+    protected override string GeneratePeripheralId(string peripheralAddress)
+    {
+        // A serial port path is stable and non-sensitive, so use it directly as the ID rather than an anonymized GUID.
+        return peripheralAddress;
     }
 
     /// <summary>
@@ -79,22 +87,62 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     /// <param name="methodName">The name of the method being called ("discover").</param>
     /// <param name="args">A JSON object optionally containing a <c>filters</c> array.</param>
     /// <returns>A <see cref="Task"/> resolving to an empty result; discoveries are streamed via notifications.</returns>
-    protected Task<object> HandleDiscover(string methodName, JsonElement? args)
+    protected async Task<object> HandleDiscover(string methodName, JsonElement? args)
     {
         var filters = ParseFilters(args);
         Trace.WriteLine($"received serial discover request with {filters.Count} filter(s)");
 
         this.ClearDiscoveredPeripherals();
-        return this.DoDiscover(filters);
+        var ports = await this.DoEnumeratePorts(filters);
+        foreach (var port in ports)
+        {
+            await this.OnPortDiscovered(port.Port, port.Path, port.DisplayName, port.VendorIdHex, port.ProductIdHex);
+        }
+
+        return new Dictionary<string, object>();
     }
 
     /// <summary>
-    /// Platform-specific implementation for port discovery. Implementations
-    /// should return promptly and stream results via <see cref="OnPortDiscovered"/>.
+    /// Implement the JSON-RPC "listSerialPorts" request. Returns a one-shot snapshot of
+    /// currently matching ports in the response (no streamed notifications) and registers
+    /// each so a subsequent <c>connect</c> can resolve its peripheral ID.
+    /// </summary>
+    /// <param name="methodName">The name of the method being called ("listSerialPorts").</param>
+    /// <param name="args">A JSON object optionally containing a <c>filters</c> array.</param>
+    /// <returns>A <see cref="Task"/> resolving to a <c>ports</c> array of the matching ports.</returns>
+    protected async Task<object> HandleListSerialPorts(string methodName, JsonElement? args)
+    {
+        var filters = ParseFilters(args);
+        Trace.WriteLine($"received listSerialPorts request with {filters.Count} filter(s)");
+
+        // Refresh the registry so an ID from a prior snapshot fails connect (-32600) instead of opening a vanished port.
+        this.ClearDiscoveredPeripherals();
+        var ports = await this.DoEnumeratePorts(filters);
+
+        var items = new List<SerialPortListItem>(ports.Count);
+        foreach (var port in ports)
+        {
+            var peripheralId = this.RegisterPeripheral(port.Port, port.Path);
+            items.Add(new SerialPortListItem
+            {
+                PeripheralId = peripheralId,
+                Name = port.DisplayName,
+                Path = port.Path,
+                VendorId = port.VendorIdHex,
+                ProductId = port.ProductIdHex,
+            });
+        }
+
+        return new SerialPortListResult { Ports = items };
+    }
+
+    /// <summary>
+    /// Platform-specific one-shot enumeration of currently present serial ports matching
+    /// the filters. Returns a complete snapshot in one call; does not stream.
     /// </summary>
     /// <param name="filters">The filter list from the client. Empty means "match all".</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    protected abstract Task<object> DoDiscover(IReadOnlyList<SerialDiscoveryFilter> filters);
+    /// <returns>A <see cref="Task"/> resolving to the matching ports.</returns>
+    protected abstract Task<IReadOnlyList<EnumeratedPort>> DoEnumeratePorts(IReadOnlyList<SerialDiscoveryFilter> filters);
 
     /// <inheritdoc/>
     protected override Task<object> DoConnect(TPort port, JsonElement? args)
@@ -696,5 +744,96 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         /// </summary>
         [JsonPropertyName("rssi")]
         public int RSSI { get; set; }
+    }
+
+    /// <summary>
+    /// A single port returned by <see cref="DoEnumeratePorts"/>, pairing the platform
+    /// port handle with the display metadata needed to report it.
+    /// </summary>
+    protected sealed class EnumeratedPort
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EnumeratedPort"/> class.
+        /// </summary>
+        /// <param name="port">The platform-specific port handle.</param>
+        /// <param name="path">The OS-level port path (e.g. "COM7").</param>
+        /// <param name="displayName">The user-visible name.</param>
+        /// <param name="vendorIdHex">The USB vendor ID as a hex string, or null.</param>
+        /// <param name="productIdHex">The USB product ID as a hex string, or null.</param>
+        public EnumeratedPort(TPort port, string path, string displayName, string vendorIdHex, string productIdHex)
+        {
+            this.Port = port;
+            this.Path = path;
+            this.DisplayName = displayName;
+            this.VendorIdHex = vendorIdHex;
+            this.ProductIdHex = productIdHex;
+        }
+
+        /// <summary>Gets the platform-specific port handle.</summary>
+        public TPort Port { get; }
+
+        /// <summary>Gets the OS-level port path.</summary>
+        public string Path { get; }
+
+        /// <summary>Gets the user-visible name.</summary>
+        public string DisplayName { get; }
+
+        /// <summary>Gets the USB vendor ID as a hex string, or null.</summary>
+        public string VendorIdHex { get; }
+
+        /// <summary>Gets the USB product ID as a hex string, or null.</summary>
+        public string ProductIdHex { get; }
+    }
+
+    /// <summary>
+    /// Payload of a <c>listSerialPorts</c> response.
+    /// </summary>
+    protected class SerialPortListResult
+    {
+        /// <summary>
+        /// Gets or sets the snapshot of currently matching ports.
+        /// </summary>
+        [JsonPropertyName("ports")]
+        public List<SerialPortListItem> Ports { get; set; }
+    }
+
+    /// <summary>
+    /// A single entry in a <c>listSerialPorts</c> response. Mirrors the
+    /// <c>didDiscoverPeripheral</c> fields without the RSSI placeholder.
+    /// </summary>
+    protected class SerialPortListItem
+    {
+        /// <summary>
+        /// Gets or sets the peripheral ID used by the client to connect.
+        /// </summary>
+        [JsonPropertyName("peripheralId")]
+        public string PeripheralId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user-visible name of the port.
+        /// </summary>
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the OS-level port path (e.g. "COM7").
+        /// </summary>
+        [JsonPropertyName("path")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string Path { get; set; }
+
+        /// <summary>
+        /// Gets or sets the USB vendor ID as a hex string, if known.
+        /// </summary>
+        [JsonPropertyName("vendorId")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string VendorId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the USB product ID as a hex string, if known.
+        /// </summary>
+        [JsonPropertyName("productId")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string ProductId { get; set; }
     }
 }

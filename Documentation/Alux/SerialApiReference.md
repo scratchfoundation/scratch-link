@@ -60,6 +60,58 @@ Discovered ports arrive as `didDiscoverPeripheral` notifications:
 
 ---
 
+### listSerialPorts
+
+Returns a one-shot snapshot of currently matching serial ports in the response (no streamed notifications), and registers each so a subsequent `connect` can resolve its `peripheralId`. Intended for a user-facing port picker.
+
+**Request:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "listSerialPorts",
+  "params": {
+    "filters": [
+      { "usbVendorId": 6790, "usbProductId": 29987, "pathHint": "COM" }
+    ]
+  }
+}
+```
+
+**Parameters:**
+- `filters` (array, optional) — Same shape and semantics as `discover`. Omit or empty to return every enumerated USB serial port. Filters are OR'd; fields within a filter are AND'd.
+
+**Response:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "ports": [
+      {
+        "peripheralId": "COM7",
+        "name": "USB-SERIAL CH340 (COM7)",
+        "path": "COM7",
+        "vendorId": "0x1A86",
+        "productId": "0x7523"
+      }
+    ]
+  }
+}
+```
+
+- `result.ports` is the complete current snapshot. No matches → `{ "ports": [] }` (not an error).
+- `peripheralId` is the COM port name; pass it back unchanged to `connect`. (Serial uses the COM path as the `peripheralId`; `discover` does the same.)
+- `vendorId` / `productId` are omitted when unknown (e.g. non-USB ports). No `rssi` field (this is a snapshot, not a BLE-style discovery).
+- **Side-effect-free:** does not open/close any port and does not disturb an in-progress session or its RX. Calling while connected is allowed — it returns the list only.
+- **Re-call replaces the snapshot:** the registry is refreshed each call. A `peripheralId` present only in a prior snapshot becomes stale and fails `connect` with -32600.
+
+**Errors:**
+- Invalid `filters` → -32602 (detail in `error.data`).
+- Method not found on an older Link → -32601; clients fall back to the `discover` path.
+
+---
+
 ### connect
 
 Opens a serial port connection.
@@ -105,13 +157,17 @@ Opens a serial port connection.
 ```
 
 **Errors:**
+
+The human-readable detail is carried in `error.data`; `error.message` holds the JSON-RPC category string (e.g. `"Application Error"`). Read `error.data` for the user-facing message.
+
 ```json
 {
   "jsonrpc": "2.0",
   "id": 2,
   "error": {
-    "code": -32603,
-    "message": "could not open serial port COM7: Port already in use"
+    "code": -32500,
+    "message": "Application Error",
+    "data": "could not open serial port COM7: Access to the path 'COM7' is denied."
   }
 }
 ```
@@ -424,12 +480,15 @@ This is a deliberate design choice for v1: keep Link's transport thin and predic
 
 ## Error Codes
 
-| Code | Message | Description |
+The human-readable detail is in `error.data`; `error.message` is the category string below.
+
+| Code | Message (category) | Description |
 |------|---------|-------------|
-| -32600 | Invalid Request | Malformed JSON-RPC |
-| -32601 | Method not found | Unknown method |
-| -32602 | Invalid params | Missing required parameter |
-| -32603 | Internal error | Port error, invalid state, etc. |
+| -32500 | Application Error | Port open failed, port enumeration hard failure, etc. (detail in `data`) |
+| -32600 | Invalid Request | Invalid state — e.g. peripheral not registered, already connected |
+| -32601 | Method not found | Unknown method (older Link server) |
+| -32602 | Invalid params | Missing/invalid parameter (e.g. missing `baudRate`, malformed `filters`) |
+| -32603 | Internal error | Internal error during a write/read operation |
 
 ---
 
@@ -478,5 +537,5 @@ Buffers longer than 256 bytes are truncated with `…(+NB)` suffix. Compare thes
 
 ---
 
-**API Version**: 1.1  
-**Last Updated**: 2026-05-25
+**API Version**: 1.2  
+**Last Updated**: 2026-06-08

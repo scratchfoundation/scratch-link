@@ -42,10 +42,11 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
     protected override bool IsConnected => this.port != null && this.port.IsOpen;
 
     /// <inheritdoc/>
-    protected override async Task<object> DoDiscover(IReadOnlyList<SerialDiscoveryFilter> filters)
+    protected override async Task<IReadOnlyList<EnumeratedPort>> DoEnumeratePorts(IReadOnlyList<SerialDiscoveryFilter> filters)
     {
         var ports = await Task.Run(() => WinSerialPortEnumerator.Query(filters));
 
+        var result = new List<EnumeratedPort>(ports.Count);
         foreach (var portInfo in ports)
         {
             var vendorHex = portInfo.VendorId.HasValue
@@ -55,10 +56,10 @@ internal class WinSerialSession : SerialSession<WinSerialPortInfo>
                 ? $"0x{portInfo.ProductId.Value:X4}"
                 : null;
 
-            await this.OnPortDiscovered(portInfo, portInfo.Path, portInfo.DisplayName, vendorHex, productHex);
+            result.Add(new EnumeratedPort(portInfo, portInfo.Path, portInfo.DisplayName, vendorHex, productHex));
         }
 
-        return new Dictionary<string, object>();
+        return result;
     }
 
     /// <inheritdoc/>

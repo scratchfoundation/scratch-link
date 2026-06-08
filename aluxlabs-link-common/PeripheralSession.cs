@@ -84,17 +84,29 @@ public abstract class PeripheralSession<TDiscoveredPeripheral, TPeripheralAddres
     protected abstract Task<object> DoConnect(TDiscoveredPeripheral discoveredPeripheral, JsonElement? args);
 
     /// <summary>
+    /// Produce the session-scoped peripheral ID for a newly seen address. The default
+    /// anonymizes the address with a fresh GUID; a transport whose address is stable and
+    /// non-sensitive may override to use the address itself as the ID.
+    /// </summary>
+    /// <param name="peripheralAddress">The peripheral device's address.</param>
+    /// <returns>The peripheral ID to associate with this address for the session.</returns>
+    protected virtual string GeneratePeripheralId(TPeripheralAddress peripheralAddress)
+    {
+        return Guid.NewGuid().ToString();
+    }
+
+    /// <summary>
     /// Store the peripheral in the "discovered peripherals" list using a session-specific peripheral ID.
     /// Storing a peripheral with the same address several times during the same session will result in the same ID each time.
     /// </summary>
     /// <param name="discoveredPeripheral">The peripheral information being registered.</param>
     /// <param name="peripheralAddress">The peripheral device's address.</param>
-    /// <returns>An anonymized, session-specific peripheral ID.</returns>
+    /// <returns>A session-specific peripheral ID (anonymized unless <see cref="GeneratePeripheralId"/> is overridden).</returns>
     protected string RegisterPeripheral(TDiscoveredPeripheral discoveredPeripheral, TPeripheralAddress peripheralAddress)
     {
         if (!this.peripheralAddressToId.TryGetValue(peripheralAddress, out var peripheralId))
         {
-            peripheralId = Guid.NewGuid().ToString();
+            peripheralId = this.GeneratePeripheralId(peripheralAddress);
             this.peripheralAddressToId[peripheralAddress] = peripheralId;
         }
 
