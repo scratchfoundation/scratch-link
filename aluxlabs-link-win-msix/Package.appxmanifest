@@ -8,12 +8,12 @@
 
   <Identity
     Name="ALUXInc.AluxLabsLink"
-    Publisher="CN=ALUX Inc."
+    Publisher="CN=&quot;ALUX Co.,Ltd&quot;, O=&quot;ALUX Co.,Ltd&quot;, S=Seoul, C=KR"
     Version="1.0.0.0" />
 
   <Properties>
     <DisplayName>AluxLabs Link</DisplayName>
-    <PublisherDisplayName>ALUX, Inc.</PublisherDisplayName>
+    <PublisherDisplayName>ALUX Inc.</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
 
