@@ -2,13 +2,13 @@
 <AppInstaller
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2017/2"
     Uri="https://scratch-link.aluxcoding.com/AluxLabsLink.appinstaller"
-    Version="1.0.0.1028">
+    Version="1.0.1.1031">
 
   <MainBundle
       Name="ALUXInc.AluxLabsLink"
       Publisher="CN=&quot;ALUX Co.,Ltd&quot;, O=&quot;ALUX Co.,Ltd&quot;, S=Seoul, C=KR"
-      Version="1.0.0.1028"
-      Uri="https://scratch-link.aluxcoding.com/AluxLabs-Link-1.0.0.1028.msixbundle" />
+      Version="1.0.1.1031"
+      Uri="https://scratch-link.aluxcoding.com/AluxLabs-Link-1.0.1.1031.msixbundle" />
 
   <UpdateSettings>
     <OnLaunch HoursBetweenUpdateChecks="0" />
