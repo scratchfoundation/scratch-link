@@ -62,6 +62,8 @@ WINDOWS_IMAGES = \
 # 개발: make sync-s3-dev  → https://dev-scratch-link.aluxcoding.com/
 # 파일별 Content-Type 지정 + CloudFront 무효화까지 수행. (aws s3 sync는 MIME가 깨져 금지)
 # aws.exe를 PATH에서 못 찾으면 기본 설치 경로(8.3 단축명, 공백 회피)로 폴백.
+# git-bash/MSYS sh가 CloudFront 경로 인자(/foo)를 Windows 경로로 변환하는 것을 방지 (무효화 실패 원인).
+export MSYS_NO_PATHCONV := 1
 AWS              ?= $(if $(wildcard C:/PROGRA~1/Amazon/AWSCLIV2/aws.exe),C:/PROGRA~1/Amazon/AWSCLIV2/aws.exe,aws)
 S3_SRC           ?= aluxlabs-link-win-msix/dist/upload/
 S3_BUNDLE        ?= $(notdir $(wildcard $(S3_SRC)*.msixbundle))
