@@ -10,6 +10,7 @@ AluxLabs Link(`aluxlabs-link-win-msix`)를 코드 서명하고, sideload MSIX로
 - 형태: **하드웨어 토큰(eToken)** — 물리 USB 토큰 + `SafeNet Authentication Client` 필요
 - 인증서 Subject (= 매니페스트 Publisher와 일치시킬 값): **`CN="ALUX Co.,Ltd", O="ALUX Co.,Ltd", S=Seoul, C=KR`**
 - 발급자: `Sectigo Public Code Signing CA R36` / 만료: **2027-07-01** (갱신 필요 시점)
+- 지문(SHA1): `EB74741683C9CDCE4457571A7EDD075A835B02C6` — `signtool /sha1`에 사용
 - 동작 제약:
   - 서명하려면 **토큰을 PC에 꽂고 SafeNet 클라이언트 + 토큰 비밀번호**가 있어야 한다.
   - **토큰 비밀번호 3회 실패 시 잠김** → Sectigo 지원팀으로만 해제. 비밀번호 창은 복사·붙여넣기 가능(오타 방지 권장).
@@ -21,17 +22,18 @@ AluxLabs Link(`aluxlabs-link-win-msix`)를 코드 서명하고, sideload MSIX로
 - **SmartScreen 평판은 즉시 생기지 않는다.** EV와 달리 다운로드·설치가 누적되어야 "알 수 없는 게시자" 경고가 사라진다. 초기 사용자는 경고를 볼 수 있다.
 - **하드웨어 토큰이라 CI 자동 서명이 어렵다.** 토큰을 꽂은 머신에서만 서명되므로 **로컬 수동 서명**으로 운영한다.
 
-### 배포 트랙 분리 (중요)
+### 배포 트랙 (한 버킷, 파일명으로 분리)
 
-서명 주체가 둘이라 **버킷·신원을 분리**한다. 섞이면 패키지 신원이 충돌해 자동 업데이트가 깨진다.
+서명 주체가 둘이지만 **버킷은 `scratch-link`(prod)/`dev-scratch-link`(dev)로 공통**이다. 파일명이 달라 충돌하지 않는다.
 
-| 트랙 | 서명 | 버킷 | 주체 |
+| 트랙 | 서명 | 파일 | 주체 |
 |---|---|---|---|
-| **실제 배포** | **USB 토큰(Sectigo)** | `scratch-assets.aluxcoding.com/link/` (+ dev: `dev-scratch-assets.../link/`) | **수동** (이 문서) |
-| CI/CD 테스트 | SignPath(신청 중) / 임시 인증서 | `scratch-link.aluxcoding.com` / `dev-scratch-link...` | GitHub Actions (`release.yml`) |
+| **실제 배포** | **USB 토큰(Sectigo)** | `AluxLabsLink.appinstaller` + `AluxLabs-Link-<버전>.msixbundle` | **수동** (이 문서) |
+| CI/CD 테스트 | SignPath(신청 중) / 임시 인증서 | `latest.msixbundle` + `latest.json` + `archive/` | GitHub Actions (`release.yml`) |
 
 - 두 트랙은 **인증서 Subject가 달라 Publisher도 다르다** → 서로 자동 업데이트 안 됨(의도된 분리).
-- CI 버킷(`scratch-link`)은 `scripts/aws/setup-cdn.sh`가 관리. **토큰 배포는 그쪽을 건드리지 않는다.**
+- CI 버킷은 `scripts/aws/setup-cdn.sh`가 만든 것. **CI 파일(`latest.*`, `archive/`)은 건드리지 않는다.**
+- (`scratch-assets` 버킷도 검토했으나 공개 DNS가 없어 제외. `scratch-link`만 CloudFront로 공개 서빙됨.)
 
 ## 1. 서명 도구 — SignTool
 
@@ -107,8 +109,8 @@ VS GUI로 할 경우: wapproj 우클릭 → **게시(Publish) → 앱 패키지 
 
 수동 운영이므로 MSBuild 자동 생성 대신 파일을 직접 관리한다. 저장소에 둔 정본:
 
-- prod: [`dist/AluxLabsLink.appinstaller`](../../aluxlabs-link-win-msix/dist/AluxLabsLink.appinstaller) → `scratch-assets.aluxcoding.com/link/`
-- dev: [`dist/AluxLabsLink.dev.appinstaller`](../../aluxlabs-link-win-msix/dist/AluxLabsLink.dev.appinstaller) → `dev-scratch-assets.aluxcoding.com/link/`
+- prod: [`dist/AluxLabsLink.appinstaller`](../../aluxlabs-link-win-msix/dist/AluxLabsLink.appinstaller) → `scratch-link.aluxcoding.com/` (루트)
+- dev: [`dist/AluxLabsLink.dev.appinstaller`](../../aluxlabs-link-win-msix/dist/AluxLabsLink.dev.appinstaller) → `dev-scratch-link.aluxcoding.com/` (루트)
 
 스키마는 `2017/2` (Windows 1809+ 호환 — 매니페스트 MinVersion과 동일). `Publisher`는 인증서 Subject와 일치.
 
@@ -128,29 +130,47 @@ VS GUI로 할 경우: wapproj 우클릭 → **게시(Publish) → 앱 패키지 
 Get-AppLockerFileInformation -Path .\AluxLabs-Link-x.y.z.msixbundle | Select-Object -ExpandProperty Publisher
 ```
 
-### 호스팅 — `scratch-assets/link/` (확정)
+### 호스팅 — `scratch-link.aluxcoding.com` 루트 (확정)
 
-토큰 배포는 `scratch-assets.aluxcoding.com/link/`(dev는 `dev-scratch-assets.../link/`)에 **수동 업로드**한다. 이 버킷은 이미 Scratch 자산(`driver/`, `firmware/`, `sb3/` 등)을 서빙 중이며 CI(`setup-cdn.sh`)가 건드리지 않는 곳이라 충돌이 없다.
+토큰 배포는 **`scratch-link.aluxcoding.com`(prod) / `dev-scratch-link.aluxcoding.com`(dev) 루트**에 `aws s3 cp`로 수동 업로드한다. (이 도메인만 CloudFront로 공개 서빙됨 — `scratch-assets`는 공개 DNS가 없어 제외.)
 
 ```
-scratch-assets.aluxcoding.com/
-  link/
-    AluxLabsLink.appinstaller          # 고정 URL (진입점, 불변)
-    AluxLabs-Link-x.y.z.msixbundle     # 토큰 서명된 번들 (버전별)
+scratch-link.aluxcoding.com/
+  AluxLabsLink.appinstaller          # 고정 URL (진입점, 불변)
+  AluxLabs-Link-x.y.z.msixbundle     # 토큰 서명된 번들 (버전별)
 ```
+
+진입점 URL: `https://scratch-link.aluxcoding.com/AluxLabsLink.appinstaller`
 
 - **`.appinstaller` URL은 영원히 고정**. `.msixbundle` URL은 버전마다 바뀌어도 됨.
-- **MIME 타입 필수** (이 버킷엔 아직 MSIX MIME이 없을 수 있음 → 업로드 시 `--content-type`으로 지정):
+- **MIME 타입 필수** — 콘솔 업로드는 `binary/octet-stream`이 붙어 깨진다. 반드시 `--content-type` 지정:
   - `.appinstaller` → `application/appinstaller`
   - `.msixbundle` → `application/vnd.ms-appx`
-- CloudFront HTTPS 서빙 전제.
+- 업로드 후 **CloudFront 무효화** 필수 (안 하면 옛 캐시가 잘못된 MIME로 남음).
+  - 배포 ID: prod `E3HEXR4KAZLITV`, dev `E1WMSQXPP9L5YF`
+
+업로드 + 무효화 명령 (CLI 자격증명 필요 — IAM 정책 `scripts/aws/policies/iam-policy.json.tpl`):
+
+```powershell
+$v = "1.0.0.1028"   # 실제 빌드 버전
+$b = "scratch-link.aluxcoding.com"   # dev면 dev-scratch-link.aluxcoding.com
+aws s3 cp "dist\upload\AluxLabs-Link-$v.msixbundle" "s3://$b/AluxLabs-Link-$v.msixbundle" --content-type application/vnd.ms-appx --cache-control "public, max-age=31536000, immutable"
+aws s3 cp "dist\upload\AluxLabsLink.appinstaller"   "s3://$b/AluxLabsLink.appinstaller"   --content-type application/appinstaller --cache-control "public, max-age=300"
+aws cloudfront create-invalidation --distribution-id E3HEXR4KAZLITV --paths "/AluxLabsLink.appinstaller" "/AluxLabs-Link-$v.msixbundle"
+```
+
+검증 (HTTP HEAD로 Content-Type 확인):
+```powershell
+Invoke-WebRequest -Method Head "https://scratch-link.aluxcoding.com/AluxLabsLink.appinstaller" -UseBasicParsing | % { $_.Headers['Content-Type'] }
+```
 
 ## 5. 신규 버전 릴리스 체크리스트 (토큰 수동)
 
 1. [ ] 토큰 연결 + SafeNet 클라이언트 실행 확인
-2. [ ] Release 구성으로 `.msixbundle` 빌드
-3. [ ] `signtool`로 서명 (1절) — Publisher 일치(2절)
+2. [ ] Release 구성으로 `.msixbundle` 빌드 (self-contained x86|x64)
+3. [ ] `signtool`로 서명 — **`/sha1 <썸프린트>` 권장** (`/n` 이름 매칭은 간헐 실패)
 4. [ ] `signtool verify /pa`로 서명 검증
-5. [ ] `.appinstaller`의 **버전 3곳 + 번들 파일명** 갱신 (위 규칙)
-6. [ ] `scratch-assets/link/`에 `.appinstaller` + 서명된 번들 업로드 (`--content-type` 지정)
-7. [ ] 기존 설치본에서 자동 업데이트 동작 확인
+5. [ ] 번들을 `dist/upload/AluxLabs-Link-<버전>.msixbundle`로 복사
+6. [ ] `.appinstaller`의 **버전 3곳 + 번들 파일명** 갱신
+7. [ ] `aws s3 cp`로 업로드(`--content-type`) → CloudFront 무효화 → HTTP HEAD 검증
+8. [ ] 기존 설치본에서 자동 업데이트 동작 확인
