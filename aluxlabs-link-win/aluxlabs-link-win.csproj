@@ -10,6 +10,10 @@
     <Authors>$(Company)</Authors>
     <Nullable>disable</Nullable>
     <UseWinUI>true</UseWinUI>
+    <!-- Custom entry point (Program.Main) for single-instance redirect before Application.Start.
+         The XAML-generated Program is gated by '#if !DISABLE_XAML_GENERATED_MAIN', so the symbol
+         must be a compile constant, not just an MSBuild property, to suppress it. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <WindowsPackageType>None</WindowsPackageType>
     <!-- Self-contained when building with a specific platform (x64/x86/ARM64): bundles App Runtime DLLs -->
     <!-- AnyCPU does not support self-contained; publish profiles also override to false for MSIX -->
