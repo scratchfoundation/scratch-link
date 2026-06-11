@@ -105,26 +105,30 @@ VS GUI로 할 경우: wapproj 우클릭 → **게시(Publish) → 앱 패키지 
 3. 앱 실행 시(또는 백그라운드 작업) Windows가 `.appinstaller`를 다시 받아 **`Version`과 설치된 버전을 스스로 비교**한다.
 4. 더 높으면 새 번들을 받아 적용한다.
 
-### `.appinstaller` 파일 (확정·커밋됨)
+### `.appinstaller` 파일 (템플릿에서 자동 생성)
 
-수동 운영이므로 MSBuild 자동 생성 대신 파일을 직접 관리한다. 저장소에 둔 정본:
+`make`가 staging 된 번들 파일명에서 버전을 읽어 prod/dev 두 파일을 생성한다(수동 편집 없음). 정본은 템플릿이다:
 
-- prod: [`dist/AluxLabsLink.appinstaller`](../../aluxlabs-link-win-msix/dist/AluxLabsLink.appinstaller) → `scratch-link.aluxcoding.com/` (루트)
-- dev: [`dist/AluxLabsLink.dev.appinstaller`](../../aluxlabs-link-win-msix/dist/AluxLabsLink.dev.appinstaller) → `dev-scratch-link.aluxcoding.com/` (루트)
+- 템플릿: [`AluxLabsLink.appinstaller.template`](../../aluxlabs-link-win-msix/AluxLabsLink.appinstaller.template) — 호스트/버전/번들 placeholder
+- 생성물(gitignore): `dist/upload/AluxLabsLink.appinstaller` (prod) / `dist/upload/AluxLabsLink.dev.appinstaller` (dev)
+- 생성: `make appinstaller` (또는 `make sync-s3`/`sync-s3-dev` 가 업로드 직전 자동 생성)
 
 스키마는 `2017/2` (Windows 1809+ 호환 — 매니페스트 MinVersion과 동일). `Publisher`는 인증서 Subject와 일치.
 
-### ⚠️ 릴리스마다 고칠 곳 — 버전 3곳
+### 버전 — 한 곳만 (Version.props)
 
-`.appinstaller`의 버전이 **실제 빌드된 번들 버전과 정확히 일치**해야 Windows가 비교한다. 새 릴리스마다 다음 3곳을 그 버전으로 바꾼다:
+`.appinstaller`의 버전·번들 파일명은 **빌드된 번들과 자동으로 일치**한다 — `make`가 staging 된 번들명(`AluxLabs-Link-<버전>.msixbundle`)에서 버전을 그대로 주입하기 때문. 손으로 맞출 곳은 없다.
 
-1. `<AppInstaller ... Version="x.y.z.b">` — 루트
-2. `<MainBundle ... Version="x.y.z.b">` — 번들
-3. `<MainBundle ... Uri=".../AluxLabs-Link-x.y.z.b.msixbundle">` — 파일명
+릴리스 버전(Major.Minor.Patch)은 **`SharedProps/Version.props` 한 곳**이 단일 소스다(`ScratchVersion.targets`가 읽어 assembly·매니페스트·번들명에 전파). 4번째 Build 자리는 커밋 수로 자동.
 
-> **`<AppInstaller>`의 `Uri`(고정 URL)는 절대 변경 금지** — 설치된 클라이언트가 기억하는 진입점이다. 바꾸는 건 버전과 번들 파일명뿐.
+```powershell
+make set-version VERSION=1.2.0   # 또는 make release-patch / release-minor
+make show-version                # 산출될 quad 확인
+```
 
-버전은 git 태그 기반으로 산출된다(`ScratchVersion.targets`): 태그 없으면 `1.0.0.<커밋수>`, 정식 릴리스는 `git tag v1.2.0` → `1.2.0.x`. 빌드된 번들의 실제 버전·Publisher 확인:
+> **`<AppInstaller>`의 `Uri`(고정 URL)는 불변** — 설치된 클라이언트가 기억하는 진입점이다. 템플릿에 고정돼 있고, 버전·번들명만 주입된다.
+
+빌드된 번들의 실제 버전·Publisher 확인:
 
 ```powershell
 Get-AppLockerFileInformation -Path .\AluxLabs-Link-x.y.z.msixbundle | Select-Object -ExpandProperty Publisher
@@ -166,11 +170,11 @@ Invoke-WebRequest -Method Head "https://scratch-link.aluxcoding.com/AluxLabsLink
 
 ## 5. 신규 버전 릴리스 체크리스트 (토큰 수동)
 
-1. [ ] 토큰 연결 + SafeNet 클라이언트 실행 확인
-2. [ ] Release 구성으로 `.msixbundle` 빌드 (self-contained x86|x64)
-3. [ ] `signtool`로 서명 — **`/sha1 <썸프린트>` 권장** (`/n` 이름 매칭은 간헐 실패)
-4. [ ] `signtool verify /pa`로 서명 검증
-5. [ ] 번들을 `dist/upload/AluxLabs-Link-<버전>.msixbundle`로 복사
-6. [ ] `.appinstaller`의 **버전 3곳 + 번들 파일명** 갱신
-7. [ ] `aws s3 cp`로 업로드(`--content-type`) → CloudFront 무효화 → HTTP HEAD 검증
-8. [ ] 기존 설치본에서 자동 업데이트 동작 확인
+1. [ ] `make set-version VERSION=x.y.z` (또는 release-patch/minor) — 버전 단일 소스 갱신
+2. [ ] 토큰 연결 + SafeNet 클라이언트 실행 확인
+3. [ ] Release 구성으로 `.msixbundle` 빌드 (self-contained x86|x64) → `AluxLabs-Link-x.y.z.<커밋수>.msixbundle`
+4. [ ] `signtool`로 서명 — **`/sha1 <썸프린트>` 권장** (`/n` 이름 매칭은 간헐 실패)
+5. [ ] `signtool verify /pa`로 서명 검증
+6. [ ] 서명된 번들을 `dist/upload/`로 복사
+7. [ ] `make sync-s3` (dev면 `sync-s3-dev`) — appinstaller 자동 생성 + 업로드 + CloudFront 무효화
+8. [ ] HTTP HEAD로 Content-Type 검증 + 기존 설치본 자동 업데이트 확인
