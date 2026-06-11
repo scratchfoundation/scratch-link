@@ -26,15 +26,9 @@ using AluxLabs.Link.JsonRpc;
 internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     where TPort : class
 {
-    // Yield keep-alive while RX is active so the peripheral can finish unsolicited notifications (e.g. BLE link-loss).
-    private const int KeepAliveRxYieldMs = 200;
-
-    // Force keep-alive once the client has been idle this long, even if RX is still flowing, to stay under the device's 1 s RX timeout.
-    private const int KeepAliveTxIdleMs = 900;
-
-    // Pause keep-alive once RX has stalled this long. Dongles defer BLE link-loss notifications while servicing PC commands;
-    // pausing gives the dongle the idle window it needs to push the notification.
-    private const int KeepAliveRxStallMs = 500;
+    // Resend the last TX packet at most once per this interval while the client is idle. Sized well under the
+    // device's ~1 s RX watchdog (minus TX/RX transmission time) so a late tick on a slow PC still lands in time.
+    private const int KeepAliveFeedIntervalMs = 300;
 
     // Serializes DoWrite calls so two writes never overlap and corrupt the stream.
     private readonly SemaphoreSlim writeSemaphore = new SemaphoreSlim(1, 1);
@@ -44,11 +38,9 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
 
     private byte[] lastSentData;
     private Timer keepAliveTimer;
-    private int keepAliveIntervalMs;
     private bool keepAliveActive;
 
     // 64-bit timestamps in DateTime.UtcNow.Ticks; accessed via Interlocked to keep reads/writes atomic on 32-bit runtimes.
-    private long lastRxTicks;
     private long lastClientTxTicks;
     private long lastKeepAliveSentTicks;
 
@@ -169,7 +161,7 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
 
     /// <summary>
     /// JSON-RPC <c>write</c> handler. Caches the payload as the most recent TX packet
-    /// and resets the keep-alive timer so resends are suppressed during active bursts.
+    /// and stamps the client-TX time so keep-alive resends stay suppressed during active bursts.
     /// </summary>
     /// <param name="methodName">Dispatched method name.</param>
     /// <param name="args">Decoded request params.</param>
@@ -193,7 +185,6 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             }
 
             Interlocked.Exchange(ref this.lastClientTxTicks, DateTime.UtcNow.Ticks);
-            this.ResetKeepAliveTimer();
 
             if (this.wireTrace)
             {
@@ -336,8 +327,6 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     protected async Task DidReceiveData(byte[] data)
     {
-        Interlocked.Exchange(ref this.lastRxTicks, DateTime.UtcNow.Ticks);
-
         if (this.wireTrace)
         {
             Trace.WriteLine($"wire-trace RX {data.Length}B {FormatHex(data)}");
@@ -408,10 +397,9 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
 
         var interval = keepAliveIntervalMs.Value;
 
-        // Seed timestamps to "now" so the first tick doesn't see zero-initialized fields as ancient activity
-        // (which would otherwise mis-trigger the RX-stall guard before any RX has arrived).
+        // Seed timestamps to "now" so the first tick doesn't read zero-initialized fields as ancient TX activity
+        // and fire an immediate resend before the client has written anything.
         var nowTicks = DateTime.UtcNow.Ticks;
-        Interlocked.Exchange(ref this.lastRxTicks, nowTicks);
         Interlocked.Exchange(ref this.lastClientTxTicks, nowTicks);
         Interlocked.Exchange(ref this.lastKeepAliveSentTicks, nowTicks);
 
@@ -423,7 +411,6 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
                 return;
             }
 
-            this.keepAliveIntervalMs = interval;
             this.keepAliveActive = true;
             this.keepAliveTimer = new Timer(this.OnKeepAliveTick, null, interval, interval);
         }
@@ -555,34 +542,6 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Push the next tick one full interval forward so that ongoing write bursts suppress the resend.
-    /// </summary>
-    private void ResetKeepAliveTimer()
-    {
-        Timer timer;
-        int interval;
-        lock (this.stateLock)
-        {
-            if (!this.keepAliveActive || this.keepAliveTimer == null)
-            {
-                return;
-            }
-
-            timer = this.keepAliveTimer;
-            interval = this.keepAliveIntervalMs;
-        }
-
-        try
-        {
-            timer.Change(interval, interval);
-        }
-        catch (ObjectDisposedException)
-        {
-            // Raced with StopKeepAlive.
-        }
-    }
-
     private async void OnKeepAliveTick(object state)
     {
         byte[] data;
@@ -601,22 +560,14 @@ internal abstract class SerialSession<TPort> : PeripheralSession<TPort, string>
             return;
         }
 
-        // msSinceAnyTx tracks "any TX we issued recently" — client write OR previous keep-alive — so a single forced
-        // keep-alive resets the budget instead of unlocking the 33 ms cadence permanently.
+        // Hold off while a client write OR a prior keep-alive landed within the interval: normal write bursts keep this
+        // silent, and counting a resend as TX means one forced send resets the budget instead of unlocking the raw tick cadence.
         var nowTicks = DateTime.UtcNow.Ticks;
-        var msSinceRx = (nowTicks - Interlocked.Read(ref this.lastRxTicks)) / TimeSpan.TicksPerMillisecond;
         var msSinceClientTx = (nowTicks - Interlocked.Read(ref this.lastClientTxTicks)) / TimeSpan.TicksPerMillisecond;
         var msSinceKeepAlive = (nowTicks - Interlocked.Read(ref this.lastKeepAliveSentTicks)) / TimeSpan.TicksPerMillisecond;
         var msSinceAnyTx = Math.Min(msSinceClientTx, msSinceKeepAlive);
 
-        // RX stalled too long: peripheral is silent (likely BLE link loss). Pause so the dongle can push its notification.
-        if (msSinceRx > KeepAliveRxStallMs)
-        {
-            return;
-        }
-
-        // Yield to in-flight RX so we don't trample its TX window; capped by KeepAliveTxIdleMs to stay under the ~1 s device timeout.
-        if (msSinceRx < KeepAliveRxYieldMs && msSinceAnyTx < KeepAliveTxIdleMs)
+        if (msSinceAnyTx < KeepAliveFeedIntervalMs)
         {
             return;
         }

@@ -144,7 +144,7 @@ Opens a serial port connection.
 - `stopBits` (string, optional) — "one" | "onePointFive" | "two" (default: "one")
 - `flowControl` (string, optional) — "none" | "rtsCts" | "xonXoff" (default: "none")
 - `peripheralType` (string, optional) — Device type identifier ("codetinker", "connect", "technic", etc.)
-- `keepAliveIntervalMs` (int, optional) — Keep-alive interval in ms. Omit or null to disable. **Recommended: 33ms for Codetinker**
+- `keepAliveIntervalMs` (int, optional) — Enables keep-alive and sets the **poll granularity** in ms (how often Link checks for an idle link). Omit or null to disable. **Recommended: 33ms for Codetinker.** The actual resend cadence is a fixed internal ~300ms idle interval, sized under the device's ~1s RX watchdog; a small poll value just hits that deadline more precisely.
 - `wireTrace` (bool, optional) — Diagnostic. When `true`, Link emits per-write/per-read hex dumps via `Trace.WriteLine` (visible in DebugView or attached debugger). Off by default. Use only for transport-level debugging; the dumps include payload bytes and can be verbose.
 
 **Response:**
@@ -447,7 +447,7 @@ This is a deliberate design choice for v1: keep Link's transport thin and predic
   }
 }
 // → result: {}
-// → Keep-alive timer starts, will resend last TX packet every 33ms if idle
+// → Keep-alive starts; polls every 33ms and resends the last TX packet after ~300ms of TX-idle
 
 // 3. Send command
 {
@@ -460,7 +460,7 @@ This is a deliberate design choice for v1: keep Link's transport thin and predic
   }
 }
 // → result: { sentBytes: 4 }
-// → Keep-alive timer resets (cached packet = AQIDBA==)
+// → Keep-alive idle budget reset (cached packet = AQIDBA==)
 
 // 4. Receive response
 // ← serialDidReceiveData: { message: "BwgJCg==", encoding: "base64" }
@@ -514,7 +514,7 @@ The human-readable detail is in `error.data`; `error.message` is the category st
 
 Two layers of protection:
 
-1. **Automatic (no client change needed).** Each `write` resets the keep-alive interval, so a burst of writes (DFU chunks) suppresses the resend until the line goes idle again.
+1. **Automatic (no client change needed).** Each `write` refreshes the last-TX timestamp, so a burst of writes (DFU chunks) keeps the link below the ~300ms idle threshold and suppresses the resend until the line goes idle again.
 2. **Explicit (recommended for wireless DFU).** Before bootloader entry, call `setKeepAlive` with `intervalMs: null` to disable keep-alive entirely. Re-enable after DFU completes. This eliminates any chance of a resend racing with a bootloader handshake on a slow wireless link.
 
 ```javascript
