@@ -55,7 +55,7 @@ WINDOWS_IMAGES = \
 	aluxlabs-link-win-msix/Images/StoreLogo.png \
 	aluxlabs-link-win-msix/Images/Wide310x150Logo.scale-200.png
 
-.PHONY: all clean mac windows sync-s3 sync-s3-dev
+.PHONY: all clean mac windows sync-s3 sync-s3-dev appinstaller show-version set-version release-patch release-minor
 
 # S3 배포: dist/upload/의 서명된 번들 + .appinstaller를 scratch-link 버킷에 업로드.
 # 운영: make sync-s3      → https://scratch-link.aluxcoding.com/
@@ -67,7 +67,7 @@ export MSYS_NO_PATHCONV := 1
 AWS              ?= $(if $(wildcard C:/PROGRA~1/Amazon/AWSCLIV2/aws.exe),C:/PROGRA~1/Amazon/AWSCLIV2/aws.exe,aws)
 S3_SRC           ?= aluxlabs-link-win-msix/dist/upload/
 S3_BUNDLE        ?= $(notdir $(wildcard $(S3_SRC)*.msixbundle))
-APPINSTALLER_DEV ?= aluxlabs-link-win-msix/dist/AluxLabsLink.dev.appinstaller
+APPINSTALLER_DEV ?= aluxlabs-link-win-msix/dist/upload/AluxLabsLink.dev.appinstaller
 S3_BUCKET        ?= scratch-link.aluxcoding.com
 S3_BUCKET_DEV    ?= dev-scratch-link.aluxcoding.com
 CF_DIST_ID       ?= E3HEXR4KAZLITV
@@ -75,6 +75,18 @@ CF_DIST_ID_DEV   ?= E1WMSQXPP9L5YF
 CT_APPINSTALLER  ?= application/appinstaller
 CT_MSIXBUNDLE    ?= application/vnd.ms-appx
 AWS_REGION       ?= ap-northeast-2
+
+# --- 버전 관리 + .appinstaller 생성 (Windows 전용) ---
+# 단일 소스: SharedProps/Version.props 의 <ReleaseTriplet> (= Major.Minor.Patch). 4번째 Build 는 커밋 수 자동.
+# .appinstaller 는 staging 된 번들 파일명에서 버전을 그대로 읽어 생성 → 번들과 절대 어긋나지 않음.
+VERSION_PROPS         ?= SharedProps/Version.props
+APPINSTALLER_TEMPLATE ?= aluxlabs-link-win-msix/AluxLabsLink.appinstaller.template
+APPINSTALLER          ?= aluxlabs-link-win-msix/dist/upload/AluxLabsLink.appinstaller
+APPINSTALLER_HOST     ?= scratch-link.aluxcoding.com
+APPINSTALLER_HOST_DEV ?= dev-scratch-link.aluxcoding.com
+RELEASE_TRIPLET        = $(shell awk -F'[<>]' '/ReleaseTriplet/{print $$3}' $(VERSION_PROPS))
+GIT_COMMITS            = $(shell git rev-list --count HEAD)
+BUNDLE_VERSION         = $(patsubst AluxLabs-Link-%.msixbundle,%,$(S3_BUNDLE))
 
 all: mac windows
 
@@ -85,17 +97,40 @@ mac: $(MAC_IMAGES)
 
 windows: $(WINDOWS_IMAGES)
 
-sync-s3:
+sync-s3: appinstaller
 	$(if $(strip $(S3_BUNDLE)),,$(error $(S3_SRC) 에 *.msixbundle 없음 — 빌드/서명/스테이징 먼저))
 	"$(AWS)" s3 cp "$(S3_SRC)$(S3_BUNDLE)" "s3://$(S3_BUCKET)/$(S3_BUNDLE)" --content-type $(CT_MSIXBUNDLE) --cache-control "public, max-age=31536000, immutable" --region $(AWS_REGION)
 	"$(AWS)" s3 cp "$(S3_SRC)AluxLabsLink.appinstaller" "s3://$(S3_BUCKET)/AluxLabsLink.appinstaller" --content-type $(CT_APPINSTALLER) --cache-control "public, max-age=300" --region $(AWS_REGION)
 	"$(AWS)" cloudfront create-invalidation --distribution-id $(CF_DIST_ID) --paths "/AluxLabsLink.appinstaller" "/$(S3_BUNDLE)"
 
-sync-s3-dev:
+sync-s3-dev: appinstaller
 	$(if $(strip $(S3_BUNDLE)),,$(error $(S3_SRC) 에 *.msixbundle 없음 — 빌드/서명/스테이징 먼저))
 	"$(AWS)" s3 cp "$(S3_SRC)$(S3_BUNDLE)" "s3://$(S3_BUCKET_DEV)/$(S3_BUNDLE)" --content-type $(CT_MSIXBUNDLE) --cache-control "public, max-age=31536000, immutable" --region $(AWS_REGION)
 	"$(AWS)" s3 cp "$(APPINSTALLER_DEV)" "s3://$(S3_BUCKET_DEV)/AluxLabsLink.appinstaller" --content-type $(CT_APPINSTALLER) --cache-control "public, max-age=300" --region $(AWS_REGION)
 	"$(AWS)" cloudfront create-invalidation --distribution-id $(CF_DIST_ID_DEV) --paths "/AluxLabsLink.appinstaller" "/$(S3_BUNDLE)"
+
+show-version:
+	@echo "triplet (Version.props): $(RELEASE_TRIPLET)"
+	@echo "quad    (+build):        $(RELEASE_TRIPLET).$(GIT_COMMITS)"
+	@echo "staged bundle:           $(if $(strip $(S3_BUNDLE)),$(S3_BUNDLE) [$(BUNDLE_VERSION)],(none in $(S3_SRC)))"
+
+set-version:
+	@echo "$(VERSION)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "ERROR: make set-version VERSION=x.y.z (예: 1.1.0)"; exit 1; }
+	sed -i 's|<ReleaseTriplet>.*</ReleaseTriplet>|<ReleaseTriplet>$(VERSION)</ReleaseTriplet>|' $(VERSION_PROPS)
+	@echo "Version.props -> $(VERSION)"
+
+release-patch:
+	$(MAKE) set-version VERSION=$(shell echo $(RELEASE_TRIPLET) | awk -F. '{print $$1"."$$2"."$$3+1}')
+
+release-minor:
+	$(MAKE) set-version VERSION=$(shell echo $(RELEASE_TRIPLET) | awk -F. '{print $$1"."$$2+1".0"}')
+
+# staging 된 번들에 맞춰 prod/dev .appinstaller 두 개를 템플릿에서 생성
+appinstaller:
+	$(if $(strip $(S3_BUNDLE)),,$(error $(S3_SRC) 에 *.msixbundle 없음 — 빌드/서명/스테이징 먼저))
+	sed -e 's|__HOST__|$(APPINSTALLER_HOST)|g' -e 's|__VERSION__|$(BUNDLE_VERSION)|g' -e 's|__BUNDLE__|$(S3_BUNDLE)|g' "$(APPINSTALLER_TEMPLATE)" > "$(APPINSTALLER)"
+	sed -e 's|__HOST__|$(APPINSTALLER_HOST_DEV)|g' -e 's|__VERSION__|$(BUNDLE_VERSION)|g' -e 's|__BUNDLE__|$(S3_BUNDLE)|g' "$(APPINSTALLER_TEMPLATE)" > "$(APPINSTALLER_DEV)"
+	@echo "appinstaller 생성: $(BUNDLE_VERSION) (prod + dev)"
 
 # Assumes the input SVG is square and that pixel [0,0] is a good background color
 # Pads the output horizontally, using the background color, to match the requested size

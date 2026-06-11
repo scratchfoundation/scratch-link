@@ -3,6 +3,7 @@
 This file sets up version properties in our own Scratch way.
 -->
 <Project>
+	<Import Project="$(MSBuildThisFileDirectory)Version.props" />
 	<!--
 	Fallback GitVersion target for build environments where the GitInfo NuGet package targets
 	are not imported (e.g. VS 2026 MSBuild resolves NuGetPackageRoot differently than the CLI).
@@ -59,6 +60,8 @@ This file sets up version properties in our own Scratch way.
 			-->
 			<ScratchVersionTriplet Condition="'$(GitSemVerMajor)' == '0' AND '$(GitSemVerMinor)' == '0'">1.0.0</ScratchVersionTriplet>
 			<ScratchVersionTriplet Condition="'$(ScratchVersionTriplet)' == ''">$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</ScratchVersionTriplet>
+				<!-- Primary source: Version.props (bumped via `make set-version`). Wins over the git/floor fallbacks above. -->
+				<ScratchVersionTriplet Condition="'$(ReleaseTriplet)' != ''">$(ReleaseTriplet)</ScratchVersionTriplet>
 			<ScratchVersionFull>$(ScratchVersionTriplet)$(GitSemVerDashLabel)</ScratchVersionFull>
 			<ScratchVersionHash>$(GitCommit)</ScratchVersionHash>
 			<ScratchVersionDetail>$(ScratchVersionFull)+$(ScratchVersionHash)</ScratchVersionDetail>

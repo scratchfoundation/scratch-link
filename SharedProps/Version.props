@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Single source of truth for the Windows release version (Major.Minor.Patch).
+The 4th field (Build) is derived from the git commit count in ScratchVersion.targets.
+Bump with `make set-version VERSION=x.y.z` (avoid hand-editing).
+-->
+<Project>
+  <PropertyGroup>
+    <ReleaseTriplet>1.1.0</ReleaseTriplet>
+  </PropertyGroup>
+</Project>
