@@ -15,13 +15,13 @@
   "devDependencies": {
     "@commitlint/cli": "17.6.1",
     "@commitlint/config-conventional": "17.6.1",
-    "@semantic-release/changelog": "6.0.3",
-    "@semantic-release/commit-analyzer": "9.0.2",
-    "@semantic-release/git": "10.0.1",
-    "@semantic-release/npm": "10.0.3",
-    "@semantic-release/release-notes-generator": "10.0.3",
+    "@semantic-release/changelog": "7.0.0",
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/git": "11.0.1",
+    "@semantic-release/npm": "13.2.0",
+    "@semantic-release/release-notes-generator": "14.1.1",
     "husky": "8.0.3",
     "scratch-vm": "3.0.15",
-    "semantic-release": "21.0.1"
+    "semantic-release": "26.0.1"
   }
 }
